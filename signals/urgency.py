@@ -32,6 +32,24 @@ URGENCY_PHRASES = [
     re.compile(r"abhi\s+kharido", re.IGNORECASE),  # Hindi: "buy now"
     re.compile(r"jaldi\s+order\s+karein", re.IGNORECASE),  # Hindi: "order quickly"
     re.compile(r"offer\s+khatam\s+hone\s+wala", re.IGNORECASE),  # Hindi: "offer about to end"
+    re.compile(r"\b\d+\s+left\b", re.IGNORECASE),
+    re.compile(r"\b(only\s+)?\d+\s+(items?\s+)?left\b", re.IGNORECASE),
+    re.compile(r"\d+\s+people\s+(bought|viewed|looking)", re.IGNORECASE),
+    re.compile(r"\d+\s+people\s+bought\s+this\s+in\s+the\s+last\s+\d+\s+days", re.IGNORECASE),
+    re.compile(r"(just\s+)?bought\s+by\s+\d+", re.IGNORECASE),
+    re.compile(r"selling\s+fast", re.IGNORECASE),
+    re.compile(r"hurry[,!]?", re.IGNORECASE),
+    re.compile(r"\d+\s+(others?\s+)?viewing\s+(this|right\s+now)", re.IGNORECASE),
+]
+
+SOCIAL_PROOF_PATTERNS = [
+    re.compile(r"\d+\s+people\s+bought\s+this\s+in\s+the\s+last\s+\d+\s+days", re.IGNORECASE),
+    re.compile(r"\d+\s+people\s+are\s+viewing\s+this", re.IGNORECASE),
+    re.compile(r"\d+\s+(others?\s+)?(?:are\s+)?looking\s+at\s+this", re.IGNORECASE),
+    re.compile(r"best\s*seller", re.IGNORECASE),
+    re.compile(r"\d+\s*(?:crores?|lakhs?)\+?\s+customers", re.IGNORECASE),
+    re.compile(r"\d+\s*(?:crores?|lakhs?)\+?\s+(?:products?\s+)?sold", re.IGNORECASE),
+    re.compile(r"\d+\s+people\s+(bought|viewed)", re.IGNORECASE),
 ]
 
 _TIMER_KEYWORDS = ["countdown", "timer", "clock", "time-left"]
@@ -45,6 +63,20 @@ def extract_urgency_claims(visible_text: List[str]) -> List[str]:
         if not text or text in seen:
             continue
         if any(pattern.search(text) for pattern in URGENCY_PHRASES):
+            seen.add(text)
+            results.append(text)
+
+    return results
+
+
+def extract_social_proof_claims(visible_text: List[str]) -> List[str]:
+    results: List[str] = []
+    seen = set()
+
+    for text in visible_text:
+        if not text or text in seen:
+            continue
+        if any(pattern.search(text) for pattern in SOCIAL_PROOF_PATTERNS):
             seen.add(text)
             results.append(text)
 
@@ -71,7 +103,9 @@ class _TimerElementParser(HTMLParser):
         if id_attr:
             selector += f"#{attrs_dict['id']}"
         elif class_attr:
-            selector += f".{class_attr.split()[0]}"
+            classes = class_attr.split()
+            if classes:
+                selector += f"." + classes[0]
 
         self._stack.append({"tag": tag, "is_timer": is_timer, "selector": selector, "text": []})
 
@@ -94,8 +128,11 @@ class _TimerElementParser(HTMLParser):
 
 
 def extract_timers(dom_html: str) -> List[Dict]:
-    if not dom_html:
+    try:
+        if not dom_html:
+            return []
+        parser = _TimerElementParser()
+        parser.feed(dom_html)
+        return parser.results
+    except Exception:
         return []
-    parser = _TimerElementParser()
-    parser.feed(dom_html)
-    return parser.results

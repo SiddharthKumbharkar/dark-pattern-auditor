@@ -1,9 +1,11 @@
 """Playwright session manager (Layer 1). Captures raw step state only —
 classification and signal extraction happen in later layers."""
 
+import json
 import os
+import time
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from playwright.sync_api import Browser, Page, Playwright, sync_playwright
 
@@ -13,6 +15,25 @@ from recorder.exclusion import is_excluded
 from recorder.screenshot import capture_screenshot
 
 VIEWPORT = {"width": 1440, "height": 900}
+
+# Clicks are recorded into window.name (rather than an exposed Python
+# function) because window.name is one of the few JS values that survives
+# same-tab navigation — an expose_function() round-trip is async and can
+# lose the race against the browser's own navigation on a real click.
+_CLICK_LISTENER_JS = """
+() => {
+    if (window.__darkPatternClickListenerAttached__) {
+        return;
+    }
+    window.__darkPatternClickListenerAttached__ = true;
+    document.addEventListener('click', (event) => {
+        const el = event.target;
+        const text = ((el && (el.innerText || el.value)) || '').trim().slice(0, 100);
+        const role = (el && (el.getAttribute('role') || el.tagName)) || '';
+        window.name = JSON.stringify({text: text, role: role});
+    }, true);
+}
+"""
 
 
 class BrowserRecorder:
@@ -33,12 +54,123 @@ class BrowserRecorder:
         self.navigation_log: List[str] = []
         self.console_errors: List[str] = []
 
+        self.captured_steps: List[dict] = []
+        self._interactive_step_counter = 0
+        self._last_captured_url: Optional[str] = None
+
     def start(self) -> None:
         self._playwright = sync_playwright().start()
         self._browser = self._playwright.chromium.launch(headless=False)
         self.page = self._browser.new_page(viewport=VIEWPORT)
         self.page.on("framenavigated", self._on_navigation)
         self.page.on("console", self._on_console)
+
+    def start_interactive(self) -> List[dict]:
+        self._playwright = sync_playwright().start()
+        self._browser = self._playwright.chromium.launch(headless=False)
+        self.page = self._browser.new_page(viewport=VIEWPORT)
+
+        self.captured_steps = []
+        self._interactive_step_counter = 0
+        self._last_captured_url = None
+        self._inject_click_listener()
+
+        print("Interactive recording started. Browse the site in the opened browser window.")
+        print("Press Ctrl+C in this terminal to stop recording.")
+
+        # No event listener here. Tested and confirmed: while the main thread
+        # is idling in a pure time.sleep() loop with no other Playwright calls
+        # in flight, neither a page.on("framenavigated", ...) handler nor a
+        # self.page.url read reliably reflects navigations that happen from
+        # real (non-Python-driven) browser activity — both silently miss
+        # events. Only an actual round trip (evaluate()) forces the
+        # connection to catch up, so that's what drives detection below.
+        try:
+            while True:
+                self._poll_for_navigation()
+                time.sleep(0.2)
+        except KeyboardInterrupt:
+            print("\nRecording stopped by user.")
+        finally:
+            self.stop()
+
+        return self.captured_steps
+
+    def _current_url(self) -> Optional[str]:
+        try:
+            return self.page.evaluate("window.location.href")
+        except Exception:
+            return None
+
+    def _poll_for_navigation(self) -> None:
+        url = self._current_url()
+        if not url or url == "about:blank" or url == self._last_captured_url:
+            return
+        self._last_captured_url = url
+
+        try:
+            self.page.wait_for_timeout(1500)
+        except Exception:
+            pass
+
+        # Re-check after settling in case of a client-side redirect chain
+        # during the wait; capture the page it actually landed on.
+        settled_url = self._current_url() or url
+        self._last_captured_url = settled_url
+
+        action_type, target_text, target_role = self._consume_pending_click()
+
+        self._interactive_step_counter += 1
+        step_id = self._interactive_step_counter
+
+        try:
+            step = self.capture_step(
+                step_id=step_id,
+                url=settled_url,
+                action_type=action_type,
+                target_text=target_text,
+                target_role=target_role,
+            )
+        except Exception as exc:
+            print(f"  Skipped step {step_id} (capture failed): {exc}")
+            return
+
+        self.captured_steps.append(step)
+        print(f"Step {step_id} captured: {settled_url}")
+
+        self._inject_click_listener()
+
+    def _inject_click_listener(self) -> None:
+        try:
+            self.page.evaluate(_CLICK_LISTENER_JS)
+        except Exception:
+            pass
+
+    def _consume_pending_click(self) -> Tuple[str, Optional[str], Optional[str]]:
+        try:
+            raw = self.page.evaluate("window.name")
+        except Exception:
+            return "open_page", None, None
+
+        if not raw:
+            return "open_page", None, None
+
+        try:
+            self.page.evaluate("window.name = ''")
+        except Exception:
+            pass
+
+        try:
+            info = json.loads(raw)
+        except (TypeError, ValueError):
+            return "open_page", None, None
+
+        target_text = info.get("text") or None
+        target_role = info.get("role") or None
+        if not target_text and not target_role:
+            return "open_page", None, None
+
+        return "click", target_text, target_role
 
     def _on_navigation(self, frame) -> None:
         self.navigation_log.append(frame.url)
@@ -53,6 +185,7 @@ class BrowserRecorder:
         url: str,
         action_type: str,
         target_text: Optional[str] = None,
+        target_role: Optional[str] = None,
     ) -> dict:
         timestamp = datetime.now(timezone.utc).isoformat()
         excluded, _matched_pattern = is_excluded(url, self.exclusion_patterns)
@@ -60,7 +193,7 @@ class BrowserRecorder:
         user_action = {
             "action_type": action_type,
             "target_text": target_text,
-            "target_role": None,
+            "target_role": target_role,
             "input_value_masked": None,
         }
 
@@ -121,8 +254,14 @@ class BrowserRecorder:
 
     def stop(self) -> None:
         if self._browser is not None:
-            self._browser.close()
+            try:
+                self._browser.close()
+            except Exception:
+                pass
             self._browser = None
         if self._playwright is not None:
-            self._playwright.stop()
+            try:
+                self._playwright.stop()
+            except Exception:
+                pass
             self._playwright = None

@@ -91,3 +91,39 @@ Disguised Advertisements, Nagging, Trick Wording, SaaS Billing, Rogue Malware.
 - benchmark/ground_truth/ Ground truth label files
 - benchmark/run_logs/    Raw LLM output from each benchmark run
 - prompts/               Versioned prompt .txt files
+## Interactive Recording Mode (being added in current session)
+
+A new --interactive flag is being added to audit.py that lets a human
+auditor browse freely while the tool records automatically.
+
+Key design rules for this mode:
+- The browser MUST launch in headed/visible mode (headless=False).
+  Never launch headless in interactive mode — the auditor needs to
+  see and control the browser.
+- Click capture uses JS injection via page.evaluate() after each
+  navigation, NOT playwright's built-in click interception.
+  Do not use page.on("request") or route interception for clicks.
+- Store the last detected click as pending_action on the recorder
+  instance. The NEXT navigation capture picks it up as user_action
+  and clears it.
+- Step counter increments on navigation only, not on every click.
+  A click followed by a navigation = one step (the navigation step
+  has the click as its user_action).
+- Ctrl+C is the only way to stop interactive recording.
+  Handle KeyboardInterrupt cleanly: stop the browser, build the
+  journey, save the JSON, then exit.
+- The exclusion check still applies in interactive mode.
+  If the auditor navigates to a payment page URL matching
+  config/exclusion_rules.py patterns, capture_excluded=True
+  and NO screenshot or DOM is taken, same as URL-list mode.
+- DO NOT auto-navigate anywhere in interactive mode.
+  The recorder is passive — it only observes, never drives.
+
+## What NOT to change when implementing interactive mode
+- Do not modify journey/builder.py or any signals/ files.
+  Interactive mode feeds into the same builder.add_step() pipeline.
+- Do not change the output JSON schema.
+  The journey JSON produced by interactive mode must be identical
+  in structure to the URL-list mode output.
+- Do not add new dependencies. Playwright already handles everything
+  needed for click detection and navigation events.

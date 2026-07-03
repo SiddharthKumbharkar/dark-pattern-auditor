@@ -15,25 +15,45 @@ from journey.schema import (
 )
 from signals.cart import compute_cart_diff, extract_cart_items
 from signals.price import extract_prices
-from signals.urgency import extract_timers, extract_urgency_claims
+from signals.urgency import extract_social_proof_claims, extract_timers, extract_urgency_claims
+
+
+def _url_path(url_lower: str) -> str:
+    without_scheme = url_lower.split("://", 1)[-1]
+    if "/" not in without_scheme:
+        return ""
+    path = without_scheme.split("/", 1)[1]
+    return path.split("?", 1)[0].split("#", 1)[0]
 
 
 def infer_page_type(url: str, page_title: str) -> str:
     url_lower = (url or "").lower()
     title_lower = (page_title or "").lower()
 
-    if "product" in url_lower or "product" in title_lower:
+    if (
+        "/p/" in url_lower
+        or "/product" in url_lower
+        or "/item" in url_lower
+        or "/pd/" in url_lower
+        or "product" in title_lower
+    ):
         return "product_page"
-    if "cart" in url_lower or "cart" in title_lower:
+    if "/cart" in url_lower or "/bag" in url_lower or "/basket" in url_lower or "cart" in title_lower:
         return "cart_page"
-    if "checkout" in url_lower or "checkout" in title_lower:
+    if "/checkout" in url_lower or "/order/confirm" in url_lower or "checkout" in title_lower:
         return "checkout_page"
-    if "payment" in url_lower or "payment" in title_lower:
+    if "/login" in url_lower or "/signin" in url_lower or "/signup" in url_lower or "/register" in url_lower:
+        return "auth_page"
+    if "/search" in url_lower or "?q=" in url_lower or "?query=" in url_lower:
+        return "search_page"
+    if "/category" in url_lower or "/c/" in url_lower or ("buy" in title_lower and "online" in title_lower):
+        return "listing_page"
+    if "/payment" in url_lower or "payment" in title_lower:
         return "payment_page"
-    if "signup" in url_lower or "register" in url_lower:
-        return "signup_page"
-    if "cancel" in url_lower:
+    if "/cancel" in url_lower:
         return "cancellation_page"
+    if _url_path(url_lower) in ("", "/"):
+        return "homepage"
     return "unknown"
 
 
@@ -104,6 +124,7 @@ class JourneyBuilder:
 
         prices = extract_prices(visible_text)
         urgency_claims = extract_urgency_claims(visible_text)
+        social_proof_claims = extract_social_proof_claims(visible_text)
         timers = extract_timers(dom_html)
 
         cart_items_raw = extract_cart_items(visible_text, dom_html)
@@ -116,6 +137,7 @@ class JourneyBuilder:
             prices=[Price(**p) for p in prices],
             cart_items=[CartItem(**c) for c in current_cart_items],
             urgency_claims=urgency_claims,
+            social_proof_claims=social_proof_claims,
             timers=timers,
             popups=[],
             forms=[],

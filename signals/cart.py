@@ -95,18 +95,21 @@ def _row_to_item(cells: List[str]) -> Optional[Dict]:
 
 
 def extract_cart_items(visible_text: List[str], dom_html: str) -> List[Dict]:
-    if not dom_html:
+    try:
+        if not dom_html:
+            return []
+
+        parser = _CartRowParser()
+        parser.feed(dom_html)
+
+        items = []
+        for cells in parser.rows:
+            item = _row_to_item(cells)
+            if item is not None:
+                items.append(item)
+        return items
+    except Exception:
         return []
-
-    parser = _CartRowParser()
-    parser.feed(dom_html)
-
-    items = []
-    for cells in parser.rows:
-        item = _row_to_item(cells)
-        if item is not None:
-            items.append(item)
-    return items
 
 
 def _normalize(text: Optional[str]) -> str:

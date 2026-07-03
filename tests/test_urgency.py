@@ -1,8 +1,17 @@
-from signals.urgency import extract_timers, extract_urgency_claims
+from signals.urgency import extract_social_proof_claims, extract_timers, extract_urgency_claims
 
 
 def test_only_n_left_is_detected():
     assert extract_urgency_claims(["Only 3 left in stock!"]) == ["Only 3 left in stock!"]
+
+
+def test_n_left_without_only_is_detected():
+    assert extract_urgency_claims(["5 left"]) == ["5 left"]
+
+
+def test_people_bought_in_last_n_days_is_detected_by_social_proof():
+    text = "220 people bought this in the last 7 days"
+    assert extract_social_proof_claims([text]) == [text]
 
 
 def test_people_are_viewing_is_detected():

@@ -60,6 +60,7 @@ class ExtractedSignals:
     prices: List[Price] = field(default_factory=list)
     cart_items: List[CartItem] = field(default_factory=list)
     urgency_claims: List[str] = field(default_factory=list)
+    social_proof_claims: List[str] = field(default_factory=list)
     timers: List[Any] = field(default_factory=list)
     popups: List[Popup] = field(default_factory=list)
     forms: List[Form] = field(default_factory=list)
