@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { Finding } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SeverityTag } from "@/components/SeverityTag";
-import { ConfidenceGauge } from "@/components/ConfidenceGauge";
 
 export function FindingCard({ finding }: { finding: Finding }) {
   const isRecessed = finding.status === "not_detected";
@@ -18,24 +17,20 @@ export function FindingCard({ finding }: { finding: Finding }) {
           : "border-brand-border bg-brand-surface"
       }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h3 className={`text-lg font-semibold ${isRecessed ? "text-brand-muted" : "text-brand-text"}`}>
-            {finding.pattern}
-          </h3>
-          <StatusBadge status={finding.status} />
-          <SeverityTag severity={finding.severity} />
-          {finding.recommended_human_review && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-amber/40 bg-brand-amber/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-amber">
-              <svg viewBox="0 0 20 20" className="h-3 w-3" fill="currentColor" aria-hidden="true">
-                <path d="M10 2 1 18h18L10 2Zm0 5a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1Zm0 8.2a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2Z" />
-              </svg>
-              Human review recommended
-            </span>
-          )}
-        </div>
-
-        <ConfidenceGauge confidence={finding.confidence} status={finding.status} />
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className={`text-lg font-semibold ${isRecessed ? "text-brand-muted" : "text-brand-text"}`}>
+          {finding.pattern}
+        </h3>
+        <StatusBadge status={finding.status} />
+        <SeverityTag severity={finding.severity} />
+        {finding.recommended_human_review && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-amber/40 bg-brand-amber/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-amber">
+            <svg viewBox="0 0 20 20" className="h-3 w-3" fill="currentColor" aria-hidden="true">
+              <path d="M10 2 1 18h18L10 2Zm0 5a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1Zm0 8.2a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2Z" />
+            </svg>
+            Human review recommended
+          </span>
+        )}
       </div>
 
       {isRecessed && !expanded ? (

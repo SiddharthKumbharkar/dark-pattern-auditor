@@ -1,11 +1,10 @@
 export type FindingStatus = "confirmed" | "likely" | "suspicious" | "not_detected";
 export type Severity = "high" | "medium" | "low";
-export type SortKey = "default" | "confidence" | "severity" | "pattern";
+export type SortKey = "default" | "severity" | "pattern";
 
 export interface Finding {
   pattern: string;
   status: FindingStatus;
-  confidence: number; // 0-1
   severity: Severity;
   evidence: string[];
   reasoning: string;

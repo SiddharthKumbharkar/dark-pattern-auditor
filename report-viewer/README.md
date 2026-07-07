@@ -55,7 +55,6 @@ interface AuditReport {
   findings: Array<{
     pattern: string;
     status: "confirmed" | "likely" | "suspicious" | "not_detected";
-    confidence: number;   // 0-1
     severity: "high" | "medium" | "low";
     evidence: string[];
     reasoning: string;
@@ -72,13 +71,13 @@ interface AuditReport {
 - **Summary stats row** — patterns checked, confirmed/likely/suspicious/not
   detected counts, human-review count. Confirmed is visually emphasized.
 - **Finding cards** — status badge (solid red / amber / yellow outline / muted
-  teal outline), severity tag, confidence bar, evidence in a monospace
-  citation-style block, reasoning in a quote-style block, and a human-review
-  flag badge. `not_detected` cards render collapsed by default (click "Show
-  reasoning" to expand) and are grouped into a separate "Checked, not found"
-  section at the bottom of the default (unfiltered) view.
-- **Filter + sort controls** — filter by status; sort by severity+confidence
-  (default), confidence only, severity only, or pattern name.
+  teal outline), severity tag, evidence in a monospace citation-style block,
+  reasoning in a quote-style block, and a human-review flag badge.
+  `not_detected` cards render collapsed by default (click "Show reasoning" to
+  expand) and are grouped into a separate "Checked, not found" section at the
+  bottom of the default (unfiltered) view.
+- **Filter + sort controls** — filter by status; sort by severity (default,
+  with pattern name as tiebreaker), severity only, or pattern name.
 
 No loading spinners anywhere — the report is bundled at build time, so
 there's nothing to wait on.

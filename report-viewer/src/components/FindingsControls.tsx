@@ -47,8 +47,7 @@ export function FindingsControls({
           onChange={(e) => onSortKeyChange(e.target.value as SortKey)}
           className="rounded-lg border border-brand-border bg-brand-surface px-3 py-1.5 text-sm text-brand-text focus:border-brand-teal focus:outline-none"
         >
-          <option value="default">Severity, then confidence</option>
-          <option value="confidence">Confidence</option>
+          <option value="default">Severity, then pattern name</option>
           <option value="severity">Severity</option>
           <option value="pattern">Pattern name</option>
         </select>

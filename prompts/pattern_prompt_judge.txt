@@ -69,8 +69,8 @@ STRICT INSTRUCTIONS — follow all of these:
    - A low-prominence or easily-missed disclosure (e.g. small footnote
      text, buried in a separate page) does NOT fully clear the finding —
      note in your reasoning that disclosure existed but was not prominent,
-     and reflect that nuance in your confidence and severity rather than
-     either ignoring the disclosure or treating it as a full pass.
+     and reflect that nuance in your severity rather than either ignoring
+     the disclosure or treating it as a full pass.
 
 6. Every finding must cite the specific step_id(s) and signal(s) it is
    based on in the evidence field. Do not produce a finding with no
@@ -82,8 +82,8 @@ STRICT INSTRUCTIONS — follow all of these:
    addressed, even briefly.
 
 7a. CALIBRATION FOR "not_detected" — this is critical and commonly done
-    wrong. Before assigning confidence to a "not_detected" finding,
-    distinguish three different situations, not two:
+    wrong. Before writing a "not_detected" finding, distinguish three
+    different situations, not two:
       (a) Evidence-absent (flow not visited): the journey never visited
           the page type or flow where this pattern would typically show
           up (e.g. no cancellation page was visited, so Subscription Trap
@@ -106,26 +106,30 @@ STRICT INSTRUCTIONS — follow all of these:
           such as a pure content/news site with no known_flow_types
           related to purchasing). This is different from (a) — it isn't
           a coverage gap, the pattern has no mechanism to occur here.
-    Confidence guidance:
-      - Case (a) evidence-absent: confidence roughly 0.3–0.5. State
-        explicitly which flow/page type was missing.
-      - Case (b) evidence-present-and-clean: confidence 0.8+. Name the
-        step(s) that covered the relevant flow.
-      - Case (c) structurally inapplicable: confidence 0.85+ is
-        reasonable, but say explicitly that the pattern doesn't apply to
-        this journey type, rather than implying it was checked and ruled
-        out.
-    Do not let every "not_detected" finding default to the same uniform
-    confidence — and do not infer "checked and clean" merely because a
-    signal array happens to be empty; check whether the flow that would
-    populate that array was ever in scope.
+    State which case applies explicitly in the reasoning text for every
+    "not_detected" finding:
+      - Case (a) evidence-absent: state explicitly which flow/page type
+        was missing, so the reader knows this is a coverage gap, not a
+        clean result.
+      - Case (b) evidence-present-and-clean: name the step(s) that
+        covered the relevant flow, so the reader knows it was actually
+        checked.
+      - Case (c) structurally inapplicable: say explicitly that the
+        pattern doesn't apply to this journey type, rather than implying
+        it was checked and ruled out.
+    Do not let every "not_detected" finding read the same way — and do
+    not infer "checked and clean" merely because a signal array happens
+    to be empty; check whether the flow that would populate that array
+    was ever in scope. Case (a) should always be flagged for
+    recommended_human_review (see rule 8); cases (b) and (c) should not
+    be, unless something else about the finding warrants it.
 
-8. Assign a confidence score (0.0–1.0) and severity (low / medium / high)
-   to every finding, and set recommended_human_review to true for any
-   finding that is "likely" or "suspicious," or that rests on OCR-sourced
-   low-confidence evidence, or that involves a disclosure-context judgment
-   call, or that is "not_detected" due to evidence-absence (case 7a-(a))
-   rather than a clean negative (case 7a-(b)).
+8. Assign a severity (low / medium / high) to every finding, and set
+   recommended_human_review to true for any finding that is "likely" or
+   "suspicious," or that rests on OCR-sourced low-confidence evidence, or
+   that involves a disclosure-context judgment call, or that is
+   "not_detected" due to evidence-absence (case 7a-(a)) rather than a
+   clean negative (case 7a-(b)).
 
 OUTPUT FORMAT — return ONLY valid JSON, no preamble, no markdown fences, no
 explanation outside the JSON structure:
@@ -135,7 +139,6 @@ explanation outside the JSON structure:
     {
       "pattern": "...",
       "status": "confirmed | likely | suspicious | not_detected",
-      "confidence": 0.0,
       "severity": "low | medium | high",
       "evidence": ["step_id and signal references..."],
       "reasoning": "...",
