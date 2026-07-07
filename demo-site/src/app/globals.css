@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf9f6;
+  --foreground: #14171f;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Brand palette for "Auralis" -- premium audio e-commerce look */
+  --color-brand-ink: #14171f;
+  --color-brand-paper: #faf9f6;
+  --color-brand-card: #ffffff;
+  --color-brand-muted: #6b7280;
+  --color-brand-border: #e6e2da;
+  --color-brand-accent: #a9762f;
+  --color-brand-accent-dark: #8a5f22;
+  --color-brand-danger: #dc2626;
+  --color-brand-danger-dark: #b91c1c;
+  --color-brand-success: #16a34a;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
