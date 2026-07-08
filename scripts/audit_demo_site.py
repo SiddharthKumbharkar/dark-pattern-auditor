@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
-"""Auto-run the dark pattern auditing pipeline against demo-site/.
+"""Auto-run the dark pattern auditing pipeline against demo-site/ (or
+demo-site-vite/, its Node-18-compatible Vite+React Router rebuild).
 
-Starts the Next.js dev server (if one isn't already running on the target
-port), waits for it to respond, drives a real click-through journey that
+Starts the dev server (if one isn't already running on the target port),
+waits for it to respond, drives a real click-through journey that
 exercises all 8 demo-site dark patterns (Add to Cart, full checkout, free
 trial signup, full cancellation flow), saves screenshots/DOM under
 storage/ and the journey JSON to the project root, then shuts the dev
 server back down (only if this script started it).
 
+Both demo-site/ (Next.js) and demo-site-vite/ (Vite) serve the exact same
+routes and button text, so the click-through journey below works against
+either one unchanged -- only the dev-server launch command differs, and
+that is auto-detected from which one has been `npm install`-ed.
+
 Usage:
     python3 scripts/audit_demo_site.py
     python3 scripts/audit_demo_site.py --audit-id my_run --port 3005
+    python3 scripts/audit_demo_site.py --site-dir demo-site-vite  # Node 18-compatible variant
     python3 scripts/audit_demo_site.py --keep-server   # leave the dev server running afterward
 """
 
@@ -23,7 +30,6 @@ import time
 import urllib.request
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEMO_SITE_DIR = os.path.join(PROJECT_ROOT, "demo-site")
 STORAGE_DIR = os.path.join(PROJECT_ROOT, "storage")
 
 sys.path.insert(0, PROJECT_ROOT)
@@ -152,10 +158,38 @@ def run_audit(base_url: str, audit_id: str, output_path: str) -> None:
     print(f"Journey saved to {output_path}")
 
 
+def resolve_dev_command(site_dir: str, port: int) -> tuple[list[str], str]:
+    """Return (subprocess argv, tool name) to launch the dev server for site_dir.
+
+    Supports both demo-site/ (Next.js) and demo-site-vite/ (Vite) -- whichever
+    binary has actually been `npm install`-ed under site_dir/node_modules/.bin
+    determines which one gets launched, so callers don't need to know or care
+    which flavor of the site they're pointing at.
+    """
+    next_bin = os.path.join(site_dir, "node_modules", ".bin", "next")
+    vite_bin = os.path.join(site_dir, "node_modules", ".bin", "vite")
+
+    if os.path.isfile(next_bin):
+        return [next_bin, "dev", "--port", str(port)], "next"
+    if os.path.isfile(vite_bin):
+        return [vite_bin, "--port", str(port)], "vite"
+
+    raise SystemExit(
+        f"Could not find a `next` or `vite` binary under {site_dir}/node_modules/.bin -- "
+        f"run `npm install` in {site_dir}/ first."
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Auto-run the auditing pipeline against demo-site/")
     parser.add_argument("--audit-id", default="demo_site_full", help="Audit ID / output filename stem")
     parser.add_argument("--port", type=int, default=3000, help="Port the demo site should run on")
+    parser.add_argument(
+        "--site-dir",
+        default="demo-site",
+        help="Directory (relative to project root) of the site to audit -- "
+        "'demo-site' (Next.js) or 'demo-site-vite' (Node 18-compatible Vite rebuild)",
+    )
     parser.add_argument(
         "--keep-server", action="store_true", help="Leave the dev server running after the audit completes"
     )
@@ -163,6 +197,7 @@ def main() -> None:
 
     base_url = f"http://localhost:{args.port}"
     output_path = os.path.join(PROJECT_ROOT, f"output_{args.audit_id}.json")
+    site_dir = os.path.join(PROJECT_ROOT, args.site_dir)
 
     server_process = None
 
@@ -170,15 +205,11 @@ def main() -> None:
         if is_server_up(base_url):
             print(f"Demo site already running at {base_url}, using it as-is.")
         else:
-            print(f"Starting demo site dev server on port {args.port}...")
-            next_bin = os.path.join(DEMO_SITE_DIR, "node_modules", ".bin", "next")
-            if not os.path.isfile(next_bin):
-                raise SystemExit(
-                    f"Could not find {next_bin} -- run `npm install` in demo-site/ first."
-                )
+            print(f"Starting {args.site_dir} dev server on port {args.port}...")
+            argv, tool = resolve_dev_command(site_dir, args.port)
             server_process = subprocess.Popen(
-                [next_bin, "dev", "--port", str(args.port)],
-                cwd=DEMO_SITE_DIR,
+                argv,
+                cwd=site_dir,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -187,13 +218,13 @@ def main() -> None:
             except RuntimeError:
                 if server_process.poll() is not None:
                     raise SystemExit(
-                        "next dev exited immediately -- most likely another dev server for "
-                        "demo-site/ is already running on a different port (Next.js only allows "
-                        "one `next dev` per project). Stop that one first, or omit --port to "
-                        "reuse it automatically if it's on port 3000."
+                        f"`{tool}` dev server exited immediately -- most likely another dev "
+                        f"server for {args.site_dir}/ is already running on a different port. "
+                        "Stop that one first, or omit --port to reuse it automatically if it's "
+                        "on port 3000."
                     )
                 raise
-            print("Demo site is up.")
+            print(f"{args.site_dir} is up.")
 
         run_audit(base_url, args.audit_id, output_path)
     finally:
