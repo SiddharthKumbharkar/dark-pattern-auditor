@@ -5,7 +5,7 @@ import json
 import os
 import time
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from playwright.sync_api import Browser, Page, Playwright, sync_playwright
 
@@ -58,6 +58,12 @@ class BrowserRecorder:
         self._interactive_step_counter = 0
         self._last_captured_url: Optional[str] = None
 
+        # Set to False (from any thread) to stop an in-progress
+        # start_interactive() loop without a real KeyboardInterrupt.
+        # Plain attribute assignment is atomic under the GIL, so no lock
+        # is needed for this single boolean flag.
+        self._running = False
+
     def start(self) -> None:
         self._playwright = sync_playwright().start()
         self._browser = self._playwright.chromium.launch(headless=False)
@@ -65,7 +71,12 @@ class BrowserRecorder:
         self.page.on("framenavigated", self._on_navigation)
         self.page.on("console", self._on_console)
 
-    def start_interactive(self) -> List[dict]:
+    def start_interactive(
+        self,
+        start_url: Optional[str] = None,
+        on_step: Optional[Callable[[dict], None]] = None,
+        on_idle: Optional[Callable[[], None]] = None,
+    ) -> List[dict]:
         self._playwright = sync_playwright().start()
         self._browser = self._playwright.chromium.launch(headless=False)
         self.page = self._browser.new_page(viewport=VIEWPORT)
@@ -74,6 +85,9 @@ class BrowserRecorder:
         self._interactive_step_counter = 0
         self._last_captured_url = None
         self._inject_click_listener()
+
+        if start_url:
+            self.page.goto(start_url)
 
         print("Interactive recording started. Browse the site in the opened browser window.")
         print("Press Ctrl+C in this terminal to stop recording.")
@@ -85,16 +99,33 @@ class BrowserRecorder:
         # real (non-Python-driven) browser activity — both silently miss
         # events. Only an actual round trip (evaluate()) forces the
         # connection to catch up, so that's what drives detection below.
+        self._running = True
         try:
-            while True:
-                self._poll_for_navigation()
+            while self._running:
+                self._poll_for_navigation(on_step=on_step)
+                if on_idle is not None:
+                    try:
+                        on_idle()
+                    except Exception:
+                        pass
                 time.sleep(0.2)
         except KeyboardInterrupt:
             print("\nRecording stopped by user.")
         finally:
+            self._running = False
             self.stop()
 
         return self.captured_steps
+
+    def next_step_id(self) -> int:
+        """Reserve the next sequential interactive step id.
+
+        Exposed publicly so out-of-band captures (e.g. a manually
+        triggered screenshot) can share the same counter as
+        navigation-driven steps instead of colliding with it.
+        """
+        self._interactive_step_counter += 1
+        return self._interactive_step_counter
 
     def _current_url(self) -> Optional[str]:
         try:
@@ -102,7 +133,7 @@ class BrowserRecorder:
         except Exception:
             return None
 
-    def _poll_for_navigation(self) -> None:
+    def _poll_for_navigation(self, on_step: Optional[Callable[[dict], None]] = None) -> None:
         url = self._current_url()
         if not url or url == "about:blank" or url == self._last_captured_url:
             return
@@ -120,8 +151,7 @@ class BrowserRecorder:
 
         action_type, target_text, target_role = self._consume_pending_click()
 
-        self._interactive_step_counter += 1
-        step_id = self._interactive_step_counter
+        step_id = self.next_step_id()
 
         try:
             step = self.capture_step(
@@ -137,6 +167,12 @@ class BrowserRecorder:
 
         self.captured_steps.append(step)
         print(f"Step {step_id} captured: {settled_url}")
+
+        if on_step is not None:
+            try:
+                on_step(step)
+            except Exception:
+                pass
 
         self._inject_click_listener()
 

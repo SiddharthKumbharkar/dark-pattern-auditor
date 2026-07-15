@@ -5,4 +5,5 @@ __pycache__/
 .pytest_cache/
 output_*.json
 .claude/settings.local.json
+.claude/worktrees/
 .DS_Store
