@@ -1,0 +1,171 @@
+# Ground truth for the Auralis demo site (demo-site/, demo-site-vite/) --
+# the tool's only known-answer test. Auralis has exactly 8 deliberately
+# planted dark patterns, each toggled by a single client-side switch
+# (localStorage key "auralis-demo-dark-patterns-enabled", flipped by the
+# "Dark Patterns: ON/OFF" button in the site header -- see
+# demo-site/src/context/DarkPatternModeContext.tsx). No pattern exists in
+# any form when the toggle is off, so every entry below has
+# enabled_when: "on".
+#
+# expected_attributes lists which of the 7 mechanism attributes
+# (attribute_agents/base.py's ATTRIBUTES) a CORRECTLY WORKING pipeline
+# should fire for this pattern. Several are deliberately empty or point at
+# a Stage-2-only stub (attribute_agents/covertness.py,
+# information_hiding.py, disparate_treatment.py always return
+# not_assessable from code) -- known_gap records WHY, so
+# validate-against-truth's report explains a miss instead of just flagging
+# it as an unexplained failure. requires_revisit marks patterns only
+# detectable from group_evidence (claim_persistence / timer_reset_detection),
+# which needs 2+ visits of the same (site_id, goal).
+#
+# Harness convention (see run_demo_suite.py): ON-mode and OFF-mode
+# sessions both connect to the SAME real dev server URL, but are recorded
+# with record.py's --site-domain flag set to "auralis-on.local" /
+# "auralis-off.local" respectively -- a pure metadata label independent
+# of the actual connection host (not a real, resolvable hostname; some
+# dev servers, e.g. Next.js's, reject requests carrying an alternate
+# real Host header like 127.0.0.1 outright, so relying on that would be
+# fragile). This gives episode.episode.site_id/site_domain a distinct,
+# verifiable value per mode for free. validate-against-truth infers mode
+# from this.
+
+schema_version: 1
+site: auralis-demo
+description: >-
+  8 deliberately planted dark patterns on the Auralis demo e-commerce/SaaS
+  site, used as the tool's only known-answer test. See demo-site/README.md
+  for the authoritative pattern cheat sheet this file was derived from.
+
+patterns:
+  - pattern_id: false_urgency_countdown_reset
+    name: "Countdown timer that resets on every page refresh/revisit"
+    ccpa_category: "False Urgency"
+    goal: purchase_cheapest
+    expected_steps_hint: >-
+      Product detail page (/product/<slug>); countdown element rendered
+      with data-countdown="true" showing a 15-minute deadline that is
+      freshly recomputed on every mount (demo-site/src/components/CountdownTimer.tsx).
+    expected_attributes: [deception]
+    enabled_when: "on"
+    requires_revisit: true
+    known_gap: null
+
+  - pattern_id: confirm_shaming_popup
+    name: "Newsletter popup with guilt-tripping decline copy"
+    ccpa_category: "Confirm Shaming"
+    goal: null
+    expected_steps_hint: >-
+      Any page, ~1.4s after first load; newsletter popup
+      (data-pattern="confirm_shaming") decline button reads "No thanks, I
+      don't like saving money" instead of a neutral "No thanks".
+    expected_attributes: []
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      Wording-only manipulation: attribute_agents/deception.py never
+      infers from claim text alone, and signals/popups.py has no
+      structured popup signal yet -- not detectable by any current code
+      agent. Only a manual Stage-2 LLM pass (build-payload --role
+      attribute, judged by a human) can catch this today.
+
+  - pattern_id: drip_pricing_fees
+    name: "Payment processing and service/handling fees revealed only at later checkout steps"
+    ccpa_category: "Drip Pricing"
+    goal: purchase_cheapest
+    expected_steps_hint: >-
+      /cart and /checkout/shipping never show a fee; /checkout/payment
+      first shows a "Payment processing fee (new)" line
+      (PAYMENT_PROCESSING_FEE); /checkout/review additionally shows a
+      "Service & handling fee" line (SERVICE_HANDLING_FEE).
+    expected_attributes: [information_hiding]
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      information_hiding is an explicit Stage-2-only stub
+      (attribute_agents/information_hiding.py always returns
+      not_assessable) -- run-attributes alone will never fire it, even
+      though episode.evidence.price_drift correctly measures the fee
+      increase. Only detectable via build-payload + a manual LLM ingest.
+
+  - pattern_id: subscription_trap_trial
+    name: "Free trial auto-enrolls into a paid subscription with a demoted cancellation entry point"
+    ccpa_category: "Subscription Trap"
+    goal: complete_signup
+    expected_steps_hint: >-
+      /trial CTA reads "Start My Free Trial" with shrunk (text-[11px])
+      fine-print disclosure; /account demotes the cancellation entry
+      point to a tiny "Manage membership" link, only rendered when
+      patterns are on.
+    expected_attributes: [covertness]
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      covertness is an explicit Stage-2-only stub
+      (attribute_agents/covertness.py always returns not_assessable) --
+      only detectable via a manual LLM ingest.
+
+  - pattern_id: basket_sneaking_protection_plan
+    name: "Protection Plan add-on pre-checked and auto-added to cart without user selection"
+    ccpa_category: "Basket Sneaking"
+    goal: purchase_cheapest
+    expected_steps_hint: >-
+      /cart shows a "Protection Plan" line item marked "(auto-added)"
+      with a pre-checked "Keep plan" checkbox the user never explicitly
+      selected on the product page (CartContext.tsx's
+      withProtectionPlan=darkPatternsEnabled).
+    expected_attributes: []
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      No v2 evidence signal exists for pre-selected/auto-added cart
+      items -- episode.evidence has no cart-item-level or
+      basket-composition signal in the current schema (a Phase 2
+      evidence extension, not yet built). Not detectable by any current
+      code agent or existing Stage-2 prompt role.
+
+  - pattern_id: false_urgency_social_proof
+    name: "Fake incrementing \"people viewing / bought today\" counters"
+    ccpa_category: "False Urgency"
+    goal: purchase_cheapest
+    expected_steps_hint: >-
+      Product detail page; social-proof counter
+      (data-pattern="false_urgency_social_proof") with two lines that
+      independently increment/decrement on timers driven by
+      Math.random(), with no real backing signal.
+    expected_attributes: [deception]
+    enabled_when: "on"
+    requires_revisit: true
+    known_gap: null
+
+  - pattern_id: interface_interference_cancel_maze
+    name: >-
+      Subscription cancellation routed through a retention-offer maze
+      with a visually dominant "Keep" button beside a tiny "Cancel" link
+    ccpa_category: "Interface Interference"
+    goal: cancel_subscription
+    expected_steps_hint: >-
+      /account/subscription -> /account/subscription/retention-offer ->
+      /account/subscription/confirm-cancel -> /account/subscription/cancelled;
+      each intermediate screen pairs a large data-pattern="interface_interference"
+      "Keep subscription" button against a tiny underlined "Cancel" link.
+      OFF mode skips both intermediate screens entirely (a single direct
+      Cancel button on /account/subscription).
+    expected_attributes: [asymmetry, restriction]
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: null
+
+  - pattern_id: nagging_modal
+    name: "Notification-permission modal that reappears repeatedly after being dismissed"
+    ccpa_category: "Nagging"
+    goal: null
+    expected_steps_hint: >-
+      Any page; nagging modal (data-pattern="nagging") first appears
+      after 5s, reappears every 22s after "Not now" is clicked, up to 5
+      times per session.
+    expected_attributes: []
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      signals/popups.py has no structured popup-reappearance-count
+      signal -- not detectable by any current code agent.

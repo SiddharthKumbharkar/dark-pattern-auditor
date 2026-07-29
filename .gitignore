@@ -1,8 +1,12 @@
 .env
 storage/
+storage_*/
+payload/
+logs/
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
 output_*.json
 .claude/settings.local.json
 .claude/worktrees/

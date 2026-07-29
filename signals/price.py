@@ -4,9 +4,16 @@ import re
 from typing import Dict, List, Optional
 
 PRICE_PATTERNS = [
-    re.compile(r"₹\s*(?P<amount>\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?)"),
-    re.compile(r"\bRs\.?\s*(?P<amount>\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?)", re.IGNORECASE),
-    re.compile(r"\bINR\s*(?P<amount>\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?)", re.IGNORECASE),
+    # \d+ (not \d{1,3}) for the leading digit run: a currency-prefixed
+    # amount can be 4+ digits with no comma grouping at all (e.g. "Rs.
+    # 1148"), not just the classic 1-3-then-comma-groups shape -- \d{1,3}
+    # would silently truncate "1148" down to "114".
+    re.compile(r"₹\s*(?P<amount>\d+(?:,\d{2,3})*(?:\.\d{1,2})?)"),
+    re.compile(r"\bRs\.?\s*(?P<amount>\d+(?:,\d{2,3})*(?:\.\d{1,2})?)", re.IGNORECASE),
+    re.compile(r"\bINR\s*(?P<amount>\d+(?:,\d{2,3})*(?:\.\d{1,2})?)", re.IGNORECASE),
+    # No currency prefix here, so this one deliberately keeps requiring at
+    # least one comma group -- that's what disambiguates a price from an
+    # arbitrary 4+ digit number (order id, phone number, etc.).
     re.compile(r"(?<![\d.\w])(?P<amount>\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?)(?!\d)"),
 ]
 

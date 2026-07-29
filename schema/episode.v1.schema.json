@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "episode.v1.schema.json",
+  "title": "Dark Pattern Audit Episode (v1)",
+  "description": "Formalizes the journey record produced by journey/schema.py (JourneyRecord.to_dict()) as it is currently defined. No field here is new; this file documents the existing shape so it can be validated and referenced from episode.v2.schema.json. Note: a handful of output_*.json files from earlier in this project's history predate fields this schema requires (e.g. extracted_signals.social_proof_claims, cart_items[].newly_added) and will correctly fail validation -- that reflects real schema drift in those older artifacts, not a bug in this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "audit_metadata",
+    "website_context",
+    "journey_steps",
+    "temporal_checks",
+    "disclosure_context"
+  ],
+  "properties": {
+    "audit_metadata": { "$ref": "#/$defs/AuditMetadata" },
+    "website_context": { "$ref": "#/$defs/WebsiteContext" },
+    "journey_steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/JourneyStep" }
+    },
+    "temporal_checks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TemporalCheck" }
+    },
+    "disclosure_context": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DisclosureContext" }
+    }
+  },
+  "$defs": {
+    "AuditMetadata": {
+      "type": "object",
+      "description": "Free-form audit identity block (JourneyBuilder.build()). Named as its own $def (rather than inlined) so episode.v2.schema.json can reuse it by pointer without inheriting this file's top-level additionalProperties:false -- v2 documents legitimately have more top-level keys than a v1 document does.",
+      "required": ["audit_id", "target_domain", "audit_start_time", "audit_end_time"],
+      "properties": {
+        "audit_id": { "type": "string", "minLength": 1 },
+        "target_domain": { "type": "string", "minLength": 1 },
+        "audit_start_time": { "type": ["string", "null"] },
+        "audit_end_time": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "WebsiteContext": {
+      "type": "object",
+      "description": "Caller-supplied context (e.g. domain, industry, known_flow_types) -- deliberately free-form, see audit.py/server.py call sites.",
+      "additionalProperties": true
+    },
+    "UserAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_type", "target_text", "target_role", "input_value_masked"],
+      "properties": {
+        "action_type": { "type": "string", "description": "open_page|click|scroll|form_input" },
+        "target_text": { "type": ["string", "null"] },
+        "target_role": { "type": ["string", "null"] },
+        "input_value_masked": { "type": ["string", "null"] }
+      }
+    },
+    "StateCapture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["screenshot_id", "dom_snapshot_id", "ocr_text_id", "accessibility_tree_id"],
+      "properties": {
+        "screenshot_id": { "type": "string", "description": "Empty string for capture_excluded steps." },
+        "dom_snapshot_id": { "type": "string", "description": "Empty string for capture_excluded steps." },
+        "ocr_text_id": { "type": ["string", "null"] },
+        "accessibility_tree_id": { "type": ["string", "null"] }
+      }
+    },
+    "ExtractionConfidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ocr_used", "dom_extraction_complete", "low_confidence_fields"],
+      "properties": {
+        "ocr_used": { "type": "boolean" },
+        "dom_extraction_complete": { "type": "boolean" },
+        "low_confidence_fields": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value", "currency"],
+      "properties": {
+        "label": { "type": "string" },
+        "value": { "type": "number" },
+        "currency": { "type": "string" }
+      }
+    },
+    "CartItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "quantity", "user_selected", "newly_added"],
+      "properties": {
+        "name": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "user_selected": { "type": "boolean", "description": "compute_cart_diff() (journey/builder.py's only caller path) always resolves this to a real bool before it reaches the schema." },
+        "newly_added": { "type": "boolean" }
+      }
+    },
+    "Popup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["popup_id", "type", "occurrence_count_this_journey"],
+      "properties": {
+        "popup_id": { "type": "string" },
+        "type": { "type": "string" },
+        "occurrence_count_this_journey": { "type": "integer" }
+      }
+    },
+    "Form": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields", "required"],
+      "properties": {
+        "fields": { "type": "array", "items": { "type": "string" } },
+        "required": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Timer": {
+      "type": "object",
+      "description": "Runtime shape produced by signals/urgency.py:extract_timers -- the JourneyStep dataclass itself types this field as List[Any].",
+      "additionalProperties": false,
+      "required": ["element_selector", "text_content"],
+      "properties": {
+        "element_selector": { "type": "string" },
+        "text_content": { "type": "string" }
+      }
+    },
+    "ExtractedSignals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prices", "cart_items", "urgency_claims", "social_proof_claims", "timers", "popups", "forms"],
+      "properties": {
+        "prices": { "type": "array", "items": { "$ref": "#/$defs/Price" } },
+        "cart_items": { "type": "array", "items": { "$ref": "#/$defs/CartItem" } },
+        "urgency_claims": { "type": "array", "items": { "type": "string" } },
+        "social_proof_claims": { "type": "array", "items": { "type": "string" } },
+        "timers": { "type": "array", "items": { "$ref": "#/$defs/Timer" } },
+        "popups": { "type": "array", "items": { "$ref": "#/$defs/Popup" } },
+        "forms": { "type": "array", "items": { "$ref": "#/$defs/Form" } }
+      }
+    },
+    "UiMeasurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["element_id", "role", "width_px", "height_px", "font_size_px", "color_contrast_ratio", "relative_size_ratio", "is_visually_prominent"],
+      "properties": {
+        "element_id": { "type": "string" },
+        "role": { "type": "string" },
+        "width_px": { "type": ["number", "null"] },
+        "height_px": { "type": ["number", "null"] },
+        "font_size_px": { "type": ["number", "null"] },
+        "color_contrast_ratio": { "type": ["number", "null"] },
+        "relative_size_ratio": { "type": ["number", "null"] },
+        "is_visually_prominent": { "type": ["boolean", "null"] }
+      }
+    },
+    "JourneyStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step_id", "timestamp", "url", "page_title", "page_type", "user_action",
+        "capture_excluded", "exclusion_reason", "state_capture", "visible_text_summary",
+        "extracted_signals", "extraction_confidence", "ui_measurements"
+      ],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "timestamp": { "type": "string" },
+        "url": { "type": "string" },
+        "page_title": { "type": "string" },
+        "page_type": { "type": "string" },
+        "user_action": { "$ref": "#/$defs/UserAction" },
+        "capture_excluded": { "type": "boolean" },
+        "exclusion_reason": { "type": ["string", "null"] },
+        "state_capture": { "$ref": "#/$defs/StateCapture" },
+        "visible_text_summary": { "type": "array", "items": { "type": "string" } },
+        "extracted_signals": { "$ref": "#/$defs/ExtractedSignals" },
+        "extraction_confidence": { "$ref": "#/$defs/ExtractionConfidence" },
+        "ui_measurements": { "type": "array", "items": { "$ref": "#/$defs/UiMeasurements" } }
+      }
+    },
+    "TemporalCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_text", "first_seen_step_id", "first_seen_timestamp", "revisit_timestamp",
+        "still_present", "revisit_step_id", "value_changed", "notes"
+      ],
+      "properties": {
+        "claim_text": { "type": "string" },
+        "first_seen_step_id": { "type": "integer" },
+        "first_seen_timestamp": { "type": "string" },
+        "revisit_timestamp": { "type": "string" },
+        "still_present": { "type": "boolean" },
+        "revisit_step_id": { "type": ["integer", "null"] },
+        "value_changed": { "type": ["boolean", "null"] },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "DisclosureContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signal_type", "disclosed", "disclosure_step_id", "disclosure_text", "prominence", "notes"],
+      "properties": {
+        "signal_type": { "type": "string" },
+        "disclosed": { "type": "boolean" },
+        "disclosure_step_id": { "type": ["integer", "null"] },
+        "disclosure_text": { "type": ["string", "null"] },
+        "prominence": { "enum": ["prominent", "buried", "not_disclosed", null] },
+        "notes": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

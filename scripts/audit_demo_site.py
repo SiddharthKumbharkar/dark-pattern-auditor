@@ -5,9 +5,10 @@ demo-site-vite/, its Node-18-compatible Vite+React Router rebuild).
 Starts the dev server (if one isn't already running on the target port),
 waits for it to respond, drives a real click-through journey that
 exercises all 8 demo-site dark patterns (Add to Cart, full checkout, free
-trial signup, full cancellation flow), saves screenshots/DOM under
-storage/ and the journey JSON to the project root, then shuts the dev
-server back down (only if this script started it).
+trial signup, full cancellation flow), saves screenshots/DOM/journey.json/
+run_manifest.json into an episode folder under output.root (see
+config.yaml), then shuts the dev server back down (only if this script
+started it).
 
 Both demo-site/ (Next.js) and demo-site-vite/ (Vite) serve the exact same
 routes and button text, so the click-through journey below works against
@@ -22,6 +23,7 @@ Usage:
 """
 
 import argparse
+import getpass
 import json
 import os
 import subprocess
@@ -30,13 +32,18 @@ import time
 import urllib.request
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STORAGE_DIR = os.path.join(PROJECT_ROOT, "storage")
 
 sys.path.insert(0, PROJECT_ROOT)
 
 from config.exclusion_rules import load_exclusion_patterns  # noqa: E402
+from config.settings import load_config, resolve_path  # noqa: E402
 from journey.builder import JourneyBuilder  # noqa: E402
+from journey.manifest import write_run_manifest  # noqa: E402
 from recorder.browser import BrowserRecorder  # noqa: E402
+
+
+def _default_operator() -> str:
+    return os.environ.get("DARK_PATTERN_OPERATOR") or getpass.getuser()
 
 
 def is_server_up(base_url: str) -> bool:
@@ -56,12 +63,17 @@ def wait_for_server(base_url: str, timeout_s: int = 30) -> None:
     raise RuntimeError(f"Demo site did not respond at {base_url} within {timeout_s}s")
 
 
-def run_audit(base_url: str, audit_id: str, output_path: str) -> None:
-    recorder = BrowserRecorder(storage_dir=STORAGE_DIR, exclusion_patterns=load_exclusion_patterns())
+def run_audit(base_url: str, audit_id: str, output_path: str, cfg, storage_dir: str, operator: str) -> None:
+    recorder = BrowserRecorder(
+        storage_dir=storage_dir,
+        audit_id=audit_id,
+        exclusion_patterns=load_exclusion_patterns(),
+        screenshot_full_page=cfg.capture.screenshot_full_page,
+    )
     builder = JourneyBuilder(
         audit_id=audit_id,
         target_domain="auralis-demo.local",
-        storage_dir=STORAGE_DIR,
+        storage_dir=storage_dir,
         website_context={
             "domain": "auralis-demo.local",
             "industry": "ecommerce",
@@ -73,6 +85,7 @@ def run_audit(base_url: str, audit_id: str, output_path: str) -> None:
                 "subscription_cancellation",
             ],
         },
+        config=cfg,
     )
 
     recorder.start()
@@ -151,8 +164,12 @@ def run_audit(base_url: str, audit_id: str, output_path: str) -> None:
         recorder.stop()
 
     journey = builder.build()
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(journey, f, indent=2)
+
+    episode_dir = os.path.join(storage_dir, audit_id)
+    write_run_manifest(episode_dir=episode_dir, audit_id=audit_id, config=cfg, operator=operator)
 
     print(f"\nTotal steps captured: {len(journey['journey_steps'])}")
     print(f"Journey saved to {output_path}")
@@ -193,12 +210,17 @@ def main() -> None:
     parser.add_argument(
         "--keep-server", action="store_true", help="Leave the dev server running after the audit completes"
     )
+    parser.add_argument("--config", default=None, help="Path to config.yaml (default: $DARK_PATTERN_CONFIG or <project_root>/config.yaml)")
+    parser.add_argument("--operator", default=None, help="Name/id of the human running this audit (default: $DARK_PATTERN_OPERATOR or OS username)")
     args = parser.parse_args()
 
-    base_url = f"http://localhost:{args.port}"
-    output_path = os.path.join(PROJECT_ROOT, f"output_{args.audit_id}.json")
+    cfg = load_config(args.config)
+    operator = args.operator or _default_operator()
+    storage_dir = resolve_path(cfg.output.root)
+    output_path = os.path.join(storage_dir, args.audit_id, "journey.json")
     site_dir = os.path.join(PROJECT_ROOT, args.site_dir)
 
+    base_url = f"http://localhost:{args.port}"
     server_process = None
 
     try:
@@ -226,7 +248,7 @@ def main() -> None:
                 raise
             print(f"{args.site_dir} is up.")
 
-        run_audit(base_url, args.audit_id, output_path)
+        run_audit(base_url, args.audit_id, output_path, cfg, storage_dir, operator)
     finally:
         if server_process is not None and not args.keep_server:
             print("Stopping demo site dev server...")

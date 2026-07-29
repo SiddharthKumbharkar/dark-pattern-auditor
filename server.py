@@ -6,6 +6,7 @@ in interactive mode on its own background thread, and the dashboard polls
 GET /audit/{id}/status for steps as they're captured.
 """
 
+import getpass
 import json
 import os
 import threading
@@ -21,7 +22,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from config.exclusion_rules import load_exclusion_patterns
+from config.settings import load_config, resolve_path
 from journey.builder import JourneyBuilder
+from journey.manifest import write_run_manifest
+from journey.privacy import PrivacyValidationError
 from recorder.browser import BrowserRecorder
 from recorder.dom import extract_dom, extract_visible_text
 from recorder.exclusion import is_excluded
@@ -30,9 +34,13 @@ from signals.cart import extract_cart_items
 from signals.price import extract_prices
 from signals.urgency import extract_social_proof_claims, extract_timers, extract_urgency_claims
 
-STORAGE_DIR = "storage"
-SCREENSHOTS_DIR = os.path.join(STORAGE_DIR, "screenshots")
-DOM_DIR = os.path.join(STORAGE_DIR, "dom")
+CFG = load_config()
+STORAGE_DIR = resolve_path(CFG.output.root)
+
+
+def _default_operator() -> str:
+    return os.environ.get("DARK_PATTERN_OPERATOR") or getpass.getuser()
+
 
 SAME_SESSION_REMINDER_DELAY = timedelta(minutes=15)
 FRESH_SESSION_REMINDER_DELAY = timedelta(hours=1)
@@ -57,6 +65,7 @@ class AuditStartRequest(BaseModel):
     domain: str
     industry: str
     url: str
+    operator: Optional[str] = None
 
 
 class TemporalCheckAcknowledgeRequest(BaseModel):
@@ -85,6 +94,7 @@ class AuditSession:
     audit_id: str
     domain: str
     industry: str
+    operator: str
     status: str  # recording|stopped|complete
     started_at: str
     output_file: str
@@ -113,11 +123,12 @@ def _new_audit_id() -> str:
     return f"audit_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')}Z"
 
 
-def _load_dom_html(step: dict) -> str:
+def _load_dom_html(session: "AuditSession", step: dict) -> str:
     dom_snapshot_id = (step.get("state_capture") or {}).get("dom_snapshot_id")
     if not dom_snapshot_id:
         return ""
-    dom_path = os.path.join(DOM_DIR, dom_snapshot_id)
+    dom_dir = session.browser_recorder.dom_dir if session.browser_recorder else os.path.join(STORAGE_DIR, session.audit_id, "dom")
+    dom_path = os.path.join(dom_dir, dom_snapshot_id)
     try:
         with open(dom_path, "r", encoding="utf-8") as f:
             return f.read()
@@ -137,7 +148,7 @@ def _check_for_temporal_claims(session: AuditSession, step: dict) -> None:
         return
 
     visible_text = step.get("visible_text_summary") or []
-    dom_html = _load_dom_html(step)
+    dom_html = _load_dom_html(session, step)
 
     claims = list(extract_urgency_claims(visible_text))
     for timer in extract_timers(dom_html):
@@ -192,8 +203,8 @@ def _build_manual_screenshot_step(session: AuditSession, recorder: BrowserRecord
 
     timestamp_tag = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
     screenshot_id = f"{session.audit_id}_manual_{timestamp_tag}.png"
-    screenshot_path = os.path.join(SCREENSHOTS_DIR, screenshot_id)
-    capture_screenshot(recorder.page, screenshot_path)
+    screenshot_path = os.path.join(recorder.screenshots_dir, screenshot_id)
+    capture_screenshot(recorder.page, screenshot_path, full_page=recorder.screenshot_full_page)
 
     visible_text = extract_visible_text(recorder.page)
     dom_html = extract_dom(recorder.page)
@@ -282,13 +293,19 @@ def _record_audit(session: AuditSession, url: str) -> None:
 @app.post("/audit/start")
 def start_audit(req: AuditStartRequest):
     audit_id = _new_audit_id()
-    output_file = f"output_{audit_id}.json"
+    output_file = os.path.join(STORAGE_DIR, audit_id, "journey.json")
 
-    recorder = BrowserRecorder(storage_dir=STORAGE_DIR, exclusion_patterns=load_exclusion_patterns())
+    recorder = BrowserRecorder(
+        storage_dir=STORAGE_DIR,
+        audit_id=audit_id,
+        exclusion_patterns=load_exclusion_patterns(),
+        screenshot_full_page=CFG.capture.screenshot_full_page,
+    )
     session = AuditSession(
         audit_id=audit_id,
         domain=req.domain,
         industry=req.industry,
+        operator=req.operator or _default_operator(),
         status="recording",
         started_at=datetime.now(timezone.utc).isoformat(),
         output_file=output_file,
@@ -326,9 +343,13 @@ def stop_audit(audit_id: str):
         target_domain=session.domain,
         storage_dir=STORAGE_DIR,
         website_context={"domain": session.domain, "industry": session.industry},
+        config=CFG,
     )
-    for step in steps_snapshot:
-        builder.add_step(step)
+    try:
+        for step in steps_snapshot:
+            builder.add_step(step)
+    except PrivacyValidationError as exc:
+        raise HTTPException(status_code=422, detail=f"Privacy validation failed, run not persisted: {exc}")
     journey = builder.build()
 
     value_changed_by_result = {"persisted": False, "changed": True, "not_found": None}
@@ -346,8 +367,12 @@ def stop_audit(audit_id: str):
         for check in acknowledged_snapshot
     ]
 
+    os.makedirs(os.path.dirname(session.output_file), exist_ok=True)
     with open(session.output_file, "w", encoding="utf-8") as f:
         json.dump(journey, f, indent=2)
+
+    episode_dir = os.path.join(STORAGE_DIR, session.audit_id)
+    write_run_manifest(episode_dir=episode_dir, audit_id=session.audit_id, config=CFG, operator=session.operator)
 
     return {
         "audit_id": session.audit_id,
@@ -418,9 +443,13 @@ def get_journey(audit_id: str):
         target_domain=session.domain,
         storage_dir=STORAGE_DIR,
         website_context={"domain": session.domain, "industry": session.industry},
+        config=CFG,
     )
-    for step in steps_snapshot:
-        builder.add_step(step)
+    try:
+        for step in steps_snapshot:
+            builder.add_step(step)
+    except PrivacyValidationError as exc:
+        raise HTTPException(status_code=422, detail=f"Privacy validation failed: {exc}")
     return builder.build()
 
 
@@ -447,12 +476,17 @@ def list_audits():
 
 @app.get("/audit/{audit_id}/screenshot/{screenshot_id}")
 def get_screenshot(audit_id: str, screenshot_id: str):
-    _get_session(audit_id)
+    session = _get_session(audit_id)
 
     # os.path.basename strips any path segments so a crafted screenshot_id
-    # (e.g. "../../etc/passwd") can't escape SCREENSHOTS_DIR.
+    # (e.g. "../../etc/passwd") can't escape the episode's screenshots dir.
     safe_name = os.path.basename(screenshot_id)
-    path = os.path.join(SCREENSHOTS_DIR, safe_name)
+    screenshots_dir = (
+        session.browser_recorder.screenshots_dir
+        if session.browser_recorder
+        else os.path.join(STORAGE_DIR, audit_id, "screenshots")
+    )
+    path = os.path.join(screenshots_dir, safe_name)
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail=f"Screenshot not found: {screenshot_id}")
 
@@ -522,5 +556,5 @@ def get_reminders():
 
 
 if __name__ == "__main__":
-    os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+    os.makedirs(STORAGE_DIR, exist_ok=True)
     uvicorn.run(app, host="127.0.0.1", port=8000)

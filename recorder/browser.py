@@ -37,12 +37,24 @@ _CLICK_LISTENER_JS = """
 
 
 class BrowserRecorder:
-    def __init__(self, storage_dir: str, exclusion_patterns: Optional[List[str]] = None):
+    def __init__(
+        self,
+        storage_dir: str,
+        audit_id: str,
+        exclusion_patterns: Optional[List[str]] = None,
+        screenshot_full_page: bool = True,
+    ):
         self.storage_dir = storage_dir
-        self.screenshots_dir = os.path.join(storage_dir, "screenshots")
-        self.dom_dir = os.path.join(storage_dir, "dom")
+        self.audit_id = audit_id
+        # Artifacts live under storage_dir/<audit_id>/ (the episode folder)
+        # so concurrent/sequential audits never collide on step filenames.
+        episode_dir = os.path.join(storage_dir, audit_id)
+        self.screenshots_dir = os.path.join(episode_dir, "screenshots")
+        self.dom_dir = os.path.join(episode_dir, "dom")
         os.makedirs(self.screenshots_dir, exist_ok=True)
         os.makedirs(self.dom_dir, exist_ok=True)
+
+        self.screenshot_full_page = screenshot_full_page
 
         self.exclusion_patterns = (
             exclusion_patterns if exclusion_patterns is not None else load_exclusion_patterns()
@@ -249,7 +261,7 @@ class BrowserRecorder:
         screenshot_path = os.path.join(self.screenshots_dir, screenshot_filename)
         dom_path = os.path.join(self.dom_dir, dom_filename)
 
-        capture_screenshot(self.page, screenshot_path)
+        capture_screenshot(self.page, screenshot_path, full_page=self.screenshot_full_page)
 
         dom_html = extract_dom(self.page)
         with open(dom_path, "w", encoding="utf-8") as f:

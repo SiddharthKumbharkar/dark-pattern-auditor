@@ -1,0 +1,86 @@
+# Central configuration for the Dark Pattern Auditing Tool.
+#
+# Every path and pipeline behavior in the tool resolves from this file --
+# see config/settings.py for the typed loader, defaults, and validation
+# rules. Override the file this loads via the DARK_PATTERN_CONFIG env var
+# or a --config CLI flag; override individual entry-point output locations
+# with --output where supported.
+
+pipeline:
+  # ccpa: the existing signal-extraction + journey pipeline (the only one
+  #       implemented today).
+  # mechanism: reserved for the mechanism-attribute stages described in the
+  #       repo map; not implemented yet, so it currently behaves like ccpa.
+  # both: run everything that is implemented for either mode.
+  mode: both
+
+privacy:
+  enabled: true
+  # If true, a masking self-check failure (recorder/masking/) also stops
+  # the whole recording session, not just that one artifact -- see
+  # journey/privacy.py and recorder/masking/masker.py.
+  strict: false
+  # If true, the unmasked screenshot captured on the way to producing a
+  # masked one is kept in its temp dir after session end instead of being
+  # deleted. Never affects the episode folder -- raw artifacts never land
+  # there either way (see recorder/masking/screenshot_masker.py).
+  keep_raw_artifacts: false
+  # null = use the built-in defaults documented in recorder/redaction.py
+  # (SENSITIVE_PATTERNS) and recorder/masking/patterns.py
+  # (DEFAULT_QUERY_PARAM_DENYLIST). Setting either list here REPLACES the
+  # built-in one entirely, it does not merge with it.
+  field_denylist: null
+  query_param_denylist: null
+
+capture:
+  screenshot_full_page: true
+  # Consumed by record.py's interactive v2 recorder (recorder/interactive_v2.py):
+  # captures network requests via the CDP Network domain (method/url_redacted/
+  # status/resource_type only, never bodies). Not consumed by the v1 pipeline
+  # (audit.py/server.py), which has no network capture at all.
+  capture_network: true
+
+goals:
+  - id: purchase_cheapest
+    description: >-
+      Find and complete purchase of the lowest-priced option that satisfies
+      the target product/service.
+  - id: complete_signup
+    description: "Complete an account registration/signup flow end to end."
+  - id: cancel_subscription
+    description: >-
+      Cancel an active subscription through the site's own cancellation
+      flow.
+  - id: reject_cookies
+    description: "Reject or decline all non-essential cookies via the consent banner."
+  - id: unsubscribe_email
+    description: "Unsubscribe from marketing emails via the site's unsubscribe flow."
+  - id: decline_addon
+    description: >-
+      Decline an upsell, add-on, or bundled offer presented during checkout
+      or signup.
+
+revisit:
+  offsets_hours: [24, 72]
+
+output:
+  # Episode storage root. Relative paths resolve against the project root
+  # (see config/settings.PROJECT_ROOT), not the process's CWD.
+  root: storage
+
+cost:
+  # Reserved for later LLM stages: log tokens/$ per role per episode.
+  log_enabled: false
+
+attributes:
+  # null = every agent in attribute_agents/registry.py is enabled. An
+  # explicit list of agent_ids restricts run-attributes to exactly those,
+  # e.g. ["asymmetry_code_v1", "complexity_code_v1"].
+  enabled_agents: null
+
+payload:
+  # Where build-payload (llm/payload_builder.py) writes
+  # payload/<episode_id>/<role>/... . Separate from output.root: these are
+  # throwaway, human-facing artifacts assembled for manual LLM use, not
+  # part of the episode record itself.
+  root: payload

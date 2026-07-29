@@ -1,8 +1,10 @@
 """Assembles captured steps into the canonical journey record (Layer 2)."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+from config.settings import Config
 from journey.artifact_store import ArtifactStore
+from journey.privacy import validate_step_privacy
 from journey.schema import (
     CartItem,
     ExtractedSignals,
@@ -64,12 +66,19 @@ class JourneyBuilder:
         target_domain: str,
         storage_dir: str,
         website_context: Dict[str, Any],
+        config: Optional[Config] = None,
     ):
         self.audit_id = audit_id
         self.target_domain = target_domain
         self.storage_dir = storage_dir
         self.website_context = website_context
-        self.artifact_store = ArtifactStore(storage_dir)
+        self.artifact_store = ArtifactStore(storage_dir, audit_id)
+
+        self.config = config or Config()
+        # Non-strict privacy findings accumulate here for the caller to
+        # inspect/log; strict-mode findings instead raise out of add_step
+        # (see journey/privacy.py) before anything is persisted.
+        self.privacy_violations: List[Dict[str, Any]] = []
 
         self.steps: List[JourneyStep] = []
         self._previous_cart_items: List[Dict[str, Any]] = []
@@ -93,6 +102,12 @@ class JourneyBuilder:
     def add_step(self, raw_step: Dict[str, Any]) -> None:
         user_action_raw = raw_step.get("user_action") or {}
         self._all_user_actions.append(user_action_raw)
+
+        violations = validate_step_privacy(user_action_raw, self.config.privacy)
+        if violations:
+            self.privacy_violations.extend(
+                {"step_id": raw_step.get("step_id"), "violation": v} for v in violations
+            )
 
         user_action = UserAction(
             action_type=user_action_raw.get("action_type", ""),

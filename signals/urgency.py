@@ -52,7 +52,7 @@ SOCIAL_PROOF_PATTERNS = [
     re.compile(r"\d+\s+people\s+(bought|viewed)", re.IGNORECASE),
 ]
 
-_TIMER_KEYWORDS = ["countdown", "timer", "clock", "time-left"]
+TIMER_KEYWORDS = ["countdown", "timer", "clock", "time-left"]
 
 
 def extract_urgency_claims(visible_text: List[str]) -> List[str]:
@@ -94,8 +94,8 @@ class _TimerElementParser(HTMLParser):
         class_attr = attrs_dict.get("class", "").lower()
         id_attr = attrs_dict.get("id", "").lower()
         is_timer = (
-            any(kw in class_attr for kw in _TIMER_KEYWORDS)
-            or any(kw in id_attr for kw in _TIMER_KEYWORDS)
+            any(kw in class_attr for kw in TIMER_KEYWORDS)
+            or any(kw in id_attr for kw in TIMER_KEYWORDS)
             or any(k.startswith("data-countdown") for k in attrs_dict.keys())
         )
 
@@ -105,7 +105,7 @@ class _TimerElementParser(HTMLParser):
         elif class_attr:
             classes = class_attr.split()
             if classes:
-                selector += f"." + classes[0]
+                selector += "." + classes[0]
 
         self._stack.append({"tag": tag, "is_timer": is_timer, "selector": selector, "text": []})
 

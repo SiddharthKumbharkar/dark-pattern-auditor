@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mechanism_verdict.v1.schema.json",
+  "title": "Dark Pattern Audit Mechanism Verdict (v1)",
+  "description": "Manually-ingested LLM responses (Stage 2) for one episode -- written by journey/mechanism_verdict_ingest.py (the ingest-response CLI) into episode.mechanism_verdict. episode.v2.schema.json's own mechanism_verdict field stays freeform (additionalProperties: true, {} until Phase 4) so existing episodes never fail v2 validation; THIS schema is the strict, standalone contract for the {entries:[...]} shape ingest-response actually writes, validated separately -- the same pattern group_evidence.v1.schema.json uses for group_evidence.json. One entry per (role, attribute) pair; attribute is null for triage/coordinator. Re-ingesting the same (role, attribute) REPLACES its prior entry rather than appending a duplicate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entries"],
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/MechanismVerdictEntry" }
+    }
+  },
+
+  "$defs": {
+    "MechanismVerdictEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "attribute", "model_name", "prompt_version", "ingested_at", "operator", "raw_response"],
+      "properties": {
+        "role": { "enum": ["triage", "attribute", "coordinator"] },
+        "attribute": {
+          "anyOf": [
+            {
+              "enum": [
+                "asymmetry", "covertness", "deception", "information_hiding",
+                "restriction", "disparate_treatment", "complexity"
+              ]
+            },
+            { "type": "null" }
+          ],
+          "description": "Null for triage/coordinator (whole-episode roles); one of the 7 attribute ids for role=attribute."
+        },
+        "model_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Supplied by the operator at ingest time (build-payload/response_schema.json never asks the model to self-report this) -- e.g. \"claude-opus-4-8\"."
+        },
+        "prompt_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Read from the manifest.json build-payload wrote alongside this response's response_schema.json, not re-derived, so it traces to the exact prompt the human was actually shown."
+        },
+        "ingested_at": { "type": "string" },
+        "operator": { "type": "string", "minLength": 1 },
+        "raw_response": {
+          "type": "object",
+          "description": "The exact parsed JSON the operator pasted in, verbatim -- already validated against the response_schema.json build-payload wrote for this (episode, role[, attribute]), and (when it has an evidence_pointers field) checked for step_ids that actually exist in this episode. Never transformed or normalized before storage."
+        }
+      }
+    }
+  }
+}
