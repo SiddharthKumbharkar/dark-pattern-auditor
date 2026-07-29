@@ -32,6 +32,67 @@ python3 <command_script>.py [args...]  # each command's own script, standalone
 would — `dpa.py` is a thin dispatcher, not a reimplementation, so both forms
 always stay in sync. Run `python3 dpa.py --help` for the full command list.
 
+## Full worked example: auditing any site
+
+Every command below in one continuous, copy-pasteable pass — replace
+`https://example-shop.com` with the real target and adjust goals as needed.
+This is the same pipeline described in more detail in the sections below;
+this is the "just show me all of it" version.
+
+```bash
+# 0. See what goals are available (add more in config.yaml's goals: list if
+#    the site needs one that isn't there).
+python3 dpa.py list-goals
+
+# 1. Record -- a real, visible browser opens; you click through the site
+#    yourself. Ctrl+C when done. (Repeat for --revisit-index 1, 2, ... a day
+#    or more later if you want claim-persistence/timer-reset checks, and/or
+#    for a second, --pair-with'd flow like a cancel page paired with signup.)
+python3 dpa.py record --site https://example-shop.com \
+    --goal purchase_cheapest --operator "your-name"
+#   -> prints the new episode_id, e.g. episode_20260729T120000000000Z
+
+# 2. Measure evidence from what was captured -- pure code, no LLM.
+python3 dpa.py extract-evidence episode_20260729T120000000000Z
+
+# 3. If you recorded more than one episode of the same (site_id, goal)
+#    (revisits, or a --pair-with'd counterpart), join them:
+python3 dpa.py extract-group-evidence example-shop.com purchase_cheapest
+
+# 4. Run the 7 code-based attribute agents.
+python3 dpa.py run-attributes episode_20260729T120000000000Z
+
+# 5. Sanity checks (optional but recommended before trusting the result):
+python3 dpa.py verify-masking episode_20260729T120000000000Z
+python3 dpa.py validate-episode storage/episode_20260729T120000000000Z/episode.json
+
+# 6. Build the human-readable HTML report -- screenshots, evidence tables,
+#    every attribute verdict with its evidence pointers drawn on the page.
+python3 dpa.py report episode_20260729T120000000000Z
+#   -> open storage/episode_20260729T120000000000Z/report.html in a browser
+
+# 7. (optional, Stage 2) For attributes code can't judge alone --
+#    covertness, information_hiding, disparate_treatment always, or any
+#    attribute you want a second opinion on -- hand it to an LLM by hand:
+python3 dpa.py build-payload episode_20260729T120000000000Z \
+    --role attribute --attribute covertness
+#   -> paste payload/episode_.../attribute/covertness/{prompt.txt,
+#      evidence_summary.json, screenshots/} into your LLM, save its reply
+#      as response.json in that same folder, then:
+python3 dpa.py ingest-response episode_20260729T120000000000Z \
+    --role attribute --file response.json --model "claude-opus-4-8" --operator "your-name"
+python3 dpa.py compare-verdicts episode_20260729T120000000000Z
+
+# 8. If you recorded more than one goal/revisit for this site, roll them
+#    all up into one page:
+python3 dpa.py report-site example-shop.com
+```
+
+Every stage is idempotent (safe to re-run any time, e.g. after recording a
+new revisit) and every command supports `--config <path>` to point at a
+different `config.yaml`, and (via `dpa.py --log-file <path> --log-level
+<level> <command> ...`) structured JSON logging of the whole run.
+
 ## Recording a manual session
 
 Recording is always human-driven: the tool opens a real, visible browser and
@@ -219,6 +280,49 @@ above — both available through `dpa.py` like everything else:
   evidence/attribute one. See `ARCHITECTURE.md`.
 - `dpa.py serve` — runs `server.py`'s FastAPI dashboard backend
   (`--host`/`--port`/`--reload`), for the live-session web dashboard.
+
+## Where everything is stored
+
+Two config-controlled roots, nothing else:
+
+| Root | Config key | Default | Holds |
+|---|---|---|---|
+| Episode storage | `output.root` | `storage/` | Every recorded episode, cross-episode group evidence, site rollups, demo-suite progress. |
+| LLM payloads | `payload.root` | `payload/` | Everything `build-payload` writes for a manual LLM handoff. |
+
+Both are plain directories, resolved relative to the project root unless
+given as an absolute path (`config.yaml`, or `--config <path>` per
+command). Neither is committed to git (see `.gitignore`) — they're your
+local run data, not source.
+
+Exact layout:
+
+```
+storage/                                       # output.root
+  <episode_id>/
+    episode.json                                # the full v2 record: steps, evidence, attributes, mechanism_verdict
+    episode_meta.json                            # lightweight summary (goal, operator, step count) -- what list-episodes reads
+    steps.jsonl                                  # incremental per-step log, written during recording (crash recovery -- see `recover`)
+    run_manifest.json                             # git hash, config snapshot, tool version, operator for this run
+    screenshots/  dom/  computed_styles/          # masked artifacts only -- raw/unmasked never lands here
+    report.html                                   # written by `report` / `report-site`
+  groups/<group_id>/
+    group_evidence.json                           # claim_persistence, timer_reset_detection, paired_flow_comparison for one (site_id, goal)
+  site_reports/
+    <site_id>.html                                # written by `report-site`
+  demo_suite_progress.json                        # resumable session tracking for `run-demo-suite` (Auralis harness only)
+
+payload/                                       # payload.root
+  <episode_id>/
+    triage/                                       # --role triage
+    coordinator/                                  # --role coordinator
+    attribute/<attribute_name>/                   # --role attribute --attribute <name>
+      prompt.txt  evidence_summary.json  screenshots/  response_schema.json  manifest.json  INSTRUCTIONS.txt
+
+baselines.json                                 # project root -- calibrated median/p25/p75 thresholds; recomputed by `update-baselines`
+logs/dpa.jsonl                                 # default JSON-lines audit log for every dpa.py invocation (--log-file to change)
+annotation_export.csv / .json                  # project root by default; `export-for-annotation --out` to change
+```
 
 ## Tests
 
