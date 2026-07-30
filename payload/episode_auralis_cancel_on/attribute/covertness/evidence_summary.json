@@ -1,0 +1,77 @@
+{
+  "episode_id": "episode_auralis_cancel_on",
+  "site_id": "auralis-on.local",
+  "site_domain": "auralis-on.local",
+  "sector": "ecommerce",
+  "goal": "cancel_subscription",
+  "revisit_index": 0,
+  "device_context": "desktop",
+  "attribute": "covertness",
+  "relevant_evidence": {
+    "visual_asymmetry": [
+      {
+        "step_id": 4,
+        "pair_pattern": "accept_reject",
+        "positive_selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+        "negative_selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "positive_text": "Yes, keep my 50% off plan",
+        "negative_text": "no thanks, cancel anyway",
+        "area_ratio": 13.065390749601276,
+        "contrast_ratio": null,
+        "font_size_ratio": 1.6363636363636365,
+        "vertical_position_delta_px": -84,
+        "tab_order_delta": -1,
+        "positive_below_fold": false,
+        "negative_below_fold": false
+      },
+      {
+        "step_id": 5,
+        "pair_pattern": "keep_cancel",
+        "positive_selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+        "negative_selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "positive_text": "Keep my membership",
+        "negative_text": "yes, cancel my membership",
+        "area_ratio": 12.144113196744776,
+        "contrast_ratio": null,
+        "font_size_ratio": 1.6363636363636365,
+        "vertical_position_delta_px": -84,
+        "tab_order_delta": -1,
+        "positive_below_fold": false,
+        "negative_below_fold": false
+      }
+    ]
+  },
+  "relevant_group_evidence": {},
+  "code_agent_result": {
+    "attribute": "covertness",
+    "verdict": "not_assessable",
+    "severity": null,
+    "confidence": 0.0,
+    "evidence_pointers": [],
+    "reasoning": "requires LLM judgement \u2014 Stage 2",
+    "agent_version": "covertness_stub/1.0.0",
+    "agent_type": "code"
+  },
+  "evidence_pointers": [
+    {
+      "step_id": 4,
+      "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+      "signal": "visual_asymmetry"
+    },
+    {
+      "step_id": 4,
+      "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+      "signal": "visual_asymmetry"
+    },
+    {
+      "step_id": 5,
+      "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+      "signal": "visual_asymmetry"
+    },
+    {
+      "step_id": 5,
+      "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+      "signal": "visual_asymmetry"
+    }
+  ]
+}

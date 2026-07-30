@@ -1,0 +1,26 @@
+HOW TO USE THIS PAYLOAD
+========================
+Role:       attribute
+Attribute:  covertness
+
+1. Open prompt.txt and copy its full contents into your LLM chat as the
+   system/first message.
+2. Attach evidence_summary.json (as a file, or paste its contents) as the
+   evidence payload.
+3. Attach every image under screenshots/ -- their filenames match the
+   step_id mapping listed in prompt.txt and in manifest.json's
+   "screenshot_step_mapping".
+4. response_schema.json documents the EXACT JSON shape the model's reply
+   must match. Ask the model to return ONLY that JSON (prompt.txt already
+   says this too, but repeat it if your interface strips instructions).
+5. When you have the model's response, save it as response.json in THIS
+   SAME DIRECTORY.
+
+To fold this response into the stored episode, run:
+  python3 ingest_response.py <episode_id> --role attribute --file response.json --model "<model name>" --operator "<your name>"
+This validates the response against response_schema.json, rejects any evidence_pointer whose step_id doesn't actually exist in this episode, and writes it into episode.mechanism_verdict.entries alongside model_name/prompt_version/ingested_at/operator. Afterward, run:
+  python3 compare_verdicts.py <episode_id>
+to see this LLM verdict next to the code agent's own verdict for this attribute.
+
+This payload was assembled entirely offline (no API was called to build
+it) -- prompt_version=attribute_prompt.v1, built_at=2026-07-29T03:15:45.303145+00:00.

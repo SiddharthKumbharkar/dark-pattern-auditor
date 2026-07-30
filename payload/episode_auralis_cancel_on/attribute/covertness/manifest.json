@@ -1,0 +1,48 @@
+{
+  "episode_id": "episode_auralis_cancel_on",
+  "role": "attribute",
+  "attribute": "covertness",
+  "prompt_version": "attribute_prompt.v1",
+  "prompt_file": "prompts/attribute_prompt.v1.txt",
+  "built_at": "2026-07-29T03:15:45.303145+00:00",
+  "tool_version": "0.1.0",
+  "metadata": {
+    "episode_id": "episode_auralis_cancel_on",
+    "site_id": "auralis-on.local",
+    "site_domain": "auralis-on.local",
+    "sector": "ecommerce",
+    "goal": "cancel_subscription",
+    "revisit_index": 0,
+    "device_context": "desktop",
+    "paired_episode_id": "episode_auralis_cancel_off",
+    "schema_version": 2
+  },
+  "screenshot_step_mapping": [
+    {
+      "filename": "step_004_masked.png",
+      "step_id": 4
+    },
+    {
+      "filename": "step_005_masked.png",
+      "step_id": 5
+    }
+  ],
+  "token_estimate": {
+    "text_chars": 10411,
+    "estimated_tokens": 2603,
+    "screenshot_count": 2,
+    "method": "chars/4 heuristic over prompt.txt + evidence_summary.json + response_schema.json. Approximate, model-agnostic; excludes per-model image-token cost for the screenshot_count attachments -- that varies by vendor/resolution and isn't computable without calling an API, which this tool never does."
+  },
+  "checksum": {
+    "algorithm": "sha256",
+    "combined": "66eade45b7fac2a47a57a33dcf82c0da2ec2a792fc3e3c2f5ff548c1a1b1ae9a",
+    "files": {
+      "prompt.txt": "1a2ab059f9c810b4c278ddb331b7eda0c6de8e1b769bd78948b3f3371a306634",
+      "evidence_summary.json": "022c858f5182738aa4be77bc926d56c97a4ff0f6e0c7706ac8de0be2167d82f5",
+      "response_schema.json": "c767decfef9c1dbfcbc5b416c09753ceb176ec30eaf5bb819fc2d832821f2086",
+      "screenshots/step_004_masked.png": "2d1dbbe04079eaa0f9c0fd07cfe733eb77eba80953612ebf1b395e587b424c38",
+      "screenshots/step_005_masked.png": "368b4b717a6cee234929f614509d9d782fb206c891da3d65f6ac295e506e2c9c"
+    }
+  },
+  "payload_dir": "/Users/siddharthkumbharkar/Documents/Code/Dark Pattern copy/payload/episode_auralis_cancel_on/attribute/covertness"
+}

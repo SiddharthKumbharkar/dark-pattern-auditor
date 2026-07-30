@@ -1,0 +1,143 @@
+{
+  "episode_id": "episode_auralis_cancel_on",
+  "site_id": "auralis-on.local",
+  "site_domain": "auralis-on.local",
+  "sector": "ecommerce",
+  "goal": "cancel_subscription",
+  "revisit_index": 0,
+  "device_context": "desktop",
+  "outcome": {
+    "goal_achieved": null,
+    "abandoned_reason": null,
+    "steps_to_complete": 6,
+    "first_price_shown": null,
+    "final_price_shown": null,
+    "operator_notes": ""
+  },
+  "attribute_results": [
+    {
+      "attribute": "asymmetry",
+      "verdict": "fires",
+      "severity": 5,
+      "confidence": 0.75,
+      "evidence_pointers": [
+        {
+          "step_id": 4,
+          "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+          "signal": "visual_asymmetry.area_ratio.positive"
+        },
+        {
+          "step_id": 4,
+          "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+          "signal": "visual_asymmetry.area_ratio.negative"
+        },
+        {
+          "step_id": 5,
+          "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+          "signal": "visual_asymmetry.area_ratio.positive"
+        },
+        {
+          "step_id": 5,
+          "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+          "signal": "visual_asymmetry.area_ratio.negative"
+        }
+      ],
+      "reasoning": "2 of 2 pair(s) exceeded the asymmetry threshold: pair at step 4 skewed on area_ratio; pair at step 5 skewed on area_ratio.",
+      "agent_version": "asymmetry_code/1.0.0",
+      "agent_type": "code"
+    },
+    {
+      "attribute": "covertness",
+      "verdict": "not_assessable",
+      "severity": null,
+      "confidence": 0.0,
+      "evidence_pointers": [],
+      "reasoning": "requires LLM judgement \u2014 Stage 2",
+      "agent_version": "covertness_stub/1.0.0",
+      "agent_type": "code"
+    },
+    {
+      "attribute": "deception",
+      "verdict": "fires",
+      "severity": 5,
+      "confidence": 0.7,
+      "evidence_pointers": [
+        {
+          "step_id": 4,
+          "selector": null,
+          "signal": "stated_vs_actual.network_fired"
+        },
+        {
+          "step_id": 5,
+          "selector": null,
+          "signal": "stated_vs_actual.network_fired"
+        },
+        {
+          "step_id": 6,
+          "selector": null,
+          "signal": "stated_vs_actual.network_fired"
+        }
+      ],
+      "reasoning": "3 claimed action(s) (e.g. 'Cancel membership') fired no network request.",
+      "agent_version": "deception_code/1.0.0",
+      "agent_type": "code"
+    },
+    {
+      "attribute": "information_hiding",
+      "verdict": "not_assessable",
+      "severity": null,
+      "confidence": 0.0,
+      "evidence_pointers": [],
+      "reasoning": "requires LLM judgement \u2014 Stage 2",
+      "agent_version": "information_hiding_stub/1.0.0",
+      "agent_type": "code"
+    },
+    {
+      "attribute": "restriction",
+      "verdict": "unsure",
+      "severity": null,
+      "confidence": 0.5,
+      "evidence_pointers": [
+        {
+          "step_id": null,
+          "selector": null,
+          "signal": "friction_metrics.friction_ratio"
+        },
+        {
+          "step_id": 1,
+          "selector": null,
+          "signal": "path_deviation.forced_interstitial"
+        }
+      ],
+      "reasoning": "friction_ratio=1.50 (unsure); 1 forced interstitial(s) (unsure).",
+      "agent_version": "restriction_code/1.0.0",
+      "agent_type": "code"
+    },
+    {
+      "attribute": "disparate_treatment",
+      "verdict": "not_assessable",
+      "severity": null,
+      "confidence": 0.0,
+      "evidence_pointers": [],
+      "reasoning": "requires LLM judgement \u2014 Stage 2",
+      "agent_version": "disparate_treatment_stub/1.0.0",
+      "agent_type": "code"
+    },
+    {
+      "attribute": "complexity",
+      "verdict": "fires",
+      "severity": 3,
+      "confidence": 0.75,
+      "evidence_pointers": [
+        {
+          "step_id": 3,
+          "selector": null,
+          "signal": "complexity_metrics.option_counts.option_count"
+        }
+      ],
+      "reasoning": "1 dimension(s) exceeded the cancel_subscription complexity threshold: option_count=14 at step 3.",
+      "agent_version": "complexity_code/1.0.0",
+      "agent_type": "code"
+    }
+  ]
+}

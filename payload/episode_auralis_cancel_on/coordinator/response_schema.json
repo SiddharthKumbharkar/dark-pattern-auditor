@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coordinator response (pastes into episode.mechanism_verdict)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "overall_verdict",
+    "top_findings",
+    "human_review_recommended",
+    "summary"
+  ],
+  "properties": {
+    "overall_verdict": {
+      "enum": [
+        "dark_patterns_present",
+        "none_detected",
+        "insufficient_data"
+      ]
+    },
+    "top_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attribute",
+          "verdict",
+          "severity",
+          "summary"
+        ],
+        "properties": {
+          "attribute": {
+            "enum": [
+              "asymmetry",
+              "covertness",
+              "deception",
+              "information_hiding",
+              "restriction",
+              "disparate_treatment",
+              "complexity"
+            ]
+          },
+          "verdict": {
+            "enum": [
+              "fires",
+              "unsure"
+            ]
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "human_review_recommended": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
