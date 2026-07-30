@@ -11,6 +11,7 @@ import os
 
 import pytest
 
+from attribute_agents.base import ATTRIBUTES
 from config.settings import Config
 from journey.attribute_runner import run_attributes
 from journey.evidence_extractor import extract_evidence
@@ -224,6 +225,45 @@ def test_coordinator_role_ingests_into_mechanism_verdict_with_null_attribute(pip
     assert entry["role"] == "coordinator"
     assert entry["attribute"] is None
     assert entry["raw_response"]["overall_verdict"] == "dark_patterns_present"
+
+
+def test_triage_role_ingests_into_mechanism_verdict_with_null_attribute(pipeline, tmp_path):
+    response = {
+        "episode_id": "episode_ingest_cancel",
+        "attribute_triage": [
+            {"attribute": a, "preliminary_read": "no", "worth_deep_dive": False, "notes": "nothing notable"}
+            for a in ATTRIBUTES
+        ],
+    }
+    response_path = _write(tmp_path, "triage.json", response)
+    episode = ingest_response(
+        pipeline["cancel_dir"], role="triage", response_file=response_path,
+        model_name="m", operator="sid",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    entry = episode["mechanism_verdict"]["entries"][0]
+    assert entry["role"] == "triage"
+    assert entry["attribute"] is None
+    assert len(entry["raw_response"]["attribute_triage"]) == len(ATTRIBUTES)
+
+
+def test_triage_role_rejects_a_short_attribute_triage_list(pipeline, tmp_path):
+    # response_schema.json requires exactly len(ATTRIBUTES) entries -- a
+    # truncated list (e.g. a model that only addressed some attributes)
+    # must be rejected, not silently ingested as partial coverage.
+    response = {
+        "episode_id": "episode_ingest_cancel",
+        "attribute_triage": [
+            {"attribute": ATTRIBUTES[0], "preliminary_read": "no", "worth_deep_dive": False, "notes": "x"},
+        ],
+    }
+    response_path = _write(tmp_path, "triage_short.json", response)
+    with pytest.raises(IngestError):
+        ingest_response(
+            pipeline["cancel_dir"], role="triage", response_file=response_path,
+            model_name="m", operator="sid",
+            storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+        )
 
 
 # -- rejection paths -----------------------------------------------------

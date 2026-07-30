@@ -1,17 +1,30 @@
-"""Playwright session manager (Layer 1). Captures raw step state only —
-classification and signal extraction happen in later layers."""
+"""Playwright session manager (Layer 1). Captures step state and masks it
+BEFORE anything is written to storage_dir/<audit_id>/ -- CLAUDE.md's rule
+("redaction happens BEFORE any data is written to storage") applies here
+exactly as it does to recorder/interactive_v2.py's v2 pipeline; this
+module used to write raw screenshots/DOM straight to disk with no masking
+at all, which was a real gap (see recorder/masking/masker.py's
+mask_dom_for_step/mask_screenshot_for_step, reused below)."""
 
 import json
 import os
+import shutil
+import tempfile
 import time
 from datetime import datetime, timezone
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from playwright.sync_api import Browser, Page, Playwright, sync_playwright
 
 from config.exclusion_rules import load_exclusion_patterns
+from config.settings import PrivacyConfig
+from journey.privacy import PrivacyValidationError
 from recorder.dom import extract_dom, extract_visible_text
 from recorder.exclusion import is_excluded
+from recorder.masking.dom_masker import redact_text_span
+from recorder.masking.masker import mask_dom_for_step, mask_screenshot_for_step, residual_pii_found
+from recorder.masking.placeholders import tally_redactions
+from recorder.redaction import redact_url
 from recorder.screenshot import capture_screenshot
 
 VIEWPORT = {"width": 1440, "height": 900}
@@ -43,6 +56,7 @@ class BrowserRecorder:
         audit_id: str,
         exclusion_patterns: Optional[List[str]] = None,
         screenshot_full_page: bool = True,
+        privacy: Optional[PrivacyConfig] = None,
     ):
         self.storage_dir = storage_dir
         self.audit_id = audit_id
@@ -60,6 +74,21 @@ class BrowserRecorder:
             exclusion_patterns if exclusion_patterns is not None else load_exclusion_patterns()
         )
 
+        # Masking is unconditional (not gated by privacy.enabled -- that
+        # flag only controls journey/privacy.py's separate, narrower
+        # user_action.input_value_masked check, matching
+        # recorder/interactive_v2.py's v2 pipeline, which never checks
+        # privacy.enabled around ITS masking calls either). strict and
+        # keep_raw_artifacts are the only privacy settings this class reads.
+        self.privacy = privacy or PrivacyConfig()
+        # Raw screenshots are staged here (OUTSIDE the episode folder) and
+        # never written into storage_dir/<audit_id>/ directly -- only the
+        # masked copy is. Deleted at session end unless
+        # privacy.keep_raw_artifacts (see cleanup_raw_artifacts/stop()).
+        self._raw_tmp_dir = tempfile.mkdtemp(prefix=f"dpa_v1_raw_{audit_id}_")
+        self.redactions_applied: List[Dict] = []
+        self.masking_issue_found = False
+
         self._playwright: Optional[Playwright] = None
         self._browser: Optional[Browser] = None
         self.page: Optional[Page] = None
@@ -75,6 +104,12 @@ class BrowserRecorder:
         # Plain attribute assignment is atomic under the GIL, so no lock
         # is needed for this single boolean flag.
         self._running = False
+
+    def cleanup_raw_artifacts(self) -> None:
+        if self.privacy.keep_raw_artifacts:
+            print(f"  privacy.keep_raw_artifacts is set -- raw screenshots kept at {self._raw_tmp_dir}")
+            return
+        shutil.rmtree(self._raw_tmp_dir, ignore_errors=True)
 
     def start(self) -> None:
         self._playwright = sync_playwright().start()
@@ -256,35 +291,101 @@ class BrowserRecorder:
                 "state_capture": None,
             }
 
-        screenshot_filename = f"step_{step_id:03d}.png"
-        dom_filename = f"step_{step_id:03d}.html"
-        screenshot_path = os.path.join(self.screenshots_dir, screenshot_filename)
-        dom_path = os.path.join(self.dom_dir, dom_filename)
-
-        capture_screenshot(self.page, screenshot_path, full_page=self.screenshot_full_page)
-
-        dom_html = extract_dom(self.page)
-        with open(dom_path, "w", encoding="utf-8") as f:
-            f.write(dom_html)
-
-        visible_text = extract_visible_text(self.page)
-
-        return {
+        url_redacted = redact_url(url)
+        base = {
             "step_id": step_id,
             "timestamp": timestamp,
-            "url": url,
+            "url": url_redacted,
             "page_title": self.page.title(),
             "page_type": None,  # classified by journey/ in a later layer
             "user_action": user_action,
             "capture_excluded": False,
             "exclusion_reason": None,
+        }
+
+        # 1. Screenshot goes to a RAW TEMP path outside the episode folder
+        # first -- only the masked copy (step 4 below) ever lands under
+        # self.screenshots_dir.
+        screenshot_filename = f"step_{step_id:03d}.png"
+        raw_screenshot_path = os.path.join(self._raw_tmp_dir, f"step_{step_id:03d}_raw.png")
+        capture_screenshot(self.page, raw_screenshot_path, full_page=self.screenshot_full_page)
+
+        # 2. DOM: extract, then mask BEFORE anything touches disk.
+        dom_html = extract_dom(self.page)
+        mask_result = mask_dom_for_step(self.page, dom_html)
+        if mask_result.error:
+            raise RuntimeError(f"dom masking failed for step {step_id}: {mask_result.error}")
+
+        # 3. visible_text_summary is a second, separate live-page read (its
+        # visibility filtering depends on computed styles, so it can't be
+        # derived from the already-masked HTML string) -- redact it
+        # span-by-span with the same primitive dom_masker.py uses for text
+        # nodes, then fold it into the same residual-PII self-check as the
+        # DOM before either is trusted.
+        raw_visible_text = extract_visible_text(self.page)
+        redacted_visible_text: List[str] = []
+        text_redaction_kinds: List[str] = []
+        for line in raw_visible_text:
+            redacted_line, kinds = redact_text_span(line)
+            redacted_visible_text.append(redacted_line)
+            text_redaction_kinds.extend(kinds)
+
+        found_residual_pii = mask_result.residual_pii_found or residual_pii_found(
+            "\n".join(redacted_visible_text)
+        )
+        if found_residual_pii:
+            self.masking_issue_found = True
+            if self.privacy.strict:
+                raise PrivacyValidationError(
+                    f"step {step_id}: masking self-check found residual PII and privacy.strict is true"
+                )
+            # Non-strict: withhold this step's DOM/screenshot/visible-text
+            # artifacts entirely rather than write anything that still
+            # looks like PII -- never a "redact harder and hope" fallback.
+            print(f"  Warning: step {step_id} withheld -- residual PII found after masking")
+            return {
+                **base,
+                "state_capture": {
+                    "screenshot_id": "",
+                    "dom_snapshot_id": "",
+                    "ocr_text_id": None,
+                    "accessibility_tree_id": None,
+                },
+                "visible_text_summary": [],
+                "extracted_signals": {
+                    "prices": [], "cart_items": [], "urgency_claims": [],
+                    "timers": [], "popups": [], "forms": [],
+                },
+                "extraction_confidence": {
+                    "ocr_used": False, "dom_extraction_complete": False, "low_confidence_fields": [],
+                },
+            }
+
+        # 4. Clean: write the masked DOM and the masked screenshot -- the
+        # raw screenshot never leaves self._raw_tmp_dir.
+        dom_filename = f"step_{step_id:03d}.html"
+        dom_path = os.path.join(self.dom_dir, dom_filename)
+        with open(dom_path, "w", encoding="utf-8") as f:
+            f.write(mask_result.masked_dom_html)
+
+        screenshot_path = os.path.join(self.screenshots_dir, screenshot_filename)
+        screenshot_error = mask_screenshot_for_step(raw_screenshot_path, screenshot_path, mask_result.boxes_to_black_out)
+        if screenshot_error:
+            raise RuntimeError(f"screenshot masking failed for step {step_id}: {screenshot_error}")
+
+        redaction_kinds = mask_result.dom_redaction_kinds + text_redaction_kinds
+        if redaction_kinds:
+            self.redactions_applied.extend(tally_redactions(step_id, redaction_kinds))
+
+        return {
+            **base,
             "state_capture": {
                 "screenshot_id": screenshot_filename,
                 "dom_snapshot_id": dom_filename,
                 "ocr_text_id": None,
                 "accessibility_tree_id": None,
             },
-            "visible_text_summary": visible_text,
+            "visible_text_summary": redacted_visible_text,
             "extracted_signals": {
                 "prices": [],
                 "cart_items": [],
@@ -313,3 +414,4 @@ class BrowserRecorder:
             except Exception:
                 pass
             self._playwright = None
+        self.cleanup_raw_artifacts()

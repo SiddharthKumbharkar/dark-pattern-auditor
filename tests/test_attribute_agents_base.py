@@ -166,6 +166,27 @@ def test_evidence_pointer_missing_signal_key_raises(baselines):
         run_agent(agent, {}, None, baselines)
 
 
+def test_evidence_pointer_present_but_empty_signal_string_raises(baselines):
+    # The key exists (so this is distinct from the missing-key case above)
+    # but an empty string is just as useless for tracing a finding back
+    # to what produced it -- must be rejected the same way.
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 1, "confidence": 0.5,
+        "evidence_pointers": [{"step_id": 1, "selector": "#x", "signal": ""}], "reasoning": "x",
+    })
+    with pytest.raises(ContractViolation):
+        run_agent(agent, {}, None, baselines)
+
+
+def test_evidence_pointer_non_dict_entry_raises(baselines):
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 1, "confidence": 0.5,
+        "evidence_pointers": ["not a dict"], "reasoning": "x",
+    })
+    with pytest.raises(ContractViolation):
+        run_agent(agent, {}, None, baselines)
+
+
 def test_empty_reasoning_raises(baselines):
     agent = _agent(lambda e, g, b: {"verdict": "no", "severity": None, "confidence": 0.5, "evidence_pointers": [], "reasoning": ""})
     with pytest.raises(ContractViolation):

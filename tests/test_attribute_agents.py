@@ -194,7 +194,7 @@ def test_information_hiding_stub_is_not_assessable_when_no_price_ever_shown(base
 # (fires >= 2.0*1.3=2.6, i.e. count>=3).
 
 
-def _restriction_episode(episode_id="e1", friction_ratio=None, forced_interstitial_count=0):
+def _restriction_episode(episode_id="e1", friction_ratio=None, forced_interstitial_count=0, dom_captured=True):
     return {
         "episode": {"episode_id": episode_id},
         "evidence": {
@@ -204,6 +204,15 @@ def _restriction_episode(episode_id="e1", friction_ratio=None, forced_interstiti
                 for i in range(forced_interstitial_count)
             ],
         },
+        # dom_snapshot_masked_path is what signals/path_deviation.py's
+        # forced-interstitial count is actually derived from at
+        # extract-evidence time -- omitting it (dom_captured=False) is how
+        # a real episode ends up with a vacuous 0 count: no step ever had a
+        # masked DOM snapshot to look at, distinct from "looked and found
+        # none".
+        "steps": [
+            {"step_id": 1, "dom_snapshot_masked_path": "dom/step_001.html" if dom_captured else None, "capture_error": None},
+        ],
     }
 
 
@@ -255,6 +264,40 @@ def test_restriction_fires_via_forced_interstitial_path_alone(baselines):
     result, _ = run_agent(RESTRICTION_AGENT, episode, _paired_flow_group_evidence(), baselines)
     assert result["verdict"] == "fires"
     assert any(p["signal"] == "path_deviation.forced_interstitial" for p in result["evidence_pointers"])
+
+
+def test_restriction_not_assessable_when_neither_dimension_is_measurable(baselines):
+    # friction_ratio never computed (not paired at extract-evidence time)
+    # AND no step ever had a masked DOM snapshot to count interstitials
+    # from -- there is genuinely nothing to assess restriction from, and
+    # this must not silently read as "no".
+    episode = _restriction_episode(friction_ratio=None, forced_interstitial_count=0, dom_captured=False)
+    result, _ = run_agent(RESTRICTION_AGENT, episode, _paired_flow_group_evidence(), baselines)
+    assert result["verdict"] == "not_assessable"
+
+
+def test_restriction_no_when_ratio_clean_and_interstitial_count_not_measurable(baselines):
+    # forced_interstitial_count=0 here is vacuous (dom_captured=False), so
+    # it must be SKIPPED, not treated as a second "clean" data point --
+    # but the ratio dimension IS genuinely measured and clean, so the
+    # overall verdict is still "no", not "not_assessable".
+    episode = _restriction_episode(friction_ratio=1.0, forced_interstitial_count=0, dom_captured=False)
+    result, _ = run_agent(RESTRICTION_AGENT, episode, _paired_flow_group_evidence(), baselines)
+    assert result["verdict"] == "no"
+    assert "not available" not in result["reasoning"]
+    assert "not assessable" in result["reasoning"]
+    # never claim the unmeasured interstitial count was "below threshold"
+    assert "0 forced interstitial" not in result["reasoning"]
+
+
+def test_restriction_fires_via_ratio_even_when_interstitial_count_not_measurable(baselines):
+    # A vacuous 0 forced-interstitial count must not be able to drag a
+    # genuine "fires" on the ratio dimension down to "unsure" or "no" --
+    # it's simply excluded from the aggregation, same as complexity.py
+    # skips an unmeasurable dimension rather than faking a clean one.
+    episode = _restriction_episode(friction_ratio=3.0, forced_interstitial_count=0, dom_captured=False)
+    result, _ = run_agent(RESTRICTION_AGENT, episode, _paired_flow_group_evidence(), baselines)
+    assert result["verdict"] == "fires"
 
 
 # -- disparate_treatment (explicit Stage-2 stub -- never fakes a verdict) --

@@ -27,9 +27,6 @@ from journey.builder import JourneyBuilder
 from journey.manifest import write_run_manifest
 from journey.privacy import PrivacyValidationError
 from recorder.browser import BrowserRecorder
-from recorder.dom import extract_dom, extract_visible_text
-from recorder.exclusion import is_excluded
-from recorder.screenshot import capture_screenshot
 from signals.cart import extract_cart_items
 from signals.price import extract_prices
 from signals.urgency import extract_social_proof_claims, extract_timers, extract_urgency_claims
@@ -177,70 +174,42 @@ def _check_for_temporal_claims(session: AuditSession, step: dict) -> None:
 
 
 def _build_manual_screenshot_step(session: AuditSession, recorder: BrowserRecorder) -> dict:
+    """Delegates to recorder.capture_step() (masked DOM + masked
+    screenshot, action_type="manual_screenshot") rather than capturing raw
+    state itself -- this used to duplicate BrowserRecorder's capture logic
+    with no masking at all, a real gap now that capture_step() masks.
+    extracted_signals is still computed here (for the dashboard's
+    immediate display), but from the MASKED dom_html/visible_text
+    capture_step() already wrote, never from a second raw page read."""
     step_id = recorder.next_step_id()
-    timestamp = datetime.now(timezone.utc).isoformat()
     url = recorder.page.url
+    step = recorder.capture_step(step_id=step_id, url=url, action_type="manual_screenshot")
 
-    user_action = {
-        "action_type": "manual_screenshot",
-        "target_text": None,
-        "target_role": None,
-        "input_value_masked": None,
+    if step.get("capture_excluded"):
+        step["screenshot_id"] = None
+        return step
+
+    visible_text = step.get("visible_text_summary") or []
+    dom_snapshot_id = (step.get("state_capture") or {}).get("dom_snapshot_id")
+    dom_html = ""
+    if dom_snapshot_id:
+        dom_path = os.path.join(recorder.dom_dir, dom_snapshot_id)
+        try:
+            with open(dom_path, "r", encoding="utf-8") as f:
+                dom_html = f.read()
+        except OSError:
+            dom_html = ""
+
+    step["extracted_signals"] = {
+        "prices": extract_prices(visible_text),
+        "cart_items": extract_cart_items(visible_text, dom_html),
+        "urgency_claims": extract_urgency_claims(visible_text),
+        "social_proof_claims": extract_social_proof_claims(visible_text),
+        "timers": extract_timers(dom_html),
+        "popups": [],
+        "forms": [],
     }
-
-    excluded, _matched_pattern = is_excluded(url, recorder.exclusion_patterns)
-    if excluded:
-        return {
-            "step_id": step_id,
-            "timestamp": timestamp,
-            "url": url,
-            "user_action": user_action,
-            "capture_excluded": True,
-            "exclusion_reason": "url_pattern_match",
-            "state_capture": None,
-            "screenshot_id": None,
-        }
-
-    timestamp_tag = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
-    screenshot_id = f"{session.audit_id}_manual_{timestamp_tag}.png"
-    screenshot_path = os.path.join(recorder.screenshots_dir, screenshot_id)
-    capture_screenshot(recorder.page, screenshot_path, full_page=recorder.screenshot_full_page)
-
-    visible_text = extract_visible_text(recorder.page)
-    dom_html = extract_dom(recorder.page)
-
-    step = {
-        "step_id": step_id,
-        "timestamp": timestamp,
-        "url": url,
-        "page_title": recorder.page.title(),
-        "page_type": None,
-        "user_action": user_action,
-        "capture_excluded": False,
-        "exclusion_reason": None,
-        "state_capture": {
-            "screenshot_id": screenshot_id,
-            "dom_snapshot_id": None,
-            "ocr_text_id": None,
-            "accessibility_tree_id": None,
-        },
-        "visible_text_summary": visible_text,
-        "extracted_signals": {
-            "prices": extract_prices(visible_text),
-            "cart_items": extract_cart_items(visible_text, dom_html),
-            "urgency_claims": extract_urgency_claims(visible_text),
-            "social_proof_claims": extract_social_proof_claims(visible_text),
-            "timers": extract_timers(dom_html),
-            "popups": [],
-            "forms": [],
-        },
-        "extraction_confidence": {
-            "ocr_used": False,
-            "dom_extraction_complete": True,
-            "low_confidence_fields": [],
-        },
-        "screenshot_id": screenshot_id,
-    }
+    step["screenshot_id"] = (step.get("state_capture") or {}).get("screenshot_id")
     return step
 
 
@@ -300,6 +269,7 @@ def start_audit(req: AuditStartRequest):
         audit_id=audit_id,
         exclusion_patterns=load_exclusion_patterns(),
         screenshot_full_page=CFG.capture.screenshot_full_page,
+        privacy=CFG.privacy,
     )
     session = AuditSession(
         audit_id=audit_id,

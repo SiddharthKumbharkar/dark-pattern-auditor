@@ -74,8 +74,11 @@ def _overlaps_any(start: int, end: int, spans: List[Tuple[int, int]]) -> bool:
     return any(s < end and start < e for s, e in spans)
 
 
-def _redact_text(text: str) -> Tuple[str, List[str]]:
-    """Denylist pass for one text node, ALLOWLIST CHECKED FIRST at the
+def redact_text_span(text: str) -> Tuple[str, List[str]]:
+    """Denylist pass for one span of text (a DOM text node here; also
+    reused directly by recorder/browser.py for the v1 pipeline's
+    visible_text_summary, which has no DOM structure of its own to walk --
+    just a flat list of strings from the live page). ALLOWLIST CHECKED FIRST at the
     span level: a scarcity/price/urgency phrase's own span is protected
     even when the same text node also contains real PII elsewhere (e.g.
     "Only 2 left in stock! Contact support@example.com" must keep the
@@ -158,10 +161,10 @@ def _is_structurally_allowlisted(tag) -> bool:
     """Whole-node exemptions based on what the node IS (heading, button,
     timer, cookie banner, error message), as opposed to content-pattern
     exemptions (price/urgency/social-proof), which are handled at the
-    span level inside _redact_text instead -- a node's ROLE justifies
+    span level inside redact_text_span instead -- a node's ROLE justifies
     skipping it entirely; a node merely CONTAINING allowlisted phrasing
     does not, because it might also contain real PII elsewhere in the
-    same node (see _redact_text's docstring)."""
+    same node (see redact_text_span's docstring)."""
     node = tag
     depth = 0
     while node is not None and getattr(node, "name", None) and depth < 6:
@@ -242,7 +245,7 @@ def _mask_text_nodes(soup: BeautifulSoup) -> Tuple[List[str], List[str]]:
         if _is_structurally_allowlisted(parent):
             continue
 
-        new_text, kinds = _redact_text(str(node))
+        new_text, kinds = redact_text_span(str(node))
         if not kinds:
             continue
 

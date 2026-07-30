@@ -182,6 +182,18 @@ def test_tel_type_field_is_redacted_unconditionally():
     assert "tel_field" in result.redaction_kinds
 
 
+def test_hidden_type_field_is_redacted_unconditionally_regardless_of_name():
+    # "hidden" isn't in dom_masker's own type->placeholder map (only
+    # password/email/tel are) -- it's caught via should_redact()'s
+    # SENSITIVE_FIELD_TYPES fallback instead, so it lands as a generic
+    # [REDACTED:<name>] / "sensitive_field", not a typed placeholder.
+    html = '<input type="hidden" name="csrf_token" value="abc123">'
+    result = mask_dom_html(html, [_field("input", "csrf_token", "hidden")])
+    assert "[REDACTED:csrf_token]" in result.masked_html
+    assert "abc123" not in result.masked_html
+    assert "sensitive_field" in result.redaction_kinds
+
+
 def test_denylisted_field_name_is_redacted():
     html = '<input type="text" name="card_number">'
     result = mask_dom_html(html, [_field("input", "card_number", "text")])

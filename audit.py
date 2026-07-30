@@ -62,6 +62,7 @@ def main(argv=None) -> int:
         audit_id=audit_id,
         exclusion_patterns=exclusion_patterns,
         screenshot_full_page=cfg.capture.screenshot_full_page,
+        privacy=cfg.privacy,
     )
     builder = JourneyBuilder(
         audit_id=audit_id,
