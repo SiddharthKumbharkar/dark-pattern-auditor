@@ -1,0 +1,27 @@
+{
+  "attribute": "covertness",
+  "verdict": "no",
+  "severity": null,
+  "confidence": 0.65,
+  "evidence_pointers": [
+    {
+      "step_id": 4,
+      "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+      "ui_region": "cancellation_flow",
+      "signal": "visual_asymmetry.positive_below_fold=false,negative_below_fold=false"
+    },
+    {
+      "step_id": 5,
+      "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+      "ui_region": "cancellation_flow",
+      "signal": "visual_asymmetry.positive_below_fold=false,negative_below_fold=false"
+    },
+    {
+      "step_id": 4,
+      "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+      "ui_region": "cancellation_flow",
+      "signal": "screenshot_visual_inspection.legibility_check"
+    }
+  ],
+  "reasoning": "On both screens, the reject option ('no thanks, cancel anyway' at step 4; 'yes, cancel my membership' at step 5) is fully visible on screen (negative_below_fold=false in both), rendered as a plain underlined text link directly beneath the primary button, and honestly labeled with exactly what clicking it does -- it is not mislabeled, not disguised as a different control, and does not require extra interaction to reveal. The measured disparities (area_ratio ~12-13x, font_size_ratio 1.64x, tab_order_delta -1, vertical_position_delta -84px) describe how much less prominent the option is, which is the asymmetry attribute already assessed separately -- they do not show deliberate concealment or disguise. contrast_ratio was not computed (null) so color-camouflage could not be measured numerically; I inspected the step 4 screenshot directly (see the screenshot_visual_inspection pointer above) and the link text remains legible against the background, not blended to near-invisibility. Given the option is present, visible, and truthfully labeled, the evidence does not support deliberate hiding/disguise as distinct from mere reduced prominence."
+}
