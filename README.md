@@ -62,16 +62,22 @@ python3 dpa.py extract-group-evidence example-shop.com purchase_cheapest
 # 4. Run the 7 code-based attribute agents.
 python3 dpa.py run-attributes episode_20260729T120000000000Z
 
-# 5. Sanity checks (optional but recommended before trusting the result):
+# 5. Compute the final output document -- overall verdict + region-grouped
+#    findings, derived from the verdicts above. Nothing here judges
+#    anything new; it only assembles what's already there.
+python3 dpa.py build-output episode_20260729T120000000000Z
+
+# 6. Sanity checks (optional but recommended before trusting the result):
 python3 dpa.py verify-masking episode_20260729T120000000000Z
 python3 dpa.py validate-episode storage/episode_20260729T120000000000Z/episode.json
 
-# 6. Build the human-readable HTML report -- screenshots, evidence tables,
-#    every attribute verdict with its evidence pointers drawn on the page.
+# 7. Build the human-readable HTML report -- findings first (one card per
+#    region with a fired attribute), then coverage, then the full verdicts
+#    table, then the screenshot filmstrip and evidence tables.
 python3 dpa.py report episode_20260729T120000000000Z
 #   -> open storage/episode_20260729T120000000000Z/report.html in a browser
 
-# 7. (optional, Stage 2) For attributes code can't judge alone --
+# 8. (optional, Stage 2) For attributes code can't judge alone --
 #    covertness, information_hiding, disparate_treatment always, or any
 #    attribute you want a second opinion on -- hand it to an LLM by hand:
 python3 dpa.py build-payload episode_20260729T120000000000Z \
@@ -82,8 +88,13 @@ python3 dpa.py build-payload episode_20260729T120000000000Z \
 python3 dpa.py ingest-response episode_20260729T120000000000Z \
     --role attribute --file response.json --model "claude-opus-4-8" --operator "your-name"
 python3 dpa.py compare-verdicts episode_20260729T120000000000Z
+#   -> re-run build-output (step 5) and report (step 7) so the ingested LLM
+#      verdict is folded into the final document -- build-output always
+#      prefers a manually-ingested Stage-2 verdict over the code agent's own.
+python3 dpa.py build-output episode_20260729T120000000000Z
+python3 dpa.py report episode_20260729T120000000000Z
 
-# 8. If you recorded more than one goal/revisit for this site, roll them
+# 9. If you recorded more than one goal/revisit for this site, roll them
 #    all up into one page:
 python3 dpa.py report-site example-shop.com
 ```
@@ -153,14 +164,22 @@ python3 dpa.py extract-group-evidence <site_id> <goal>
 #    disparate_treatment are explicit Stage-2-only stubs -- see ARCHITECTURE.md)
 python3 dpa.py run-attributes <episode_id>
 
-# 5. (optional) Verify nothing unmasked slipped through, and validate the
+# 5. Assemble the final output document -- overall.verdict, region-grouped
+#    findings (regions), and the flat verdicts list, all derived from the
+#    verdicts written in step 4 (and any Stage-2 entries already ingested,
+#    see below). Pure presentation: never changes a verdict, only groups
+#    and summarizes what's already there. Idempotent -- re-run any time.
+python3 dpa.py build-output <episode_id>
+
+# 6. (optional) Verify nothing unmasked slipped through, and validate the
 #    episode against the schema
 python3 dpa.py verify-masking <episode_id>
 python3 dpa.py validate-episode <episode_id>/episode.json
 
-# 6. Build a single-episode HTML report -- screenshot filmstrip, evidence
-#    tables, and every attribute verdict's evidence pointers as clickable
-#    links to the screenshot with a bounding box drawn on the element
+# 7. Build a single-episode HTML report -- findings (region cards) and
+#    coverage first, then the full verdicts table, then the screenshot
+#    filmstrip with every evidence pointer drawn on the page as a
+#    bounding box
 python3 dpa.py report <episode_id>
 # ...or roll up every goal/revisit for one site into one page:
 python3 dpa.py report-site <site_id>
@@ -215,6 +234,11 @@ not a debugging aid:
 ```bash
 python3 dpa.py compare-verdicts <episode_id>
 ```
+
+Then re-run `build-output <episode_id>` (and `report <episode_id>` if you
+want the HTML updated too) — it always prefers a manually-ingested Stage-2
+verdict over the code agent's own for that attribute, so the ingested
+answer now flows into `overall`/`regions` without anything else changing.
 
 To export a flat, one-row-per-`(episode, attribute)` CSV/JSON for human
 labelling (empty `human_verdict`/`annotator_id` columns to fill in):

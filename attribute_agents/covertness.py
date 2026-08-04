@@ -16,16 +16,14 @@ LLM-backed agent alongside it instead when Stage 2 lands.
 
 from typing import Dict, Optional
 
-from attribute_agents.base import AttributeAgent, not_assessable_result
+from attribute_agents.base import AttributeAgent, STAGE2_STUB_REASON, not_assessable_result
 from journey.baselines import BaselineStore
 
 AGENT_VERSION = "covertness_stub/1.0.0"
 
-STUB_REASON = "requires LLM judgement — Stage 2"
-
 
 def assess(episode: Dict, group_evidence: Optional[Dict], baselines: BaselineStore) -> Dict:
-    return not_assessable_result(STUB_REASON)
+    return not_assessable_result(STAGE2_STUB_REASON)
 
 
 AGENT = AttributeAgent(

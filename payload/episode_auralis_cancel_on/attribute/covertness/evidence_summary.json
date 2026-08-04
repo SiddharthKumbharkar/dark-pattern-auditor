@@ -56,22 +56,26 @@
     {
       "step_id": 4,
       "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
-      "signal": "visual_asymmetry"
+      "signal": "visual_asymmetry",
+      "ui_region": "unclassified"
     },
     {
       "step_id": 4,
       "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
-      "signal": "visual_asymmetry"
+      "signal": "visual_asymmetry",
+      "ui_region": "cancellation_flow"
     },
     {
       "step_id": 5,
       "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
-      "signal": "visual_asymmetry"
+      "signal": "visual_asymmetry",
+      "ui_region": "unclassified"
     },
     {
       "step_id": 5,
       "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
-      "signal": "visual_asymmetry"
+      "signal": "visual_asymmetry",
+      "ui_region": "cancellation_flow"
     }
   ]
 }

@@ -23,4 +23,4 @@ This validates the response against response_schema.json, rejects any evidence_p
 to see this LLM verdict next to the code agent's own verdict for this attribute.
 
 This payload was assembled entirely offline (no API was called to build
-it) -- prompt_version=attribute_prompt.v1, built_at=2026-07-29T03:15:45.303145+00:00.
+it) -- prompt_version=attribute_prompt.v1, built_at=2026-08-04T04:25:48.440523+00:00.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "mechanism_verdict.v1.schema.json",
   "title": "Dark Pattern Audit Mechanism Verdict (v1)",
-  "description": "Manually-ingested LLM responses (Stage 2) for one episode -- written by journey/mechanism_verdict_ingest.py (the ingest-response CLI) into episode.mechanism_verdict. episode.v2.schema.json's own mechanism_verdict field stays freeform (additionalProperties: true, {} until Phase 4) so existing episodes never fail v2 validation; THIS schema is the strict, standalone contract for the {entries:[...]} shape ingest-response actually writes, validated separately -- the same pattern group_evidence.v1.schema.json uses for group_evidence.json. One entry per (role, attribute) pair; attribute is null for triage/coordinator. Re-ingesting the same (role, attribute) REPLACES its prior entry rather than appending a duplicate.",
+  "description": "Manually-ingested LLM responses (Stage 2) for one episode -- written by journey/mechanism_verdict_ingest.py (the ingest-response CLI) into episode.mechanism_verdict. episode.v2.schema.json's own mechanism_verdict field stays freeform (additionalProperties: true, {} until Phase 4) so existing episodes never fail v2 validation; THIS schema is the strict, standalone contract for the {entries:[...], computed_output:{...}} shape ingest-response/build-output actually write, validated separately -- the same pattern group_evidence.v1.schema.json uses for group_evidence.json. One entry per (role, attribute) pair; attribute is null for triage/coordinator. Re-ingesting the same (role, attribute) REPLACES its prior entry rather than appending a duplicate. computed_output is written by build_output.py (journey/episode_output_builder.py) -- the generated, presentation-layer {overall, regions, verdicts} document, never hand-authored -- and is optional: absent until build-output has run at least once for this episode.",
   "type": "object",
   "additionalProperties": false,
   "required": ["entries"],
@@ -10,7 +10,8 @@
     "entries": {
       "type": "array",
       "items": { "$ref": "#/$defs/MechanismVerdictEntry" }
-    }
+    },
+    "computed_output": { "$ref": "#/$defs/ComputedOutput" }
   },
 
   "$defs": {
@@ -48,6 +49,174 @@
           "type": "object",
           "description": "The exact parsed JSON the operator pasted in, verbatim -- already validated against the response_schema.json build-payload wrote for this (episode, role[, attribute]), and (when it has an evidence_pointers field) checked for step_ids that actually exist in this episode. Never transformed or normalized before storage."
         }
+      }
+    },
+
+    "EvidencePointer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "selector", "ui_region", "signal"],
+      "properties": {
+        "step_id": { "type": ["integer", "null"] },
+        "selector": { "type": ["string", "null"] },
+        "ui_region": {
+          "enum": [
+            "cookie_consent_banner", "checkout_price_summary", "cancellation_flow",
+            "signup_form", "login_form", "newsletter_modal", "addon_upsell",
+            "account_settings", "retention_offer", "unclassified"
+          ]
+        },
+        "signal": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "Verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attribute", "verdict", "severity", "confidence", "evidence_pointers",
+        "reasoning", "agent_version", "agent_type"
+      ],
+      "properties": {
+        "attribute": {
+          "enum": ["asymmetry", "covertness", "deception", "information_hiding", "restriction", "disparate_treatment", "complexity"]
+        },
+        "verdict": { "enum": ["fires", "no", "unsure", "not_assessable"] },
+        "severity": { "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 5 }, { "type": "null" }] },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "evidence_pointers": { "type": "array", "items": { "$ref": "#/$defs/EvidencePointer" } },
+        "reasoning": { "type": "string", "minLength": 1 },
+        "agent_version": { "type": "string" },
+        "agent_type": { "enum": ["code", "llm"] },
+        "visual_claim_unverified": { "type": "boolean" }
+      }
+    },
+
+    "Coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assessed", "not_assessable", "stubbed_pending_stage2", "counts"],
+      "properties": {
+        "assessed": { "type": "array", "items": { "type": "string" } },
+        "not_assessable": { "type": "array", "items": { "type": "string" } },
+        "stubbed_pending_stage2": { "type": "array", "items": { "type": "string" } },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fires", "no", "unsure", "not_assessable"],
+          "properties": {
+            "fires": { "type": "integer", "minimum": 0 },
+            "no": { "type": "integer", "minimum": 0 },
+            "unsure": { "type": "integer", "minimum": 0 },
+            "not_assessable": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+
+    "FiredAttributeSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attribute", "severity", "confidence"],
+      "properties": {
+        "attribute": { "enum": ["asymmetry", "covertness", "deception", "information_hiding", "restriction", "disparate_treatment", "complexity"] },
+        "severity": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+      }
+    },
+
+    "LikelyPattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "confidence", "source"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "confidence": {
+          "anyOf": [{ "type": "number", "minimum": 0.0, "maximum": 1.0 }, { "type": "null" }],
+          "description": "Always null today: the coordinator's pattern_combinations response has no confidence field to draw from (deliberately removed in an earlier session), so likely_pattern is gated on the region's own finding_strength instead of a fabricated number -- see journey/episode_output_builder.py's module docstring."
+        },
+        "source": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "Region": {
+      "type": "object",
+      "description": "The findings view: one entry per ui_region that had >=1 fired or unsure attribute, built by journey/episode_output_builder.py::build_regions() from `verdicts` alone. A region with everything \"no\"/\"not_assessable\" never appears here.",
+      "additionalProperties": false,
+      "required": [
+        "ui_region", "representative_element", "steps", "attributes_fired", "attributes_unsure",
+        "attributes_absent", "attributes_not_assessed", "likely_pattern", "finding_strength", "assessment"
+      ],
+      "properties": {
+        "ui_region": {
+          "enum": [
+            "cookie_consent_banner", "checkout_price_summary", "cancellation_flow",
+            "signup_form", "login_form", "newsletter_modal", "addon_upsell",
+            "account_settings", "retention_offer", "unclassified"
+          ]
+        },
+        "representative_element": {
+          "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+          "description": "Selector of the highest-severity fired element in this region; the first unsure element's selector if nothing fired here."
+        },
+        "steps": { "type": "array", "items": { "type": "integer" } },
+        "attributes_fired": { "type": "array", "items": { "$ref": "#/$defs/FiredAttributeSummary" } },
+        "attributes_unsure": { "type": "array", "items": { "type": "string" } },
+        "attributes_absent": { "type": "array", "items": { "type": "string" } },
+        "attributes_not_assessed": { "type": "array", "items": { "type": "string" } },
+        "likely_pattern": { "anyOf": [{ "$ref": "#/$defs/LikelyPattern" }, { "type": "null" }] },
+        "finding_strength": { "enum": ["strong", "moderate", "weak"] },
+        "assessment": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "RegionsSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_regions_examined", "regions_with_findings", "regions_clean"],
+      "properties": {
+        "total_regions_examined": {
+          "type": "integer", "minimum": 0,
+          "description": "Every distinct region signals/ui_regions.py tagged on any captured element this episode, INCLUDING clean ones -- the false-positive/discrimination signal. Clean regions are counted here, never listed individually."
+        },
+        "regions_with_findings": { "type": "integer", "minimum": 0 },
+        "regions_clean": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "Overall": {
+      "type": "object",
+      "description": "The honestly-scoped headline -- computed from `regions`/`verdicts`, never a hand-authored summary.",
+      "additionalProperties": false,
+      "required": ["verdict", "coverage_limited", "human_review_recommended", "coverage", "regions_summary", "summary"],
+      "properties": {
+        "verdict": { "enum": ["dark_patterns_present", "no_dark_patterns_found", "inconclusive"] },
+        "coverage_limited": {
+          "type": "boolean",
+          "description": "True when >=3 of 7 attributes are not_assessable or stubbed_pending_stage2 -- verdict and summary must not overstate confidence past this."
+        },
+        "human_review_recommended": { "type": "boolean" },
+        "coverage": { "$ref": "#/$defs/Coverage" },
+        "regions_summary": { "$ref": "#/$defs/RegionsSummary" },
+        "summary": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "ComputedOutput": {
+      "type": "object",
+      "description": "Written by build_output.py / journey/episode_output_builder.py -- generated wholesale from episode.attributes.results and episode.mechanism_verdict.entries every run (idempotent full replace, same convention as episode.attributes and episode.evidence). Exactly three top-level sections: verdicts is the flat evaluation currency (source of truth); regions and overall are both COMPUTED from it, never hand-authored.",
+      "additionalProperties": false,
+      "required": ["overall", "regions", "verdicts"],
+      "properties": {
+        "verdicts": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": { "$ref": "#/$defs/Verdict" },
+          "description": "One authoritative verdict per attribute (attribute_agents.base.ATTRIBUTES order) -- the ingested Stage-2 LLM entry when one exists for that attribute, else the code agent's own result. Unfiltered: includes verdict==\"no\", \"unsure\", and \"not_assessable\" too."
+        },
+        "regions": { "type": "array", "items": { "$ref": "#/$defs/Region" } },
+        "overall": { "$ref": "#/$defs/Overall" }
       }
     }
   }

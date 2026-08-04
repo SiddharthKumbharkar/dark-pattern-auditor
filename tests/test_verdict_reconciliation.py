@@ -101,14 +101,14 @@ def test_agreement_and_disagreement_after_ingesting_two_attributes(pipeline, tmp
 
     agree_path = _write(tmp_path, "agree.json", {
         "attribute": "asymmetry", "verdict": "fires", "severity": code_asymmetry["severity"], "confidence": 0.9,
-        "evidence_pointers": [{"step_id": 1, "selector": "#accept-btn", "signal": "screenshot_contrast"}],
+        "evidence_pointers": [{"step_id": 1, "selector": "#accept-btn", "ui_region": "account_settings", "signal": "measured_contrast"}],
         "reasoning": "Agrees with the code agent.",
     })
     # covertness: code is always not_assessable (stub) -- LLM disagrees with "fires".
     disagree_path = _write(tmp_path, "disagree.json", {
         "attribute": "covertness", "verdict": "fires", "severity": 2, "confidence": 0.6,
-        "evidence_pointers": [{"step_id": 1, "selector": "#reject-btn", "signal": "screenshot_contrast"}],
-        "reasoning": "Reject option looks deliberately hidden.",
+        "evidence_pointers": [{"step_id": 1, "selector": "#reject-btn", "ui_region": "account_settings", "signal": "measured_contrast"}],
+        "reasoning": "Reject option is measurably harder to notice.",
     })
 
     ingest_response(pipeline["signup_dir"], role="attribute", response_file=agree_path,
@@ -140,7 +140,7 @@ def test_agreeing_verdicts_with_different_severity_are_still_agree_but_noted(pip
 
     response_path = _write(tmp_path, "resp.json", {
         "attribute": "asymmetry", "verdict": "fires", "severity": different_severity, "confidence": 0.9,
-        "evidence_pointers": [{"step_id": 1, "selector": "#accept-btn", "signal": "screenshot_contrast"}],
+        "evidence_pointers": [{"step_id": 1, "selector": "#accept-btn", "ui_region": "account_settings", "signal": "measured_contrast"}],
         "reasoning": "Agrees on verdict, differs on severity.",
     })
     ingest_response(pipeline["signup_dir"], role="attribute", response_file=response_path,
@@ -155,8 +155,8 @@ def test_agreeing_verdicts_with_different_severity_are_still_agree_but_noted(pip
 def test_cli_prints_table_and_disagreements_section(pipeline, tmp_path):
     disagree_path = _write(tmp_path, "disagree.json", {
         "attribute": "covertness", "verdict": "fires", "severity": 2, "confidence": 0.6,
-        "evidence_pointers": [{"step_id": 1, "selector": "#reject-btn", "signal": "x"}],
-        "reasoning": "Looks hidden.",
+        "evidence_pointers": [{"step_id": 1, "selector": "#reject-btn", "ui_region": "account_settings", "signal": "x"}],
+        "reasoning": "Measurably harder to notice.",
     })
     ingest_response(pipeline["signup_dir"], role="attribute", response_file=disagree_path,
                      model_name="m", operator="sid", storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"])

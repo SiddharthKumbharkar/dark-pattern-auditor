@@ -24,22 +24,26 @@
         {
           "step_id": 4,
           "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
-          "signal": "visual_asymmetry.area_ratio.positive"
+          "signal": "visual_asymmetry.area_ratio.positive",
+          "ui_region": "unclassified"
         },
         {
           "step_id": 4,
           "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
-          "signal": "visual_asymmetry.area_ratio.negative"
+          "signal": "visual_asymmetry.area_ratio.negative",
+          "ui_region": "cancellation_flow"
         },
         {
           "step_id": 5,
           "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
-          "signal": "visual_asymmetry.area_ratio.positive"
+          "signal": "visual_asymmetry.area_ratio.positive",
+          "ui_region": "unclassified"
         },
         {
           "step_id": 5,
           "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
-          "signal": "visual_asymmetry.area_ratio.negative"
+          "signal": "visual_asymmetry.area_ratio.negative",
+          "ui_region": "cancellation_flow"
         }
       ],
       "reasoning": "2 of 2 pair(s) exceeded the asymmetry threshold: pair at step 4 skewed on area_ratio; pair at step 5 skewed on area_ratio.",
@@ -65,17 +69,20 @@
         {
           "step_id": 4,
           "selector": null,
-          "signal": "stated_vs_actual.network_fired"
+          "signal": "stated_vs_actual.network_fired",
+          "ui_region": "unclassified"
         },
         {
           "step_id": 5,
           "selector": null,
-          "signal": "stated_vs_actual.network_fired"
+          "signal": "stated_vs_actual.network_fired",
+          "ui_region": "unclassified"
         },
         {
           "step_id": 6,
           "selector": null,
-          "signal": "stated_vs_actual.network_fired"
+          "signal": "stated_vs_actual.network_fired",
+          "ui_region": "unclassified"
         }
       ],
       "reasoning": "3 claimed action(s) (e.g. 'Cancel membership') fired no network request.",
@@ -101,12 +108,14 @@
         {
           "step_id": null,
           "selector": null,
-          "signal": "friction_metrics.friction_ratio"
+          "signal": "friction_metrics.friction_ratio",
+          "ui_region": "unclassified"
         },
         {
           "step_id": 1,
           "selector": null,
-          "signal": "path_deviation.forced_interstitial"
+          "signal": "path_deviation.forced_interstitial",
+          "ui_region": "unclassified"
         }
       ],
       "reasoning": "friction_ratio=1.50 (unsure); 1 forced interstitial(s) (unsure).",
@@ -132,12 +141,20 @@
         {
           "step_id": 3,
           "selector": null,
-          "signal": "complexity_metrics.option_counts.option_count"
+          "signal": "complexity_metrics.option_counts.option_count",
+          "ui_region": "unclassified"
         }
       ],
       "reasoning": "1 dimension(s) exceeded the cancel_subscription complexity threshold: option_count=14 at step 3.",
       "agent_version": "complexity_code/1.0.0",
       "agent_type": "code"
     }
+  ],
+  "region_groups": [],
+  "page_level_co_occurrence": [
+    "asymmetry",
+    "complexity",
+    "deception",
+    "restriction"
   ]
 }

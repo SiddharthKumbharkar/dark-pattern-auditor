@@ -52,6 +52,24 @@ code { background: #8882; padding: 0.05rem 0.3rem; border-radius: 3px; font-size
 .episode-table th { background: #8882; }
 .fires-list span { display: inline-block; background: #e5484d22; color: #e5484d; border-radius: 999px;
   padding: 0.05rem 0.5rem; font-size: 0.78rem; margin: 0.1rem 0.15rem 0.1rem 0; }
+.region-card { border: 1px solid #8884; border-radius: 8px; padding: 0.9rem 1.1rem; margin-bottom: 1rem;
+  display: flex; gap: 1rem; flex-wrap: wrap; }
+.region-card h3 { margin: 0 0 0.5rem; font-size: 1.05rem; width: 100%; }
+.region-thumb { width: 220px; flex-shrink: 0; }
+.region-thumb-empty { width: 220px; flex-shrink: 0; opacity: 0.6; font-style: italic; font-size: 0.85rem; }
+.region-body { flex: 1; min-width: 240px; }
+.fired-attr { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; font-size: 0.9rem; }
+.sev-bar-track { width: 90px; height: 8px; background: #8883; border-radius: 4px; overflow: hidden; }
+.sev-bar-fill { height: 100%; background: #e5484d; }
+.likely-pattern { font-size: 0.9rem; }
+.assessment { font-size: 0.88rem; opacity: 0.9; }
+.badge.strength-strong { background: #e5484d22; color: #e5484d; }
+.badge.strength-moderate { background: #f5a62322; color: #b5750a; }
+.badge.strength-weak { background: #8884; color: #666; }
+.overall-banner { border: 1px solid #8884; border-radius: 8px; padding: 0.9rem 1.1rem; margin-bottom: 1rem; }
+.overall-banner.verdict-dark_patterns_present { border-left: 4px solid #e5484d; }
+.overall-banner.verdict-inconclusive { border-left: 4px solid #f5a623; }
+.overall-banner.verdict-no_dark_patterns_found { border-left: 4px solid #30a46c; }
 """
 
 
@@ -181,6 +199,84 @@ def _render_attribute_section(section: Dict) -> str:
     )
 
 
+def _severity_bar(severity: Optional[int]) -> str:
+    if severity is None:
+        return ""
+    pct = severity / 5 * 100
+    return f'<div class="sev-bar-track"><div class="sev-bar-fill" style="width:{pct:.0f}%"></div></div>'
+
+
+def _region_thumbnail(region: Dict, filmstrip_by_step: Dict[int, Dict]) -> str:
+    step_id = region.get("representative_step_id")
+    step = filmstrip_by_step.get(step_id) if step_id is not None else None
+    if not step or not step["screenshot_b64"]:
+        return '<div class="region-thumb-empty">(no element)</div>'
+    bbox = region.get("representative_bounding_box")
+    overlay = ""
+    if bbox and step["image_width"] and step["image_height"]:
+        overlay = f'<div class="bbox fires" style="{_bbox_style(bbox, step["image_width"], step["image_height"])}"></div>'
+    return (
+        f'<div class="region-thumb"><div class="screenshot-wrap">'
+        f'<img src="data:image/png;base64,{step["screenshot_b64"]}" alt="{escape(region["ui_region"])} thumbnail">'
+        f"{overlay}</div></div>"
+    )
+
+
+def _render_region_card(region: Dict, filmstrip_by_step: Dict[int, Dict]) -> str:
+    fired_html = "".join(
+        f'<div class="fired-attr"><code>{escape(a["attribute"])}</code> severity {a["severity"]} '
+        f'{_severity_bar(a["severity"])}</div>'
+        for a in region["attributes_fired"]
+    ) or '<p class="section-empty">(nothing fired here)</p>'
+    unsure_html = (
+        f'<p>Unsure: {", ".join(escape(a) for a in region["attributes_unsure"])}</p>'
+        if region["attributes_unsure"] else ""
+    )
+    pattern = region["likely_pattern"]
+    pattern_html = (
+        f'<p class="likely-pattern">Likely pattern: <strong>{escape(pattern["name"])}</strong> '
+        f'(source: {escape(pattern["source"])})</p>'
+        if pattern else '<p class="section-empty">No likely_pattern.</p>'
+    )
+    steps_html = ", ".join(f'<a href="#step-{s}">{s}</a>' for s in region["steps"]) or "—"
+    return (
+        f'<div class="region-card">'
+        f'<h3>{escape(region["ui_region"])} '
+        f'<span class="badge strength-{escape(region["finding_strength"])}">{escape(region["finding_strength"])}</span></h3>'
+        f'{_region_thumbnail(region, filmstrip_by_step)}'
+        f'<div class="region-body">{fired_html}{unsure_html}{pattern_html}'
+        f'<p class="assessment">{escape(region["assessment"])}</p>'
+        f'<p class="step-meta">steps: {steps_html}</p>'
+        f"</div></div>"
+    )
+
+
+def _render_overall(overall: Optional[Dict]) -> str:
+    if not overall:
+        return '<p class="section-empty">No computed output yet -- run build-output.</p>'
+    coverage = overall["coverage"]
+    rs = overall["regions_summary"]
+    flags = []
+    if overall["coverage_limited"]:
+        flags.append("coverage limited")
+    if overall["human_review_recommended"]:
+        flags.append("human review recommended")
+    flags_html = f" &middot; {' &middot; '.join(flags)}" if flags else ""
+    return (
+        f'<div class="overall-banner verdict-{escape(overall["verdict"])}">'
+        f'<div><strong>{escape(overall["verdict"])}</strong>{flags_html}</div>'
+        f'<p>{escape(overall["summary"])}</p>'
+        f'<table class="meta-table">'
+        f'<tr><td>regions examined</td><td>{rs["total_regions_examined"]}</td></tr>'
+        f'<tr><td>regions with findings</td><td>{rs["regions_with_findings"]}</td></tr>'
+        f'<tr><td>regions clean</td><td>{rs["regions_clean"]}</td></tr>'
+        f'<tr><td>assessed</td><td>{escape(", ".join(coverage["assessed"]) or "—")}</td></tr>'
+        f'<tr><td>not assessable</td><td>{escape(", ".join(coverage["not_assessable"]) or "—")}</td></tr>'
+        f'<tr><td>stubbed (pending Stage 2)</td><td>{escape(", ".join(coverage["stubbed_pending_stage2"]) or "—")}</td></tr>'
+        f"</table></div>"
+    )
+
+
 def _render_mechanism_entry(entry: Dict) -> str:
     raw = json.dumps(entry["raw_response"], indent=2)
     attribute = entry["attribute"] or "(whole episode)"
@@ -197,6 +293,11 @@ def render_html(data: Dict) -> str:
     episode_meta = data["episode"]
     title = f"Dark Pattern Audit — {episode_meta.get('episode_id')}"
 
+    filmstrip_by_step = {s["step_id"]: s for s in data["filmstrip"]}
+    regions_html = "".join(_render_region_card(r, filmstrip_by_step) for r in data["regions"]) or (
+        '<p class="section-empty">No regions with findings -- either build-output has not run yet, '
+        "or this episode is clean.</p>"
+    )
     filmstrip_html = "".join(_render_step(s) for s in data["filmstrip"]) or '<p class="section-empty">(no steps)</p>'
     attributes_html = "".join(_render_attribute_section(s) for s in data["attribute_sections"]) or '<p class="section-empty">No attribute results yet -- run run-attributes.</p>'
     mechanism_html = "".join(_render_mechanism_entry(e) for e in data["mechanism_verdict_entries"]) or '<p class="section-empty">No manually-ingested LLM verdicts yet -- run build-payload / ingest-response.</p>'
@@ -212,11 +313,17 @@ def render_html(data: Dict) -> str:
 <h1>{escape(title)}</h1>
 {_meta_table(episode_meta, data["outcome"])}
 
+<h2>Findings</h2>
+{regions_html}
+
+<h2>Coverage</h2>
+{_render_overall(data["overall"])}
+
+<h2>All Verdicts</h2>
+{attributes_html}
+
 <h2>Journey</h2>
 <div class="filmstrip">{filmstrip_html}</div>
-
-<h2>Attribute Verdicts</h2>
-{attributes_html}
 
 <h2>Mechanism Verdict (Stage 2, manually ingested)</h2>
 {mechanism_html}

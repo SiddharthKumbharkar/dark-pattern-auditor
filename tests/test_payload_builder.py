@@ -243,6 +243,13 @@ def test_attribute_role_scopes_evidence_and_screenshots_to_that_attribute(pipeli
     assert mapped_step_ids  # restriction fired in this fixture, so this must be non-empty
     assert mapped_step_ids < {1, 2, 3} or mapped_step_ids == {1, 2, 3}  # always a subset of real steps
 
+    # Every pointer shown to the human/LLM already carries a ui_region --
+    # read from the extractor's own tagging, never left for the model to
+    # invent (Issue 2).
+    assert evidence_summary["evidence_pointers"]
+    for pointer in evidence_summary["evidence_pointers"]:
+        assert "ui_region" in pointer and pointer["ui_region"]
+
 
 def test_attribute_response_schema_matches_assess_output_shape(pipeline):
     manifest = build_payload(
@@ -256,6 +263,14 @@ def test_attribute_response_schema_matches_assess_output_shape(pipeline):
     # mechanical metadata attached afterward (see INSTRUCTIONS.txt).
     assert "agent_version" not in schema["properties"]
     assert "agent_type" not in schema["properties"]
+    # visual_claim_unverified is OPTIONAL (Issue 4) -- present as a
+    # property but not required, since it only applies when reasoning
+    # makes a visual claim.
+    assert "visual_claim_unverified" in schema["properties"]
+    assert "visual_claim_unverified" not in schema["required"]
+    # ui_region is required on every evidence_pointers entry (Issue 2).
+    pointer_schema = schema["properties"]["evidence_pointers"]["items"]
+    assert "ui_region" in pointer_schema["required"]
 
 
 def test_stub_attribute_still_surfaces_its_raw_evidence_even_though_code_result_is_empty(pipeline):
@@ -304,9 +319,19 @@ def test_coordinator_role_synthesizes_all_attribute_results_and_scopes_screensho
     assert "outcome" in evidence_summary
 
     response_schema = json.load(open(os.path.join(payload_dir, "response_schema.json"), encoding="utf-8"))
-    assert set(response_schema["required"]) == {
-        "overall_verdict", "top_findings", "human_review_recommended", "summary",
-    }
+    # overall_verdict/top_findings/human_review_recommended/summary are no
+    # longer asked of the coordinator -- they're computed by build_output.py
+    # from episode.attributes.results, not authored (Issue 1). The
+    # coordinator's own job shrinks to naming pattern combinations already
+    # grouped by ui_region for it.
+    assert set(response_schema["required"]) == {"pattern_combinations"}
+    assert "overall_verdict" not in response_schema["properties"]
+    assert "top_findings" not in response_schema["properties"]
+
+    # region_groups/page_level_co_occurrence are code-computed and handed
+    # to the coordinator, not something it derives itself.
+    assert "region_groups" in evidence_summary
+    assert "page_level_co_occurrence" in evidence_summary
 
     # Screenshots: union of evidence_pointers from fires/unsure attributes only.
     firing_step_ids = set()

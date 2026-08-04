@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "AttributeResult judgement for 'covertness' (Stage 2, LLM)",
+  "description": "Visual claims: if `reasoning` describes what a screenshot shows (color, legibility, layout, contrast, etc.), you MUST either (a) include at least one evidence_pointers entry whose signal is prefixed \"screenshot_visual_inspection\", or (b) set visual_claim_unverified: true. A response with a visual claim and neither is rejected at ingest -- see journey/mechanism_verdict_ingest.py.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -48,6 +49,7 @@
         "required": [
           "step_id",
           "selector",
+          "ui_region",
           "signal"
         ],
         "properties": {
@@ -63,9 +65,25 @@
               "null"
             ]
           },
+          "ui_region": {
+            "enum": [
+              "cookie_consent_banner",
+              "checkout_price_summary",
+              "cancellation_flow",
+              "signup_form",
+              "login_form",
+              "newsletter_modal",
+              "addon_upsell",
+              "account_settings",
+              "retention_offer",
+              "unclassified"
+            ],
+            "description": "Copy this from the matching pointer's ui_region already shown to you in evidence_summary.json -- never invent one. If you're pointing at something not already tagged there, use \"unclassified\"."
+          },
           "signal": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Which measurement/observation this points at. If this specific claim rests on something you saw in an attached screenshot (not a measured field in evidence_summary.json), prefix it \"screenshot_visual_inspection\" -- see response_schema.json's top-level note on visual claims."
           }
         }
       }
@@ -73,6 +91,10 @@
     "reasoning": {
       "type": "string",
       "minLength": 1
+    },
+    "visual_claim_unverified": {
+      "type": "boolean",
+      "description": "Optional. Set true if reasoning makes a visual claim you cannot ground in an image-sourced evidence_pointers entry."
     }
   }
 }

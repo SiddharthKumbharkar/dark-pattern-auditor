@@ -109,7 +109,75 @@ npm run build && npm run preview
 
 ---
 
-## Run the auditing tool manually on any website
+## Run the auditing tool manually on any website (current pipeline)
+
+The unified entry point is `dpa.py` — every step below is `python3 dpa.py <command> ...`.
+Replace `https://example-shop.com` with the real target; each `record` prints
+the actual `episode_id` to use in every step after it.
+
+```bash
+# 0. See available goals (add more in config.yaml's goals: list if needed)
+python3 dpa.py list-goals
+
+# 1. Record -- a real, visible browser opens; you click through the site
+#    yourself, Ctrl+C when done
+python3 dpa.py record --site https://example-shop.com \
+    --goal purchase_cheapest --operator "your-name"
+#   -> prints the new episode_id, e.g. episode_20260729T120000000000Z
+
+# 2. Measure evidence from what was captured -- pure code, no LLM
+python3 dpa.py extract-evidence episode_20260729T120000000000Z
+
+# 3. Only if you recorded 2+ episodes of the same (site_id, goal)
+#    (revisits, or a --pair-with'd counterpart)
+python3 dpa.py extract-group-evidence example-shop.com purchase_cheapest
+
+# 4. Run the 7 code-based attribute agents
+python3 dpa.py run-attributes episode_20260729T120000000000Z
+
+# 5. Assemble the final output document -- overall verdict + region-grouped
+#    findings, derived from step 4's verdicts. Pure presentation, never
+#    changes a verdict.
+python3 dpa.py build-output episode_20260729T120000000000Z
+
+# 6. Optional sanity checks
+python3 dpa.py verify-masking episode_20260729T120000000000Z
+python3 dpa.py validate-episode storage/episode_20260729T120000000000Z/episode.json
+
+# 7. Build the HTML report -- findings (region cards) first, then coverage,
+#    then the full verdicts table, then the screenshot filmstrip/evidence
+python3 dpa.py report episode_20260729T120000000000Z
+#   -> open storage/episode_20260729T120000000000Z/report.html
+
+# 8. Optional Stage 2: hand an attribute to an LLM by hand (covertness,
+#    information_hiding, disparate_treatment can only ever leave
+#    not_assessable this way)
+python3 dpa.py build-payload episode_20260729T120000000000Z \
+    --role attribute --attribute covertness
+#   -> paste prompt.txt + evidence_summary.json + screenshots/ into your LLM,
+#      save its reply as response.json in that same payload folder, then:
+python3 dpa.py ingest-response episode_20260729T120000000000Z \
+    --role attribute --file response.json --model "claude-opus-4-8" --operator "your-name"
+python3 dpa.py compare-verdicts episode_20260729T120000000000Z
+#   -> re-run 5 and 7 so the ingested LLM verdict is folded in (build-output
+#      always prefers a manually-ingested Stage-2 verdict over the code
+#      agent's own for that attribute):
+python3 dpa.py build-output episode_20260729T120000000000Z
+python3 dpa.py report episode_20260729T120000000000Z
+
+# 9. If you recorded more than one goal/revisit for this site, roll them up
+python3 dpa.py report-site example-shop.com
+```
+
+Every step is idempotent (safe to re-run any time) and takes `--config <path>`
+for a non-default `config.yaml`. Every artifact written to
+`storage/<episode_id>/` is already privacy-masked before it touches disk.
+
+### Legacy v1 pipeline (`audit.py`)
+
+Superseded by the `dpa.py record` flow above (no privacy masking, no
+attribute agents, no region-grouped findings) but still functional — see
+`ARCHITECTURE.md` for what it does and doesn't do.
 
 **URL list mode** (visits a fixed list of pages, no clicking):
 
@@ -121,12 +189,6 @@ python3 audit.py \
   --industry ecommerce \
   --output output_my_audit.json
 ```
-
-- `--urls` — comma-separated list, visited in order (required unless `--interactive`)
-- `--audit-id` — optional; defaults to an auto-generated timestamp
-- `--domain` — required
-- `--industry` — required (e.g. `ecommerce`, `saas`, `subscription_streaming`)
-- `--output` — optional; defaults to `output_{audit-id}.json`
 
 **Interactive mode** (you browse a real site by hand; every navigation and click is captured automatically):
 

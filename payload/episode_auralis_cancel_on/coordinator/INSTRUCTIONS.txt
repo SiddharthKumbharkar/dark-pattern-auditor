@@ -17,7 +17,9 @@ Role:       coordinator
 
 To fold this response into the stored episode, run:
   python3 ingest_response.py <episode_id> --role coordinator --file response.json --model "<model name>" --operator "<your name>"
-This validates the response against response_schema.json and writes it into episode.mechanism_verdict.entries alongside model_name/prompt_version/ingested_at/operator.
+This validates the response against response_schema.json and writes it into episode.mechanism_verdict.entries alongside model_name/prompt_version/ingested_at/operator. Then run:
+  python3 build_output.py <episode_id>
+to compute overall_verdict/coverage/top_findings/summary -- those are generated from episode.attributes.results wholesale, not part of this response, so build-output must run (and re-run after any later re-ingest) for them to reflect this pattern_combinations pass.
 
 This payload was assembled entirely offline (no API was called to build
-it) -- prompt_version=coordinator_prompt.v1, built_at=2026-07-29T03:15:45.462641+00:00.
+it) -- prompt_version=coordinator_prompt.v1, built_at=2026-08-04T04:25:48.289201+00:00.

@@ -43,9 +43,11 @@ import shutil
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
-from attribute_agents.base import ATTRIBUTES
+from attribute_agents.base import ATTRIBUTES, build_region_map, enrich_evidence_pointers
 from config.settings import PROJECT_ROOT, TOOL_VERSION
+from config.ui_regions import REGION_IDS
 from journey.schema_migration import load_episode
+from journey.verdict_output_builder import compute_region_groups, select_authoritative_verdicts
 from recorder.interactive_v2 import EPISODE_FILENAME
 
 ROLES = ("triage", "attribute", "coordinator")
@@ -323,7 +325,8 @@ def build_attribute_evidence_summary(episode: Dict, group_evidence: Optional[Dic
     code_result = _find_code_agent_result(episode, attribute)
     if code_result:
         pointers.extend(code_result["evidence_pointers"])
-    pointers = _dedup_pointers(pointers)
+    region_map = build_region_map(episode)
+    pointers = _dedup_pointers(enrich_evidence_pointers(pointers, region_map))
 
     step_ids = sorted({p["step_id"] for p in pointers if p["step_id"] is not None})
 
@@ -340,10 +343,19 @@ def build_attribute_evidence_summary(episode: Dict, group_evidence: Optional[Dic
 
 def _build_coordinator(episode: Dict) -> Tuple[Dict, List[int]]:
     results = ((episode.get("attributes") or {}).get("results")) or []
+    # select_authoritative_verdicts prefers an already-ingested Stage-2
+    # attribute-role verdict over the code agent's own result -- the
+    # coordinator should group/name patterns off whichever verdict is
+    # actually authoritative, same as journey/verdict_output_builder.py's
+    # build_output() does for the final computed output.
+    verdicts = select_authoritative_verdicts(episode)
+    grouping = compute_region_groups(verdicts)
     summary = {
         **_episode_header(episode),
         "outcome": episode.get("outcome") or {},
         "attribute_results": results,
+        "region_groups": grouping["region_groups"],
+        "page_level_co_occurrence": grouping["page_level_co_occurrence"],
     }
 
     pointers: List[Dict] = []
@@ -402,11 +414,28 @@ def _evidence_pointer_schema() -> Dict:
     return {
         "type": "object",
         "additionalProperties": False,
-        "required": ["step_id", "selector", "signal"],
+        "required": ["step_id", "selector", "ui_region", "signal"],
         "properties": {
             "step_id": {"type": ["integer", "null"]},
             "selector": {"type": ["string", "null"]},
-            "signal": {"type": "string", "minLength": 1},
+            "ui_region": {
+                "enum": list(REGION_IDS),
+                "description": (
+                    "Copy this from the matching pointer's ui_region already shown to you in "
+                    "evidence_summary.json -- never invent one. If you're pointing at something not "
+                    "already tagged there, use \"unclassified\"."
+                ),
+            },
+            "signal": {
+                "type": "string",
+                "minLength": 1,
+                "description": (
+                    "Which measurement/observation this points at. If this specific claim rests on "
+                    "something you saw in an attached screenshot (not a measured field in "
+                    "evidence_summary.json), prefix it \"screenshot_visual_inspection\" -- see "
+                    "response_schema.json's top-level note on visual claims."
+                ),
+            },
         },
     }
 
@@ -422,6 +451,13 @@ def _attribute_response_schema(attribute: str) -> Dict:
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": f"AttributeResult judgement for '{attribute}' (Stage 2, LLM)",
+        "description": (
+            "Visual claims: if `reasoning` describes what a screenshot shows (color, legibility, "
+            "layout, contrast, etc.), you MUST either (a) include at least one evidence_pointers "
+            "entry whose signal is prefixed \"screenshot_visual_inspection\", or (b) set "
+            "visual_claim_unverified: true. A response with a visual claim and neither is rejected "
+            "at ingest -- see journey/mechanism_verdict_ingest.py."
+        ),
         "type": "object",
         "additionalProperties": False,
         "required": ["attribute", "verdict", "severity", "confidence", "evidence_pointers", "reasoning"],
@@ -432,6 +468,10 @@ def _attribute_response_schema(attribute: str) -> Dict:
             "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
             "evidence_pointers": {"type": "array", "items": _evidence_pointer_schema()},
             "reasoning": {"type": "string", "minLength": 1},
+            "visual_claim_unverified": {
+                "type": "boolean",
+                "description": "Optional. Set true if reasoning makes a visual claim you cannot ground in an image-sourced evidence_pointers entry.",
+            },
         },
     }
 
@@ -466,30 +506,54 @@ def _triage_response_schema() -> Dict:
 
 
 def _coordinator_response_schema() -> Dict:
+    """overall_verdict/top_findings/human_review_recommended/summary are
+    deliberately NOT part of this schema -- those are computed
+    mechanically from episode.attributes.results by
+    journey/verdict_output_builder.py::build_output() (the build-output
+    CLI), never hand-authored, so they can never drift into a thinner
+    shape than the verdicts they're derived from (see the task's Issue 1).
+    What's left for the coordinator to actually judge is the one genuinely
+    interpretive question a fixed rule can't answer: given attributes that
+    co-occur in the SAME ui_region (evidence_summary.json's region_groups,
+    already computed and given to you), what named pattern does that
+    combination amount to?
+    """
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Coordinator response (pastes into episode.mechanism_verdict)",
+        "description": (
+            "Ground every pattern_combinations entry in evidence_summary.json's region_groups -- "
+            "its ui_region and attributes must exactly match (or be a subset of) one region_groups "
+            "entry. Do not invent a region or an attribute that isn't already listed there; do not "
+            "combine attributes from page_level_co_occurrence into a named pattern -- page-level-only "
+            "co-occurrence is a weak signal, not a combination. A pattern_combinations entry has no "
+            "evidence_pointers of its own, so if `description` makes a visual claim you MUST set "
+            "visual_claim_unverified: true -- there is no image-sourced-pointer escape hatch here "
+            "the way there is for the attribute prompt."
+        ),
         "type": "object",
         "additionalProperties": False,
-        "required": ["overall_verdict", "top_findings", "human_review_recommended", "summary"],
+        "required": ["pattern_combinations"],
         "properties": {
-            "overall_verdict": {"enum": ["dark_patterns_present", "none_detected", "insufficient_data"]},
-            "top_findings": {
+            "pattern_combinations": {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "additionalProperties": False,
-                    "required": ["attribute", "verdict", "severity", "summary"],
+                    "required": ["ui_region", "attributes", "pattern_name", "description"],
                     "properties": {
-                        "attribute": {"enum": list(ATTRIBUTES)},
-                        "verdict": {"enum": ["fires", "unsure"]},
-                        "severity": {"anyOf": [{"type": "integer", "minimum": 1, "maximum": 5}, {"type": "null"}]},
-                        "summary": {"type": "string", "minLength": 1},
+                        "ui_region": {"enum": list(REGION_IDS)},
+                        "attributes": {
+                            "type": "array",
+                            "minItems": 2,
+                            "items": {"enum": list(ATTRIBUTES)},
+                        },
+                        "pattern_name": {"type": "string", "minLength": 1},
+                        "description": {"type": "string", "minLength": 1},
+                        "visual_claim_unverified": {"type": "boolean"},
                     },
                 },
             },
-            "human_review_recommended": {"type": "boolean"},
-            "summary": {"type": "string", "minLength": 1},
         },
     }
 
@@ -544,7 +608,12 @@ _INSTRUCTIONS_TAIL = {
         "  python3 ingest_response.py <episode_id> --role coordinator --file response.json "
         '--model "<model name>" --operator "<your name>"\n'
         "This validates the response against response_schema.json and writes it into "
-        "episode.mechanism_verdict.entries alongside model_name/prompt_version/ingested_at/operator."
+        "episode.mechanism_verdict.entries alongside model_name/prompt_version/ingested_at/operator. "
+        "Then run:\n"
+        "  python3 build_output.py <episode_id>\n"
+        "to compute overall_verdict/coverage/top_findings/summary -- those are generated from "
+        "episode.attributes.results wholesale, not part of this response, so build-output must run "
+        "(and re-run after any later re-ingest) for them to reflect this pattern_combinations pass."
     ),
 }
 

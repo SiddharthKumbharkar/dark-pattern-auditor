@@ -19,6 +19,14 @@ evidence_pointers, reasoning}. run_agent() below fills in
   3. every raw result is validated against the full contract shape
      before any of the above -- a malformed agent result raises
      ContractViolation rather than being silently accepted.
+  4. every surviving evidence_pointer is stamped with the ui_region the
+     evidence extractor already assigned its (step_id, selector) --
+     agents never classify a region themselves, see build_region_map.
+  5. a code agent's reasoning may never read like it inspected a
+     screenshot -- code agents are never given one, so that would always
+     be a bug in the agent, not a legitimate finding (see
+     signals/visual_claims.py). Stage-2 LLM verdicts are checked
+     separately, more leniently, by journey/mechanism_verdict_ingest.py.
 
 Agents are pure functions of (episode, group_evidence, baselines): no
 file I/O happens inside assess() or run_agent() -- the caller
@@ -28,7 +36,9 @@ file I/O happens inside assess() or run_agent() -- the caller
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from config.ui_regions import UNCLASSIFIED_REGION
 from journey.baselines import BaselineStore
+from signals.visual_claims import has_visual_claim
 
 ATTRIBUTES = (
     "asymmetry",
@@ -41,6 +51,16 @@ ATTRIBUTES = (
 )
 VERDICTS = ("fires", "no", "unsure", "not_assessable")
 AGENT_TYPES = ("code", "llm")
+
+# The one, single-sourced string every Stage-2-only stub agent
+# (attribute_agents/{covertness,information_hiding,disparate_treatment}.py)
+# returns as its not_assessable reasoning -- centralized here (rather than
+# each stub file defining its own copy) so downstream coverage computation
+# (journey/verdict_output_builder.py) can reliably tell "genuinely
+# stubbed, pending Stage 2" apart from "a real code agent tried and
+# couldn't assess this episode" by an exact string match, without three
+# separate literals that could silently drift apart.
+STAGE2_STUB_REASON = "requires LLM judgement — Stage 2"
 
 AssessFn = Callable[[Dict, Optional[Dict], BaselineStore], Dict]
 
@@ -116,6 +136,33 @@ def _missing_signals(agent: AttributeAgent, episode: Dict, group_evidence: Optio
     return [path for path in agent.required_signals if _is_missing(_resolve_path(episode, group_evidence, path))]
 
 
+def build_region_map(episode: Dict) -> Dict[Tuple[Optional[int], Optional[str]], str]:
+    """(step_id, selector) -> region, from episode.evidence.ui_regions --
+    the ONE lookup every evidence_pointer's ui_region is stamped from,
+    shared with llm/payload_builder.py's evidence_summary builder so an
+    LLM-facing payload and a code agent's own result tag the exact same
+    element the exact same way. Never populated by an agent; always by
+    signals/ui_regions.py via journey/evidence_extractor.py, ahead of
+    every agent run.
+    """
+    tags = (episode.get("evidence") or {}).get("ui_regions") or []
+    return {(tag["step_id"], tag["selector"]): tag["region"] for tag in tags}
+
+
+def enrich_evidence_pointers(pointers: List[Dict], region_map: Dict[Tuple[Optional[int], Optional[str]], str]) -> List[Dict]:
+    """Stamps ui_region onto every pointer from `region_map`, defaulting to
+    "unclassified" -- never invented, never left off. A pointer with no
+    selector (many group-evidence-sourced pointers, e.g.
+    deception.py's claim_persistence pointers) has no element to look up,
+    so it is honestly "unclassified" too, same as a selector the region
+    tagger never saw."""
+    enriched = []
+    for pointer in pointers:
+        region = region_map.get((pointer.get("step_id"), pointer.get("selector")), UNCLASSIFIED_REGION)
+        enriched.append({**pointer, "ui_region": region})
+    return enriched
+
+
 def _validate_evidence_pointer(pointer: Dict) -> None:
     if not isinstance(pointer, dict):
         raise ContractViolation(f"evidence_pointers entries must be objects, got {pointer!r}")
@@ -160,6 +207,13 @@ def run_agent(
         raw = agent.assess(episode, group_evidence, baselines)
         _validate_raw_result(raw)
 
+        if agent.agent_type == "code" and has_visual_claim(raw["reasoning"]):
+            raise ContractViolation(
+                f"{agent.agent_id}: reasoning reads like it inspected a screenshot "
+                f"({raw['reasoning']!r}), but code agents are never given one -- this is a bug "
+                f"in the agent, not a legitimate finding (see signals/visual_claims.py)."
+            )
+
         if raw["verdict"] in ("fires", "unsure") and not raw["evidence_pointers"]:
             warning = (
                 f"{agent.agent_id}: verdict={raw['verdict']!r} with empty evidence_pointers -- "
@@ -171,12 +225,13 @@ def run_agent(
             raw["verdict"] = "no"
             raw["severity"] = None
 
+    region_map = build_region_map(episode)
     result = {
         "attribute": agent.attribute,
         "verdict": raw["verdict"],
         "severity": raw["severity"],
         "confidence": raw["confidence"],
-        "evidence_pointers": raw["evidence_pointers"],
+        "evidence_pointers": enrich_evidence_pointers(raw["evidence_pointers"], region_map),
         "reasoning": raw["reasoning"],
         "agent_version": agent.agent_version,
         "agent_type": agent.agent_type,

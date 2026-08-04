@@ -30,11 +30,13 @@ from typing import Dict, List, Optional
 
 from jsonschema import Draft202012Validator
 
-from attribute_agents.base import ATTRIBUTES
+from attribute_agents.base import ATTRIBUTES, build_region_map
 from config.settings import PROJECT_ROOT
 from journey.schema_migration import load_episode, validate_mechanism_verdict, validate_v2
+from journey.verdict_output_builder import compute_region_groups, select_authoritative_verdicts
 from llm.payload_builder import ROLES
 from recorder.interactive_v2 import EPISODE_FILENAME
+from signals.visual_claims import has_visual_claim, pointer_is_image_sourced
 
 
 class IngestError(ValueError):
@@ -89,6 +91,128 @@ def validate_evidence_pointers(response: Dict, valid_step_ids: set) -> List[str]
             errors.append(
                 f"evidence_pointers[{i}].step_id: {step_id} does not exist in this episode "
                 f"(known step_ids: {sorted(valid_step_ids)}) -- fabricated pointer rejected."
+            )
+    return errors
+
+
+def validate_evidence_pointer_regions(response: Dict, region_map: Dict) -> List[str]:
+    """role=attribute only: each evidence_pointer's ui_region must match
+    the region signals/ui_regions.py already assigned that exact
+    (step_id, selector) -- a human or model claiming a DIFFERENT region
+    than the extractor's own tag is exactly the "agents read the region,
+    they do not invent it" rule, applied to a Stage-2 response the same
+    way it's applied to a code agent's own evidence_pointers (see
+    attribute_agents/base.py's enrich_evidence_pointers, the one other
+    place this same lookup is used)."""
+    pointers = response.get("evidence_pointers")
+    if not isinstance(pointers, list):
+        return []
+    errors = []
+    for i, pointer in enumerate(pointers):
+        if not isinstance(pointer, dict):
+            continue
+        claimed = pointer.get("ui_region")
+        expected = region_map.get((pointer.get("step_id"), pointer.get("selector")), "unclassified")
+        if claimed != expected:
+            errors.append(
+                f"evidence_pointers[{i}].ui_region: {claimed!r} does not match the region already "
+                f"assigned to (step_id={pointer.get('step_id')!r}, selector={pointer.get('selector')!r}) "
+                f"by the evidence extractor ({expected!r}) -- regions are read from the extractor's "
+                f"tagging, never invented."
+            )
+    return errors
+
+
+def _screenshots_supplied(payload_dir: str) -> bool:
+    manifest_path = os.path.join(payload_dir, "manifest.json")
+    if not os.path.isfile(manifest_path):
+        return False
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    return bool(manifest.get("screenshot_step_mapping"))
+
+
+def validate_visual_claims_attribute(response: Dict, screenshots_supplied: bool) -> List[str]:
+    """role=attribute: a `reasoning` that reads like it inspected a
+    screenshot (see signals/visual_claims.py) must be grounded -- either a
+    screenshot_visual_inspection-prefixed evidence_pointer, or an explicit
+    visual_claim_unverified: true. If NO screenshot was even included in
+    this payload (manifest.json's screenshot_step_mapping is empty), a
+    visual claim is unambiguously fabricated -- rejected regardless of
+    either flag, since there is nothing it could legitimately be
+    grounded in."""
+    reasoning = response.get("reasoning") or ""
+    if not has_visual_claim(reasoning):
+        return []
+
+    if not screenshots_supplied:
+        return [
+            "reasoning: makes a visual claim (references what a screenshot shows) but this payload's "
+            "manifest.json shows zero screenshots were included -- fabricated visual grounding, rejected."
+        ]
+
+    pointers = response.get("evidence_pointers") or []
+    image_sourced = any(isinstance(p, dict) and pointer_is_image_sourced(p) for p in pointers)
+    if image_sourced or response.get("visual_claim_unverified") is True:
+        return []
+
+    return [
+        "reasoning: makes a visual claim but no evidence_pointers entry is image-sourced "
+        "(signal prefixed \"screenshot_visual_inspection\") and visual_claim_unverified is not "
+        "set to true -- do not silently trust an ungrounded visual claim."
+    ]
+
+
+def validate_visual_claims_coordinator(response: Dict) -> List[str]:
+    """role=coordinator: pattern_combinations entries have no
+    evidence_pointers of their own, so the only grounding available for a
+    visual claim in `description` is the explicit flag -- no
+    image-sourced-pointer escape hatch here (see
+    llm/payload_builder.py's _coordinator_response_schema docstring)."""
+    errors = []
+    for i, combination in enumerate(response.get("pattern_combinations") or []):
+        if not isinstance(combination, dict):
+            continue
+        description = combination.get("description") or ""
+        if has_visual_claim(description) and combination.get("visual_claim_unverified") is not True:
+            errors.append(
+                f"pattern_combinations[{i}].description: makes a visual claim but "
+                f"visual_claim_unverified is not set to true -- a pattern_combinations entry has no "
+                f"evidence_pointers to ground it in any other way."
+            )
+    return errors
+
+
+def validate_pattern_combinations_grounded(response: Dict, episode: Dict) -> List[str]:
+    """role=coordinator: every (ui_region, attributes) pair must exactly
+    match, or be a strict subset of, one of the region_groups
+    journey/verdict_output_builder.py's compute_region_groups already
+    computed for this episode -- the coordinator names/describes a
+    combination, it does not get to invent which attributes co-occurred
+    where."""
+    combinations = response.get("pattern_combinations")
+    if not isinstance(combinations, list) or not combinations:
+        return []
+
+    verdicts = select_authoritative_verdicts(episode)
+    computed_groups = compute_region_groups(verdicts)["region_groups"]
+    allowed_by_region: Dict[str, set] = {}
+    for group in computed_groups:
+        allowed_by_region.setdefault(group["ui_region"], set()).update(group["attributes"])
+
+    errors = []
+    for i, combination in enumerate(combinations):
+        if not isinstance(combination, dict):
+            continue
+        region = combination.get("ui_region")
+        attributes = set(combination.get("attributes") or [])
+        allowed = allowed_by_region.get(region, set())
+        invented = attributes - allowed
+        if invented:
+            errors.append(
+                f"pattern_combinations[{i}]: attributes {sorted(invented)} were not computed as "
+                f"co-occurring in ui_region {region!r} (region_groups only has {sorted(allowed)} there) "
+                f"-- do not invent a combination beyond what evidence_summary.json's region_groups supplied."
             )
     return errors
 
@@ -192,6 +316,22 @@ def ingest_response(
     pointer_errors = validate_evidence_pointers(response, valid_step_ids)
     if pointer_errors:
         raise IngestError(pointer_errors)
+
+    region_errors = validate_evidence_pointer_regions(response, build_region_map(episode))
+    if region_errors:
+        raise IngestError(region_errors)
+
+    if role == "attribute":
+        visual_errors = validate_visual_claims_attribute(response, _screenshots_supplied(payload_dir))
+    elif role == "coordinator":
+        visual_errors = validate_visual_claims_coordinator(response)
+        visual_errors += validate_pattern_combinations_grounded(response, episode)
+    else:
+        visual_errors = []
+    if visual_errors:
+        for error in visual_errors:
+            print(f"  Warning (rejected): {error}")
+        raise IngestError(visual_errors)
 
     prompt_version = _prompt_version_used(payload_dir)
 

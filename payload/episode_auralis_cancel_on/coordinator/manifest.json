@@ -4,7 +4,7 @@
   "attribute": null,
   "prompt_version": "coordinator_prompt.v1",
   "prompt_file": "prompts/coordinator_prompt.v1.txt",
-  "built_at": "2026-07-29T03:15:45.462641+00:00",
+  "built_at": "2026-08-04T04:25:48.289201+00:00",
   "tool_version": "0.1.0",
   "metadata": {
     "episode_id": "episode_auralis_cancel_on",
@@ -40,18 +40,18 @@
     }
   ],
   "token_estimate": {
-    "text_chars": 11887,
-    "estimated_tokens": 2972,
+    "text_chars": 15690,
+    "estimated_tokens": 3922,
     "screenshot_count": 5,
     "method": "chars/4 heuristic over prompt.txt + evidence_summary.json + response_schema.json. Approximate, model-agnostic; excludes per-model image-token cost for the screenshot_count attachments -- that varies by vendor/resolution and isn't computable without calling an API, which this tool never does."
   },
   "checksum": {
     "algorithm": "sha256",
-    "combined": "1a411800df35789d4a9687e9ca7e0deeff9054ef256bca865a4f2cceac73c84e",
+    "combined": "8ade1117055cc210ba81bf5dd9ce03b3b3d607439cfcd71285e3122358b5a221",
     "files": {
-      "prompt.txt": "e949cadec9f42e8d9062a3ab5fc3043426ab3b36332c99b8c7e6eaadfe2ed42e",
-      "evidence_summary.json": "c23d5714635808d49859db8b981f8bd878e2558ee0c3f5e4f5a9c03d58ab41fd",
-      "response_schema.json": "2f4d1ab5c960a8b564b820f19df265960c911569e9df27c46cb489c98a6a2f47",
+      "prompt.txt": "2de181064547d99e9d0b1ed0cf15cadae81b673ba7f739494a1208cb5aab3140",
+      "evidence_summary.json": "8ad519e42021035424c18eb7f71fb54c337bae2b9a096d368b460e77fa80d94b",
+      "response_schema.json": "7f6785aef6bb69cb3d20494f9827319c957feea741da5c6a332ff6d801af721b",
       "screenshots/step_001_masked.png": "c5a2afd45d61ddf5eb39e48c842bda8efb25b493d6f38ad86c76eaea64a10b21",
       "screenshots/step_003_masked.png": "1c49195632806a8dd822fbe6b79406604adca1f19bace6dcb3eb31ee6fe09809",
       "screenshots/step_004_masked.png": "2d1dbbe04079eaa0f9c0fd07cfe733eb77eba80953612ebf1b395e587b424c38",

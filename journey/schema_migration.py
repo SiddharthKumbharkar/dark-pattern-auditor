@@ -103,6 +103,20 @@ def validate_mechanism_verdict(doc: dict) -> List[str]:
     return _sorted_errors(validator, doc)
 
 
+def validate_computed_output(doc: dict) -> List[str]:
+    """Returns a list of human-readable field-level errors (empty if
+    valid). Validates just the {builder_version, verdicts, coverage, ...}
+    shape journey/verdict_output_builder.py produces and build_output.py
+    writes into episode.mechanism_verdict.computed_output, against the
+    #/$defs/ComputedOutput def inside mechanism_verdict.v1.schema.json --
+    same file as validate_mechanism_verdict, different sub-schema, since
+    computed_output is optional there and ingest-response never writes it."""
+    schema = _load_json(MECHANISM_VERDICT_SCHEMA_PATH)
+    computed_output_schema = {**schema["$defs"]["ComputedOutput"], "$defs": schema["$defs"]}
+    validator = Draft202012Validator(computed_output_schema)
+    return _sorted_errors(validator, doc)
+
+
 def _operator_from_sibling_manifest(episode_path: str) -> Optional[str]:
     manifest_path = os.path.join(os.path.dirname(episode_path), MANIFEST_FILENAME)
     if not os.path.isfile(manifest_path):

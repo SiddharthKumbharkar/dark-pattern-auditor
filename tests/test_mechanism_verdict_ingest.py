@@ -132,8 +132,13 @@ VALID_ASYMMETRY_RESPONSE = {
     "verdict": "fires",
     "severity": 4,
     "confidence": 0.9,
-    "evidence_pointers": [{"step_id": 1, "selector": "#accept-btn", "signal": "screenshot_contrast"}],
-    "reasoning": "Accept is large/high-contrast; reject is tiny and washed out.",
+    # #accept-btn sits under the signup fixture's "Create your account" H1,
+    # whose text signals/ui_regions.py's keyword match picks up as ancestor
+    # context -- "account" matches account_settings, so that's the region
+    # the extractor actually assigns here. This response's ui_region must
+    # match that exactly (Issue 2: never invented) for ingest to accept it.
+    "evidence_pointers": [{"step_id": 1, "selector": "#accept-btn", "ui_region": "account_settings", "signal": "measured_contrast"}],
+    "reasoning": "Accept has a much higher measured contrast ratio than reject; reject's font_size_px is also far smaller.",
 }
 
 
@@ -195,8 +200,8 @@ def test_different_attributes_accumulate_independently(pipeline, tmp_path):
     asym_path = _write(tmp_path, "asym.json", VALID_ASYMMETRY_RESPONSE)
     cov_path = _write(tmp_path, "cov.json", {
         "attribute": "covertness", "verdict": "fires", "severity": 3, "confidence": 0.6,
-        "evidence_pointers": [{"step_id": 1, "selector": "#reject-btn", "signal": "screenshot_contrast"}],
-        "reasoning": "Reject option looks deliberately hard to notice.",
+        "evidence_pointers": [{"step_id": 1, "selector": "#reject-btn", "ui_region": "account_settings", "signal": "measured_contrast"}],
+        "reasoning": "Reject option is measurably harder to notice than accept.",
     })
     ingest_response(pipeline["signup_dir"], role="attribute", response_file=asym_path,
                      model_name="m", operator="sid", storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"])
@@ -207,14 +212,12 @@ def test_different_attributes_accumulate_independently(pipeline, tmp_path):
 
 
 def test_coordinator_role_ingests_into_mechanism_verdict_with_null_attribute(pipeline, tmp_path):
-    response = {
-        "overall_verdict": "dark_patterns_present",
-        "top_findings": [
-            {"attribute": "deception", "verdict": "fires", "severity": 3, "summary": "cancel fired no request"},
-        ],
-        "human_review_recommended": True,
-        "summary": "Cancel flow shows real friction and a possibly non-functional cancel action.",
-    }
+    # overall_verdict/top_findings/human_review_recommended/summary are no
+    # longer part of the coordinator's response (Issue 1) -- those are
+    # computed by build_output.py from episode.attributes.results. The
+    # coordinator's job is just pattern_combinations, which may legitimately
+    # be empty (no region_groups worth naming as a pattern here).
+    response = {"pattern_combinations": []}
     response_path = _write(tmp_path, "coord.json", response)
     episode = ingest_response(
         pipeline["cancel_dir"], role="coordinator", response_file=response_path,
@@ -224,7 +227,7 @@ def test_coordinator_role_ingests_into_mechanism_verdict_with_null_attribute(pip
     entry = episode["mechanism_verdict"]["entries"][0]
     assert entry["role"] == "coordinator"
     assert entry["attribute"] is None
-    assert entry["raw_response"]["overall_verdict"] == "dark_patterns_present"
+    assert entry["raw_response"]["pattern_combinations"] == []
 
 
 def test_triage_role_ingests_into_mechanism_verdict_with_null_attribute(pipeline, tmp_path):
@@ -307,7 +310,7 @@ def test_fires_with_empty_evidence_pointers_is_rejected_by_schema(pipeline, tmp_
 
 def test_fabricated_step_id_in_evidence_pointers_is_rejected(pipeline, tmp_path):
     bad = dict(VALID_ASYMMETRY_RESPONSE)
-    bad["evidence_pointers"] = [{"step_id": 9999, "selector": "#nope", "signal": "made_up"}]
+    bad["evidence_pointers"] = [{"step_id": 9999, "selector": "#nope", "ui_region": "account_settings", "signal": "made_up"}]
     response_path = _write(tmp_path, "bad.json", bad)
     with pytest.raises(IngestError, match="does not exist in this episode"):
         ingest_response(
@@ -321,7 +324,9 @@ def test_null_step_id_in_evidence_pointers_is_not_treated_as_fabricated(pipeline
     # null step_id is legitimate for group-level evidence (see
     # EvidencePointer's schema docstring) -- must not be rejected.
     ok = dict(VALID_ASYMMETRY_RESPONSE)
-    ok["evidence_pointers"] = [{"step_id": None, "selector": None, "signal": "friction_metrics.friction_ratio"}]
+    # a null selector has no element to look a region up for -- must claim
+    # "unclassified", not whatever region a nearby real element happens to have.
+    ok["evidence_pointers"] = [{"step_id": None, "selector": None, "ui_region": "unclassified", "signal": "friction_metrics.friction_ratio"}]
     response_path = _write(tmp_path, "ok.json", ok)
     episode = ingest_response(
         pipeline["signup_dir"], role="attribute", response_file=response_path,

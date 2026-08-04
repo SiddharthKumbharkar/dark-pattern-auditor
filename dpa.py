@@ -51,6 +51,7 @@ COMMAND_TABLE = {
     "update-baselines":        ("update_baselines", [], "Recompute baselines.json from labelled-clean episodes"),
     "build-payload":           ("build_payload", [], "Assemble an offline LLM payload for one episode/role"),
     "ingest-response":         ("ingest_response", [], "Ingest a manually-pasted LLM response.json"),
+    "build-output":            ("build_output", [], "Compute the unified audit output (overall verdict + region-grouped findings)"),
     "compare-verdicts":        ("compare_verdicts", [], "Reconcile code-agent vs manually-ingested LLM verdicts"),
     "export-for-annotation":   ("export_for_annotation", [], "Flat episode/attribute export for human annotation"),
     "validate-against-truth":  ("validate_against_truth", [], "Compare an episode against ground_truth.yaml"),

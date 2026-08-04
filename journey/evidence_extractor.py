@@ -26,6 +26,7 @@ from signals.friction import compute_friction_metrics
 from signals.path_deviation import compute_path_deviation
 from signals.price_drift import compute_price_drift
 from signals.stated_vs_actual import find_stated_vs_actual
+from signals.ui_regions import compute_ui_regions
 from signals.visual_asymmetry import compute_visual_asymmetry
 
 EXTRACTOR_VERSION = "evidence_extractor/1.0.0"
@@ -127,6 +128,11 @@ def extract_evidence(episode_path: str, storage_dir: Optional[str] = None) -> Di
 
     stated_vs_actual = find_stated_vs_actual(steps, computed_styles_by_step_id)
 
+    # Region tagging runs here -- BEFORE any attribute agent -- so every
+    # agent (and the coordinator) reads a region off an evidence_pointer
+    # rather than classifying one itself. See signals/ui_regions.py.
+    ui_regions = compute_ui_regions(steps, dom_htmls, computed_styles)
+
     evidence = {
         "extractor_version": EXTRACTOR_VERSION,
         "extracted_at": datetime.now(timezone.utc).isoformat(),
@@ -137,6 +143,7 @@ def extract_evidence(episode_path: str, storage_dir: Optional[str] = None) -> Di
         "path_deviation": path_deviation,
         "complexity_metrics": complexity_metrics,
         "stated_vs_actual": stated_vs_actual,
+        "ui_regions": ui_regions,
     }
 
     episode["evidence"] = evidence

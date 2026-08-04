@@ -232,3 +232,71 @@ def test_not_assessable_result_shape():
     assert result["verdict"] == "not_assessable"
     assert result["confidence"] == 0.0
     assert result["evidence_pointers"] == []
+
+
+# -- ui_region enrichment (Issue 2): agents never classify, the framework does --
+
+
+def test_evidence_pointer_is_stamped_with_the_region_the_extractor_assigned(baselines):
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": 4, "selector": "#cancel-link", "signal": "test.signal"}],
+        "reasoning": "measured finding",
+    })
+    episode = {"evidence": {"ui_regions": [{"step_id": 4, "selector": "#cancel-link", "region": "cancellation_flow"}]}}
+    result, _ = run_agent(agent, episode, None, baselines)
+    assert result["evidence_pointers"][0]["ui_region"] == "cancellation_flow"
+
+
+def test_evidence_pointer_with_no_matching_tag_defaults_to_unclassified(baselines):
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": 1, "selector": "#unknown", "signal": "test.signal"}],
+        "reasoning": "measured finding",
+    })
+    result, _ = run_agent(agent, {}, None, baselines)
+    assert result["evidence_pointers"][0]["ui_region"] == "unclassified"
+
+
+def test_evidence_pointer_with_null_selector_defaults_to_unclassified(baselines):
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": None, "selector": None, "signal": "group.signal"}],
+        "reasoning": "measured finding",
+    })
+    episode = {"evidence": {"ui_regions": [{"step_id": 4, "selector": "#x", "region": "cancellation_flow"}]}}
+    result, _ = run_agent(agent, episode, None, baselines)
+    assert result["evidence_pointers"][0]["ui_region"] == "unclassified"
+
+
+def test_downgraded_no_result_has_no_pointers_to_enrich(baselines):
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 4, "confidence": 0.9, "evidence_pointers": [], "reasoning": "bug",
+    })
+    result, warnings = run_agent(agent, {}, None, baselines)
+    assert result["verdict"] == "no"
+    assert result["evidence_pointers"] == []
+    assert warnings
+
+
+# -- hard rule: a code agent's reasoning may never read like it inspected a screenshot (Issue 4) --
+
+
+def test_code_agent_visual_language_in_reasoning_raises_contract_violation(baselines):
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": 1, "selector": "#x", "signal": "test.signal"}],
+        "reasoning": "the screenshot shows the button is clearly legible against the background",
+    })
+    with pytest.raises(ContractViolation):
+        run_agent(agent, {}, None, baselines)
+
+
+def test_code_agent_measured_language_is_fine(baselines):
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": 1, "selector": "#x", "signal": "test.signal"}],
+        "reasoning": "contrast_ratio=1.2 is below the required threshold of 3.0",
+    })
+    result, _ = run_agent(agent, {}, None, baselines)
+    assert result["verdict"] == "fires"

@@ -279,7 +279,30 @@
         "price_drift": { "$ref": "#/$defs/PriceDrift" },
         "path_deviation": { "type": "array", "items": { "$ref": "#/$defs/PathDeviationEvent" } },
         "complexity_metrics": { "$ref": "#/$defs/ComplexityMetrics" },
-        "stated_vs_actual": { "type": "array", "items": { "$ref": "#/$defs/StatedVsActualEntry" } }
+        "stated_vs_actual": { "type": "array", "items": { "$ref": "#/$defs/StatedVsActualEntry" } },
+        "ui_regions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/UiRegionTag" },
+          "description": "One entry per interactive element recorder/evidence_probe.py captured, tagged by signals/ui_regions.py BEFORE any attribute agent runs -- see attribute_agents/base.py's build_region_map, the only place downstream that reads this. Added after v2's initial release -- additive, same schema_version:2."
+        }
+      }
+    },
+
+    "UiRegionTag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "selector", "region"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "selector": { "type": "string", "minLength": 1 },
+        "region": {
+          "enum": [
+            "cookie_consent_banner", "checkout_price_summary", "cancellation_flow",
+            "signup_form", "login_form", "newsletter_modal", "addon_upsell",
+            "account_settings", "retention_offer", "unclassified"
+          ],
+          "description": "Must exactly match config.ui_regions.REGION_IDS -- kept as a duplicated enum (same pattern as AttributeResult.attribute duplicating attribute_agents.base.ATTRIBUTES) so schema validation doesn't need to import Python config at validate time."
+        }
       }
     },
 
@@ -462,14 +485,22 @@
     "EvidencePointer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["step_id", "selector", "signal"],
+      "required": ["step_id", "selector", "ui_region", "signal"],
       "properties": {
         "step_id": {
           "type": ["integer", "null"],
           "description": "Null for evidence sourced from group-level signals (claim_persistence, paired_flow_comparison, etc.), which span more than one episode/step and have no single step_id."
         },
         "selector": { "type": ["string", "null"] },
-        "signal": { "type": "string", "minLength": 1, "description": "Dot-path identifying which measurement this points at, e.g. \"visual_asymmetry.contrast_ratio\"." }
+        "ui_region": {
+          "enum": [
+            "cookie_consent_banner", "checkout_price_summary", "cancellation_flow",
+            "signup_form", "login_form", "newsletter_modal", "addon_upsell",
+            "account_settings", "retention_offer", "unclassified"
+          ],
+          "description": "Stamped by attribute_agents/base.py's build_region_map/enrich_evidence_pointers from episode.evidence.ui_regions -- never authored by an agent, never invented by an LLM (journey/mechanism_verdict_ingest.py rejects a Stage-2 response whose ui_region doesn't match the extractor's own tag for that (step_id, selector)). \"unclassified\" is the honest default when no region matched or selector is null."
+        },
+        "signal": { "type": "string", "minLength": 1, "description": "Dot-path identifying which measurement this points at, e.g. \"visual_asymmetry.contrast_ratio\". An image-sourced signal (the model actually looked at the attached screenshot for this specific claim) is prefixed \"screenshot_visual_inspection\" -- see signals/visual_claims.py." }
       }
     },
 
@@ -497,7 +528,11 @@
         },
         "reasoning": { "type": "string", "minLength": 1 },
         "agent_version": { "type": "string" },
-        "agent_type": { "enum": ["code", "llm"] }
+        "agent_type": { "enum": ["code", "llm"] },
+        "visual_claim_unverified": {
+          "type": "boolean",
+          "description": "OPTIONAL 9th field, present only when relevant. A Stage-2 LLM verdict whose reasoning makes a visual claim (see signals/visual_claims.py) must set this true UNLESS at least one evidence_pointer's signal is image-sourced (prefixed \"screenshot_visual_inspection\") -- journey/mechanism_verdict_ingest.py enforces the OR at ingest time. Absent (not false) for every code-agent result and every LLM result with no visual claim at all -- code agents structurally can never have this be true, see attribute_agents/base.py's hard visual-claim guard."
+        }
       }
     }
   }

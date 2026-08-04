@@ -100,6 +100,29 @@ def _resolve_pointers(result: Dict, computed_styles_by_step: Dict[int, List[Dict
     return resolved
 
 
+def _resolve_regions(computed_output: Optional[Dict], computed_styles_by_step: Dict[int, List[Dict]]) -> List[Dict]:
+    """Attaches a representative_step_id/representative_bounding_box to
+    each region (computed_output.regions, already built by
+    journey/episode_output_builder.py) so report_html.py can draw a
+    thumbnail without re-deriving anything -- the first step in the
+    region's own `steps` whose computed_styles has an element matching
+    representative_element wins."""
+    resolved = []
+    for region in (computed_output or {}).get("regions") or []:
+        selector = region.get("representative_element")
+        step_id, bounding_box = None, None
+        if selector:
+            for sid in region["steps"]:
+                match = next(
+                    (el for el in computed_styles_by_step.get(sid, []) if el.get("selector") == selector), None
+                )
+                if match is not None:
+                    step_id, bounding_box = sid, match["bounding_box"]
+                    break
+        resolved.append({**region, "representative_step_id": step_id, "representative_bounding_box": bounding_box})
+    return resolved
+
+
 def _boxes_by_step(attribute_sections: List[Dict]) -> Dict[int, List[Dict]]:
     """Groups resolved pointers with a real bounding_box by step_id, merging
     multiple pointers at the same (step_id, selector) into one overlay box
@@ -133,8 +156,15 @@ def build_report_data(episode: Dict, episode_dir: str) -> Dict:
     filmstrip = _build_filmstrip(episode, episode_dir)
     computed_styles_by_step = _computed_styles_by_step(episode, episode_dir)
 
+    computed_output = (episode.get("mechanism_verdict") or {}).get("computed_output")
+    # computed_output.verdicts is the authoritative, LLM-override-applied
+    # list once build-output has run; before that (or if it never has),
+    # fall back to the code agents' own raw episode.attributes.results so
+    # the report still renders something.
+    verdicts_source = computed_output["verdicts"] if computed_output else (episode.get("attributes") or {}).get("results") or []
+
     attribute_sections = []
-    for result in (episode.get("attributes") or {}).get("results") or []:
+    for result in verdicts_source:
         attribute_sections.append({
             **result,
             "resolved_pointers": _resolve_pointers(result, computed_styles_by_step),
@@ -151,4 +181,6 @@ def build_report_data(episode: Dict, episode_dir: str) -> Dict:
         "evidence": episode.get("evidence") or {},
         "attribute_sections": attribute_sections,
         "mechanism_verdict_entries": (episode.get("mechanism_verdict") or {}).get("entries") or [],
+        "overall": (computed_output or {}).get("overall"),
+        "regions": _resolve_regions(computed_output, computed_styles_by_step),
     }

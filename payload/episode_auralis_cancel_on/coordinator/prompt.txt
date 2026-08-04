@@ -10,10 +10,13 @@ INSTRUCTIONS.txt in this same directory for where to save it.
 ================================================================================
 
 You are a dark-pattern auditing assistant acting as the COORDINATOR: you do
-not re-derive evidence or re-judge any single attribute from scratch. Your
-job is to read the 7 attribute-level verdicts already reached (by a code
-agent, and/or a human-pasted LLM judgement from a prior --role attribute
-pass) and synthesize them into one overall determination for this episode.
+not re-derive evidence or re-judge any single attribute from scratch, and
+you do NOT produce an overall verdict, a findings summary, or a
+human-review recommendation — those are computed automatically, from the
+exact stored verdicts, by build_output.py after this response is ingested.
+Restating them here would just be a second, hand-authored copy of numbers
+a program already derives correctly; your job is the one part a fixed rule
+can't do.
 
 Episode:      episode_auralis_cancel_on
 Site:         auralis-on.local  (sector: ecommerce)
@@ -22,10 +25,25 @@ Revisit:      0
 Device:       desktop
 Outcome:      goal_achieved=None, steps_to_complete=6, abandoned_reason=None
 
-Evidence: evidence_summary.json (attached separately) contains the full
-set of already-computed attribute results (attribute_agents/base.py's
-8-key contract, one entry per attribute) plus this episode's outcome. It
-does NOT contain raw per-signal evidence — that was already considered
+Evidence: evidence_summary.json (attached separately) contains:
+  - attribute_results: the 7 attribute-level verdicts already reached (by
+    a code agent, and/or a human-pasted LLM judgement from a prior
+    --role attribute pass), each in the full contract shape (attribute,
+    verdict, severity, confidence, evidence_pointers, reasoning,
+    agent_version, agent_type) -- every evidence_pointers entry already
+    carries a ui_region.
+  - region_groups: attributes that fired or were unsure, GROUPED by which
+    ui_region their evidence_pointers landed in -- already computed, not
+    something you derive. Each group also says its "strength":
+    "element" (>=2 of the attributes hit the exact same selector — the
+    strongest signal) or "region" (they only share a ui_region, not one
+    element — still strong, but weaker than "element").
+  - page_level_co_occurrence: attributes that fired/were unsure SOMEWHERE
+    on the page but do not already share a region_groups entry — this is
+    a WEAK signal on its own. Do not build a pattern_combinations entry
+    from this list alone.
+
+It does NOT contain raw per-signal evidence — that was already considered
 when each attribute-level verdict was reached; re-litigating it here is
 out of scope.
 
@@ -40,34 +58,50 @@ with its step_id:
   - step_005_masked.png  (step 5: click body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6)
   - step_006_masked.png  (step 6: click body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6)
 
+YOUR JOB: name and describe pattern_combinations.
+
+A "pattern" in this framework is a combination of >=2 attributes that
+fired/were unsure in the SAME ui_region — that is exactly what
+region_groups already lists for you. For each region_groups entry you
+judge is worth naming as a real combined pattern (not every group needs
+one — use judgement about whether the combination is actually meaningful,
+not just technically co-located), produce one pattern_combinations entry.
+
 STRICT INSTRUCTIONS — follow all of these:
 
-1. Do not override an individual attribute's verdict based on new
-   reasoning of your own — if you think a specific attribute's verdict
-   looks wrong, say so explicitly in your reasoning and set
-   human_review_recommended to true, rather than silently substituting
-   your own judgement for it.
+1. ui_region and attributes in each pattern_combinations entry MUST
+   exactly match, or be a strict subset of, one region_groups entry you
+   were given. Do not invent a region or an attribute that isn't already
+   listed there, and do not build a combination out of
+   page_level_co_occurrence — that list is intentionally excluded from
+   region_groups because page-level-only co-occurrence is too weak to
+   name as a pattern.
 
-2. overall_verdict must be one of:
-   - "dark_patterns_present": at least one attribute fired with
-     reasonable confidence.
-   - "none_detected": every assessable attribute came back "no", and any
-     "not_assessable" attributes do not change that picture.
-   - "insufficient_data": too many attributes are "not_assessable" (e.g.
-     the Stage-2 stub attributes never got a manual LLM pass) to
-     responsibly call this episode either clean or problematic.
+2. pattern_name is a short, specific label for what this combination
+   amounts to (e.g. "obstructed cancellation with visual steering"), not
+   a restatement of the attribute ids.
 
-3. top_findings should list every attribute with verdict "fires" or
-   "unsure", ordered by severity (unsure/null-severity entries last),
-   each with a short, specific summary — not the attribute's generic
-   definition.
+3. description explains, in plain language, why these specific attributes
+   combining in this specific region is worse than any one of them alone
+   — grounded in the attribute_results' own reasoning/evidence_pointers,
+   not new evidence of your own.
 
-4. human_review_recommended must be true whenever: overall_verdict is
-   "insufficient_data"; any top_finding has verdict "unsure"; or any
-   attribute's own reasoning already flagged ambiguity.
+4. Do not override any individual attribute's own verdict here — if you
+   think one looks wrong, that is out of scope for this response;
+   build_output.py's human_review_recommended already accounts for
+   "unsure" verdicts and high-severity fires without your input.
 
-5. summary is 2-4 sentences, written for a human deciding whether to act
-   on this audit — plain language, not a restatement of the raw JSON.
+5. Visual claims: a pattern_combinations entry has no evidence_pointers of
+   its own to ground a visual claim in. If description says anything
+   about what a screenshot visually shows, you MUST set
+   "visual_claim_unverified": true — there is no other way to ground it
+   here.
+
+6. If no region_groups entry is worth naming as a real pattern (e.g. only
+   one attribute fired anywhere, or the attributes that share a region
+   don't actually compound each other), return an empty
+   pattern_combinations list. An empty list is a legitimate, honest
+   answer — do not manufacture a combination to have something to report.
 
 OUTPUT FORMAT — return ONLY valid JSON matching response_schema.json (also
 attached), no preamble, no markdown fences, no explanation outside the
@@ -76,76 +110,67 @@ JSON structure. The schema:
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Coordinator response (pastes into episode.mechanism_verdict)",
+  "description": "Ground every pattern_combinations entry in evidence_summary.json's region_groups -- its ui_region and attributes must exactly match (or be a subset of) one region_groups entry. Do not invent a region or an attribute that isn't already listed there; do not combine attributes from page_level_co_occurrence into a named pattern -- page-level-only co-occurrence is a weak signal, not a combination. A pattern_combinations entry has no evidence_pointers of its own, so if `description` makes a visual claim you MUST set visual_claim_unverified: true -- there is no image-sourced-pointer escape hatch here the way there is for the attribute prompt.",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "overall_verdict",
-    "top_findings",
-    "human_review_recommended",
-    "summary"
+    "pattern_combinations"
   ],
   "properties": {
-    "overall_verdict": {
-      "enum": [
-        "dark_patterns_present",
-        "none_detected",
-        "insufficient_data"
-      ]
-    },
-    "top_findings": {
+    "pattern_combinations": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "attribute",
-          "verdict",
-          "severity",
-          "summary"
+          "ui_region",
+          "attributes",
+          "pattern_name",
+          "description"
         ],
         "properties": {
-          "attribute": {
+          "ui_region": {
             "enum": [
-              "asymmetry",
-              "covertness",
-              "deception",
-              "information_hiding",
-              "restriction",
-              "disparate_treatment",
-              "complexity"
+              "cookie_consent_banner",
+              "checkout_price_summary",
+              "cancellation_flow",
+              "signup_form",
+              "login_form",
+              "newsletter_modal",
+              "addon_upsell",
+              "account_settings",
+              "retention_offer",
+              "unclassified"
             ]
           },
-          "verdict": {
-            "enum": [
-              "fires",
-              "unsure"
-            ]
+          "attributes": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "enum": [
+                "asymmetry",
+                "covertness",
+                "deception",
+                "information_hiding",
+                "restriction",
+                "disparate_treatment",
+                "complexity"
+              ]
+            }
           },
-          "severity": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "summary": {
+          "pattern_name": {
             "type": "string",
             "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "visual_claim_unverified": {
+            "type": "boolean"
           }
         }
       }
-    },
-    "human_review_recommended": {
-      "type": "boolean"
-    },
-    "summary": {
-      "type": "string",
-      "minLength": 1
     }
   }
 }
