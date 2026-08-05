@@ -2,26 +2,27 @@
   "attribute": "covertness",
   "verdict": "no",
   "severity": null,
-  "confidence": 0.65,
+  "confidence": 0.75,
   "evidence_pointers": [
     {
       "step_id": 4,
       "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
-      "ui_region": "cancellation_flow",
-      "signal": "visual_asymmetry.negative_below_fold=false"
+      "signal": "visual_asymmetry.positive_below_fold",
+      "ui_region": "cancellation_flow"
     },
     {
       "step_id": 5,
       "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
-      "ui_region": "cancellation_flow",
-      "signal": "visual_asymmetry.negative_below_fold=false"
+      "signal": "visual_asymmetry.negative_below_fold",
+      "ui_region": "cancellation_flow"
     },
     {
       "step_id": 4,
       "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
-      "ui_region": "cancellation_flow",
-      "signal": "screenshot_visual_inspection.link_legibility"
+      "signal": "screenshot_visual_inspection.reject_option_legibility",
+      "ui_region": "cancellation_flow"
     }
   ],
-  "reasoning": "On both screens, the reject option ('no thanks, cancel anyway' at step 4; 'yes, cancel my membership' at step 5) is not hidden: evidence_summary.json's visual_asymmetry entries record negative_below_fold=false for both instances, meaning the option is on-screen without scrolling. It is rendered as a plain underlined text link directly beneath the primary button, honestly labeled with exactly what clicking it does -- it is not mislabeled, not disguised as a different control (e.g. rendered as disabled or decorative text), and needs no extra interaction to reveal. The measured disparities (area_ratio ~12-13x, font_size_ratio 1.64x, tab_order_delta -1, vertical_position_delta -84px) quantify how much less prominent the option is -- that is the asymmetry attribute, already assessed separately, and does not by itself establish deliberate concealment or disguise. contrast_ratio was not computed (null), so I visually inspected the step 4 screenshot directly (see the screenshot_visual_inspection pointer above): the cancel-link text renders as legible dark-gray against the light page background, not color-camouflaged or blended to near-invisibility. Given the option is present, visible, and truthfully labeled, the evidence does not support deliberate hiding/disguise as distinct from mere reduced prominence."
+  "reasoning": "The evidence shows a large prominence gap (area_ratio ~12-13x, font_size_ratio 1.64x favoring the keep option) but that alone is the asymmetry attribute, not covertness -- this judgement is about whether the reject option was deliberately concealed or disguised beyond mere lower prominence. It was not: negative_below_fold is false at both step 4 and step 5, meaning the cancel option is fully visible in the initial viewport without any scrolling required. In the screenshots, the cancel link ('no thanks, cancel anyway' at step 4, 'yes, cancel my membership' at step 5) is rendered directly beneath the primary button, in legible dark-gray underlined text against the cream background -- not color-camouflaged, not miniaturized to illegibility, and not disguised as an unrelated element (e.g. a fake close icon or ambiguous label). Its wording plainly and unambiguously states the cancel action, so a user is not misled about what the link does or tricked into missing it. This is a textbook case of a de-emphasized but fully discoverable and legible option -- less prominent by design, but not hidden or disguised. That distinction (covertness requires concealment/disguise beyond de-emphasis) is exactly what the attribute definition draws, so the correct verdict here is 'no', with the underlying imbalance left to the asymmetry attribute.",
+  "visual_claim_unverified": false
 }

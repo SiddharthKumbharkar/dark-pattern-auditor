@@ -220,7 +220,8 @@ _TEMPLATE = r"""
     box.setAttribute('data-dpa-overlay', 'true');
     box.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:2147483647;' +
       'background:#111827;color:#e5e7eb;font:12px/1.4 -apple-system,sans-serif;' +
-      'padding:10px 12px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:280px;';
+      'padding:10px 12px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:280px;' +
+      'max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;';
     box.innerHTML =
       '<div style="font-weight:600;margin-bottom:4px;">Dark Pattern Recorder</div>' +
       '<div>Goal: <span id="__dpa_goal__"></span></div>' +
