@@ -6,6 +6,7 @@ on both --role attribute and --role coordinator responses.
 """
 
 from journey.mechanism_verdict_ingest import (
+    coerce_untagged_evidence_pointer_regions,
     validate_evidence_pointer_regions,
     validate_pattern_combinations_grounded,
     validate_visual_claims_attribute,
@@ -47,6 +48,67 @@ def test_null_selector_must_claim_unclassified():
 
 def test_response_with_no_evidence_pointers_field_is_fine():
     assert validate_evidence_pointer_regions({"summary": "x"}, REGION_MAP) == []
+
+
+# -- coercion backstop: untagged elements get "unclassified", not rejected -
+
+
+def test_coerce_fixes_an_invented_region_on_a_never_tagged_selector():
+    # Same shape as test_unknown_selector_must_claim_unclassified, but run
+    # through the coercion step first -- the invented label is fixed up
+    # in place instead of surviving to fail validation.
+    response = {"evidence_pointers": [{"step_id": 1, "selector": "#never-tagged", "ui_region": "signup_form", "signal": "x"}]}
+    log = coerce_untagged_evidence_pointer_regions(response, REGION_MAP)
+    assert len(log) == 1
+    assert "signup_form" in log[0] and "unclassified" in log[0]
+    assert response["evidence_pointers"][0]["ui_region"] == "unclassified"
+    # and now validation passes, since the label matches region_map's
+    # (absent-key) expectation of "unclassified"
+    assert validate_evidence_pointer_regions(response, REGION_MAP) == []
+
+
+def test_coerce_leaves_a_genuinely_tagged_mismatch_alone():
+    # (4, "#cancel-link") IS in REGION_MAP as "cancellation_flow" -- a
+    # model claiming a DIFFERENT region for a REAL tagged element is a
+    # genuine grounding error, not an absent-tag artifact, so coercion
+    # must not touch it; validate_evidence_pointer_regions() still rejects.
+    response = {"evidence_pointers": [{"step_id": 4, "selector": "#cancel-link", "ui_region": "checkout_price_summary", "signal": "x"}]}
+    log = coerce_untagged_evidence_pointer_regions(response, REGION_MAP)
+    assert log == []
+    assert response["evidence_pointers"][0]["ui_region"] == "checkout_price_summary"  # unchanged
+    errors = validate_evidence_pointer_regions(response, REGION_MAP)
+    assert len(errors) == 1
+
+
+def test_coerce_does_not_touch_an_already_correct_pointer():
+    response = {"evidence_pointers": [{"step_id": 4, "selector": "#cancel-link", "ui_region": "cancellation_flow", "signal": "x"}]}
+    log = coerce_untagged_evidence_pointer_regions(response, REGION_MAP)
+    assert log == []
+    assert response["evidence_pointers"][0]["ui_region"] == "cancellation_flow"
+
+
+def test_coerce_does_not_touch_an_already_correctly_unclassified_pointer():
+    response = {"evidence_pointers": [{"step_id": 1, "selector": "#never-tagged", "ui_region": "unclassified", "signal": "x"}]}
+    log = coerce_untagged_evidence_pointer_regions(response, REGION_MAP)
+    assert log == []
+
+
+def test_coerce_handles_multiple_pointers_independently():
+    response = {
+        "evidence_pointers": [
+            {"step_id": 1, "selector": "#never-tagged", "ui_region": "signup_form", "signal": "a"},
+            {"step_id": 4, "selector": "#cancel-link", "ui_region": "cancellation_flow", "signal": "b"},
+            {"step_id": 99, "selector": "#also-never-tagged", "ui_region": "retention_offer", "signal": "c"},
+        ]
+    }
+    log = coerce_untagged_evidence_pointer_regions(response, REGION_MAP)
+    assert len(log) == 2  # only the two untagged, wrongly-labeled pointers
+    regions = [p["ui_region"] for p in response["evidence_pointers"]]
+    assert regions == ["unclassified", "cancellation_flow", "unclassified"]
+
+
+def test_coerce_response_with_no_evidence_pointers_field_is_fine():
+    assert coerce_untagged_evidence_pointer_regions({"summary": "x"}, REGION_MAP) == []
 
 
 # -- visual-claim guard, --role attribute (Issue 4) ------------------------

@@ -102,10 +102,19 @@ def test_deception_no_when_network_fired_and_no_group_issues(baselines):
 
 
 def test_deception_fires_when_claimed_action_has_no_network_activity(baselines):
-    episode = {"evidence": {"stated_vs_actual": [{"claimed_action": "Unsubscribe", "step_id": 5, "network_fired": False, "request_ids": []}]}}
+    episode = {"evidence": {"stated_vs_actual": [{"claimed_action": "Unsubscribe", "step_id": 5, "network_fired": False, "route_changed": False, "request_ids": []}]}}
     result, _ = run_agent(DECEPTION_AGENT, episode, None, baselines)
     assert result["verdict"] == "fires"
     assert result["evidence_pointers"][0]["step_id"] == 5
+
+
+def test_deception_no_when_no_network_but_a_genuine_client_side_route_change_occurred(baselines):
+    # A client-side-only app (no backend at all) can perform a completely
+    # real state change with zero network activity -- route_changed=True
+    # alone must be enough to NOT flag this as a dead/deceptive action.
+    episode = {"evidence": {"stated_vs_actual": [{"claimed_action": "Cancel my membership", "step_id": 6, "network_fired": False, "route_changed": True, "request_ids": []}]}}
+    result, _ = run_agent(DECEPTION_AGENT, episode, None, baselines)
+    assert result["verdict"] == "no"
 
 
 def test_deception_fires_from_group_evidence_implausible_claim(baselines):
@@ -115,11 +124,64 @@ def test_deception_fires_from_group_evidence_implausible_claim(baselines):
     assert result["verdict"] == "fires"
 
 
-def test_deception_fires_from_timer_reset(baselines):
+def test_deception_never_fires_from_timer_reset_detection(baselines):
+    # Policy decision, not a detection gap: countdown/urgency timers are
+    # detect-and-flag-for-human-review only (see
+    # journey/episode_output_builder.py's overall.urgency_claims) --
+    # deception.py must never auto-fire or auto-conclude anything from
+    # group_evidence.timer_reset_detection, no matter how clearly a timer
+    # reset instead of counting down.
     episode = {"evidence": {}}
     group_evidence = {"claim_persistence": [], "timer_reset_detection": [{"selector": "#t", "reset_detected": True}]}
     result, _ = run_agent(DECEPTION_AGENT, episode, group_evidence, baselines)
+    assert result["verdict"] == "not_assessable"  # nothing else to assess either
+
+
+def test_deception_never_fires_from_a_frozen_countdown_timer_claim_persistence_entry(baselines):
+    # Same policy, the OTHER evidence channel: a countdown_timer claim
+    # that stayed byte-identical long enough to read "implausible" via
+    # signals/claim_persistence.py's general frozen-too-long check must
+    # ALSO be excluded -- not just the timer_reset_detection-specific path.
+    episode = {"evidence": {}}
+    group_evidence = {
+        "claim_persistence": [{"claim_type": "countdown_timer", "selector": "#t", "verdict": "implausible"}],
+        "timer_reset_detection": [],
+    }
+    result, _ = run_agent(DECEPTION_AGENT, episode, group_evidence, baselines)
+    assert result["verdict"] == "not_assessable"
+
+
+def test_deception_ignores_countdown_timer_insufficient_data_too(baselines):
+    # A countdown_timer claim stuck at insufficient_data must not even
+    # produce "unsure" -- deception has nothing to say about timers at
+    # all now, not a weaker judgement either.
+    episode = {"evidence": {"stated_vs_actual": []}}
+    group_evidence = {
+        "claim_persistence": [{"claim_type": "countdown_timer", "selector": "#t", "verdict": "insufficient_data"}],
+        "timer_reset_detection": [],
+    }
+    result, _ = run_agent(DECEPTION_AGENT, episode, group_evidence, baselines)
+    assert result["verdict"] == "not_assessable"
+
+
+def test_deception_dead_control_still_fires_with_a_timer_reset_also_present(baselines):
+    # The dead-control path is a completely different evidence channel
+    # (stated_vs_actual) and must be entirely unaffected by removing the
+    # timer auto-fire path -- even with a real, clearly-firing timer
+    # reset sitting right next to it in group_evidence, the verdict and
+    # its evidence_pointers must come from the dead click alone.
+    episode = {"evidence": {"stated_vs_actual": [
+        {"claimed_action": "Unsubscribe", "step_id": 5, "network_fired": False, "route_changed": False, "request_ids": []}
+    ]}}
+    group_evidence = {
+        "claim_persistence": [{"claim_type": "countdown_timer", "selector": "#t", "verdict": "implausible"}],
+        "timer_reset_detection": [{"selector": "#t", "reset_detected": True}],
+    }
+    result, _ = run_agent(DECEPTION_AGENT, episode, group_evidence, baselines)
     assert result["verdict"] == "fires"
+    assert len(result["evidence_pointers"]) == 1
+    assert result["evidence_pointers"][0]["signal"] == "stated_vs_actual.network_fired"
+    assert result["evidence_pointers"][0]["step_id"] == 5
 
 
 def test_deception_unsure_when_only_insufficient_data(baselines):
@@ -360,13 +422,39 @@ def test_complexity_unsure_when_reading_grade_in_borderline_band(baselines):
     assert result["severity"] is None
 
 
+def _option_count_fires_bar(baselines, goal=None) -> float:
+    threshold = baselines.get("complexity_option_count_threshold", goal=goal)
+    factor = baselines.get("complexity_option_count_p75_factor", goal=goal).median
+    return threshold.p75 * factor
+
+
 def test_complexity_fires_on_option_count_alone(baselines):
-    # option_count threshold: median=4.0, p75=7.0 -- no consent copy at all
-    episode = {"evidence": {"complexity_metrics": {"option_counts": [{"step_id": 3, "option_count": 10}]}}}
+    # option_count doesn't use the shared median/p75 _tier() -- see
+    # _option_count_dimension's docstring -- it needs to clear
+    # p75*factor, not just p75. Computed from the live fixture (not a
+    # hardcoded number) so this stays correct across baseline recalibration
+    # -- these tests read the real, on-disk baselines.json (see the
+    # `baselines` fixture above), not a frozen snapshot.
+    fires_bar = _option_count_fires_bar(baselines)
+    option_count = int(fires_bar) + 5
+    episode = {"evidence": {"complexity_metrics": {"option_counts": [{"step_id": 3, "option_count": option_count}]}}}
     result, _ = run_agent(COMPLEXITY_AGENT, episode, None, baselines)
     assert result["verdict"] == "fires"
     assert result["evidence_pointers"][0]["step_id"] == 3
     assert result["evidence_pointers"][0]["signal"] == "complexity_metrics.option_counts.option_count"
+
+
+def test_complexity_no_when_option_count_is_below_the_factor_scaled_bar(baselines):
+    # The real bug this guards against: raw option_count is noisy/
+    # chrome-dominated (see the dimension's docstring) -- a count that
+    # doesn't clear p75*factor must read as "no", not "fires" or "unsure"
+    # (this dimension has no unsure tier). Computed from the live fixture,
+    # same reasoning as the fires-side test above.
+    fires_bar = _option_count_fires_bar(baselines)
+    option_count = max(1, int(fires_bar) - 3)
+    episode = {"evidence": {"complexity_metrics": {"option_counts": [{"step_id": 3, "option_count": option_count}]}}}
+    result, _ = run_agent(COMPLEXITY_AGENT, episode, None, baselines)
+    assert result["verdict"] == "no"
 
 
 def test_complexity_fires_on_total_actions_alone(baselines):

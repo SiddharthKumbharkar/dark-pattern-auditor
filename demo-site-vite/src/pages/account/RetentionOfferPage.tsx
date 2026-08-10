@@ -37,7 +37,7 @@ export default function RetentionOfferPage() {
 
       <button
         type="button"
-        onClick={() => navigate("/account/subscription/confirm-cancel")}
+        onClick={() => navigate("/account/subscription/exit-survey")}
         className="btn-cancel-link mt-6 text-[11px] text-brand-muted/60 underline"
         data-pattern="interface_interference"
       >

@@ -18,7 +18,9 @@ Three roles:
                  and only the screenshots its evidence_pointers
                  reference -- synthesized from the raw evidence's own
                  step_id fields, unioned with the matching entry (if any)
-                 already in episode.attributes.results.
+                 already in episode.attributes.results. Two exceptions,
+                 covertness and information_hiding, additionally get
+                 EVERY step's screenshot -- see _NEEDS_FULL_FLOW_SCREENSHOTS.
   coordinator -- synthesizes the 7 already-computed attribute results
                  (episode.attributes.results) into one overall
                  determination, shaped to paste into the
@@ -73,6 +75,31 @@ ATTRIBUTE_EVIDENCE_MAP: Dict[str, Dict[str, List[str]]] = {
 }
 
 MAX_ENTRIES_PER_LIST = 25  # keeps evidence_summary.json in the ~1-2k token range
+
+# information_hiding is the only attribute that reads disclosure-tagged
+# ui_regions entries (signals/ui_regions.py's opt-in data-disclosure pass)
+# into its own evidence_summary.json -- see _disclosure_elements(). Scoped
+# narrowly to this one attribute, not added to every payload, so covertness
+# (already validated) sees exactly the evidence it saw on its validated
+# run; nothing about this addition can change covertness's behavior.
+_NEEDS_DISCLOSURE_ELEMENTS = ("information_hiding",)
+
+# covertness and information_hiding have no dedicated structured signal
+# that reliably LOCATES their evidence -- both are Stage-2-only precisely
+# because no code signal CAN point at them (see their own module
+# docstrings). ATTRIBUTE_EVIDENCE_MAP's mapped key still describes real,
+# relevant evidence when it's non-empty (a genuinely asymmetric pair is
+# still covertness-relevant; a genuine price_drift increase is still
+# information_hiding-relevant) -- the problem is what it MISSES: a covert
+# element that isn't part of an accept/reject pair (e.g. a buried,
+# pre-checked opt-in) never appears via visual_asymmetry; a withheld term
+# that isn't a numeric price at all (e.g. wording revealed late) never
+# appears via price_drift. Both attributes fall back to every step's own
+# screenshot in addition to whatever their mapped key found -- the same
+# "show the whole flow" fallback _build_coordinator() already uses when
+# nothing fired -- so narrow, possibly-incomplete evidence-key routing is
+# never the ONLY grounding a human/LLM judge gets for these two.
+_NEEDS_FULL_FLOW_SCREENSHOTS = ("covertness", "information_hiding")
 
 
 class PayloadBuildError(ValueError):
@@ -224,6 +251,67 @@ def _dedup_pointers(pointers: List[Dict]) -> List[Dict]:
     return deduped
 
 
+def _disclosure_elements(episode: Dict) -> List[Dict]:
+    """Every disclosure-tagged entry from episode.evidence.ui_regions --
+    i.e. every tag carrying a "text" field (see signals/ui_regions.py's
+    opt-in data-disclosure pass). Interactive-element tags never have
+    "text", so this is a plain filter, not a re-classification.
+
+    This is what actually closes the information_hiding grounding gap:
+    build_region_map() already lets an agent's evidence_pointer validate
+    against these (step_id, selector) pairs at ingest time, but nothing
+    upstream of this function ever showed a model the pair to cite in the
+    first place -- a real selector sitting only in region_map is invisible
+    to whoever is reading evidence_summary.json. Surfacing {step_id,
+    selector, region, text} here means a model that correctly reads
+    "₹199 cancellation fee" in a screenshot has a genuine element to point
+    at, instead of inventing one that then gets (correctly) rejected.
+    """
+    tags = (episode.get("evidence") or {}).get("ui_regions") or []
+    return [dict(tag) for tag in tags if "text" in tag]
+
+
+def _tagged_elements(episode: Dict, step_ids: List[int]) -> Tuple[List[Dict], int]:
+    """The real (step_id, selector) -> region vocabulary for exactly the
+    steps this payload shows the model (via screenshots) -- i.e. the same
+    raw entries build_region_map() turns into a lookup dict, given here as
+    a literal list so the model can be told to only use a NAMED region for
+    a (step_id, selector) that actually appears here, and "unclassified"
+    for anything that doesn't.
+
+    Exists because a model reading a screenshot has always been able to
+    correctly SEE an element without ever having a real tag for it -- most
+    non-interactive, non-disclosure-tagged text on a real page has none --
+    and would then guess a plausible-sounding region instead of writing
+    "unclassified" as prompts/attribute_prompt.v1.txt's rule 4 already
+    asked it to. journey/mechanism_verdict_ingest.py's
+    coerce_untagged_evidence_pointer_regions() is the backstop for when
+    that happens anyway; this is the prevention -- giving the model the
+    actual ground truth instead of relying on it to remember an abstract
+    rule.
+
+    Disclosure-tagged entries (the "text"-carrying ones -- see
+    signals/ui_regions.py) are NEVER subject to MAX_ENTRIES_PER_LIST
+    capping here, only interactive-element entries are: a busy page can
+    easily have 25+ nav/header/button tags before the flow even reaches a
+    disclosure element several steps later, and dropping THAT entry would
+    directly contradict relevant_evidence.disclosure_elements (built
+    separately, uncapped, by _disclosure_elements()) reporting a real
+    region for a (step_id, selector) that tagged_elements then claims not
+    to know about -- exactly the kind of self-inflicted "not listed here,
+    so 'unclassified'" mistake this whole mechanism exists to prevent.
+    Returns (entries, truncated_count) -- truncated_count covers only the
+    interactive subset, matching every other _cap_list() caller's shape.
+    """
+    step_id_set = set(step_ids)
+    tags = [dict(tag) for tag in ((episode.get("evidence") or {}).get("ui_regions") or []) if tag["step_id"] in step_id_set]
+    disclosure = [t for t in tags if "text" in t]
+    interactive = [t for t in tags if "text" not in t]
+    capped_interactive, truncated = _cap_list(interactive)
+    combined = sorted(capped_interactive + disclosure, key=lambda t: t["step_id"])
+    return combined, truncated
+
+
 def _find_code_agent_result(episode: Dict, attribute: str) -> Optional[Dict]:
     results = ((episode.get("attributes") or {}).get("results")) or []
     matches = [r for r in results if r["attribute"] == attribute]
@@ -314,6 +402,10 @@ def build_attribute_evidence_summary(episode: Dict, group_evidence: Optional[Dic
     evidence_map = ATTRIBUTE_EVIDENCE_MAP[attribute]
 
     relevant_evidence = {key: evidence[key] for key in evidence_map["episode"] if key in evidence}
+    if attribute in _NEEDS_DISCLOSURE_ELEMENTS:
+        disclosure_elements = _disclosure_elements(episode)
+        if disclosure_elements:
+            relevant_evidence["disclosure_elements"] = disclosure_elements
     relevant_group_evidence = {
         key: (group_evidence or {})[key] for key in evidence_map["group"] if group_evidence and key in group_evidence
     }
@@ -329,6 +421,11 @@ def build_attribute_evidence_summary(episode: Dict, group_evidence: Optional[Dic
     pointers = _dedup_pointers(enrich_evidence_pointers(pointers, region_map))
 
     step_ids = sorted({p["step_id"] for p in pointers if p["step_id"] is not None})
+    if attribute in _NEEDS_FULL_FLOW_SCREENSHOTS:
+        all_ids = {step["step_id"] for step in (episode.get("steps") or [])}
+        step_ids = sorted(set(step_ids) | all_ids)
+
+    tagged_elements, tagged_elements_truncated = _tagged_elements(episode, step_ids)
 
     summary = {
         **_episode_header(episode),
@@ -337,7 +434,10 @@ def build_attribute_evidence_summary(episode: Dict, group_evidence: Optional[Dic
         "relevant_group_evidence": relevant_group_evidence,
         "code_agent_result": code_result,
         "evidence_pointers": pointers,
+        "tagged_elements": tagged_elements,
     }
+    if tagged_elements_truncated:
+        summary["tagged_elements_truncated_count"] = tagged_elements_truncated
     return summary, step_ids
 
 

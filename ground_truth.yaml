@@ -1,5 +1,5 @@
 # Ground truth for the Auralis demo site (demo-site/, demo-site-vite/) --
-# the tool's only known-answer test. Auralis has exactly 8 deliberately
+# the tool's only known-answer test. Auralis has exactly 12 deliberately
 # planted dark patterns, each toggled by a single client-side switch
 # (localStorage key "auralis-demo-dark-patterns-enabled", flipped by the
 # "Dark Patterns: ON/OFF" button in the site header -- see
@@ -18,6 +18,12 @@
 # detectable from group_evidence (claim_persistence / timer_reset_detection),
 # which needs 2+ visits of the same (site_id, goal).
 #
+# expected_evidence names the CONCRETE signal/value a correctly-working
+# pipeline should produce for this pattern -- the answer key a human (or
+# validate-against-truth, for the 4 code-first attributes) checks a run
+# against, distinct from expected_steps_hint (where to look) and known_gap
+# (why a currently-stubbed attribute won't show as detected yet).
+#
 # Harness convention (see run_demo_suite.py): ON-mode and OFF-mode
 # sessions both connect to the SAME real dev server URL, but are recorded
 # with record.py's --site-domain flag set to "auralis-on.local" /
@@ -28,13 +34,27 @@
 # fragile). This gives episode.episode.site_id/site_domain a distinct,
 # verifiable value per mode for free. validate-against-truth infers mode
 # from this.
+#
+# NOTE on scoring the 3 Stage-2-only attributes (covertness,
+# information_hiding, disparate_treatment): journey/ground_truth.py's
+# validate_against_truth() reads episode.attributes.results (the CODE
+# agent's raw output) directly, not the Stage-2-override-aware
+# select_authoritative_verdicts() journey/episode_output_builder.py uses --
+# so even after a manual Stage-2 verdict is ingested for one of these
+# three, the CLI scorer will still show not_assessable/FN for it. This is
+# a real, separate scorer limitation (out of scope for the enrichment that
+# added these patterns) -- Stage-2 attributes are validated by reading the
+# ingested mechanism_verdict entry directly, not via validate-against-truth.
 
 schema_version: 1
 site: auralis-demo
 description: >-
-  8 deliberately planted dark patterns on the Auralis demo e-commerce/SaaS
-  site, used as the tool's only known-answer test. See demo-site/README.md
-  for the authoritative pattern cheat sheet this file was derived from.
+  12 deliberately planted dark patterns on the Auralis demo e-commerce/SaaS
+  site, used as the tool's only known-answer test: the original 8 (see
+  demo-site/README.md for that cheat sheet) plus 4 added to exercise every
+  one of the 7 mechanism attributes at least once (restriction, deception,
+  complexity, covertness, information_hiding, disparate_treatment were
+  previously under-exercised or untested; asymmetry was already covered).
 
 patterns:
   - pattern_id: false_urgency_countdown_reset
@@ -45,6 +65,15 @@ patterns:
       Product detail page (/product/<slug>); countdown element rendered
       with data-countdown="true" showing a 15-minute deadline that is
       freshly recomputed on every mount (demo-site/src/components/CountdownTimer.tsx).
+    expected_evidence: >-
+      deception fires via group_evidence.timer_reset_detection:
+      reset_detected=true on revisit (remaining_seconds observed on
+      revisit 1 is ~= the full 900s duration again, not
+      revisit-0-remaining minus real elapsed seconds -- exceeds
+      timer_drift_tolerance_seconds comfortably). Needs 2 recorded visits
+      of the same (site_id=auralis-on.local, goal=purchase_cheapest)
+      episode, a few minutes apart is enough (the reset is structural, not
+      timing noise).
     expected_attributes: [deception]
     enabled_when: "on"
     requires_revisit: true
@@ -58,6 +87,10 @@ patterns:
       Any page, ~1.4s after first load; newsletter popup
       (data-pattern="confirm_shaming") decline button reads "No thanks, I
       don't like saving money" instead of a neutral "No thanks".
+    expected_evidence: >-
+      No code-agent signal fires (by design, see known_gap). A manual
+      Stage-2 attribute pass over deception's evidence_summary, given the
+      popup screenshot, would be the only way to catch the wording itself.
     expected_attributes: []
     enabled_when: "on"
     requires_revisit: false
@@ -77,6 +110,12 @@ patterns:
       first shows a "Payment processing fee (new)" line
       (PAYMENT_PROCESSING_FEE); /checkout/review additionally shows a
       "Service & handling fee" line (SERVICE_HANDLING_FEE).
+    expected_evidence: >-
+      episode.evidence.price_drift.increases carries 2 entries (payment
+      step, review step), both step_id > the cart/shipping steps.
+      information_hiding itself stays not_assessable from code (see
+      known_gap) -- fires only via a manual Stage-2 ingest given this
+      price_drift evidence.
     expected_attributes: [information_hiding]
     enabled_when: "on"
     requires_revisit: false
@@ -95,7 +134,16 @@ patterns:
       /trial CTA reads "Start My Free Trial" with shrunk (text-[11px])
       fine-print disclosure; /account demotes the cancellation entry
       point to a tiny "Manage membership" link, only rendered when
-      patterns are on.
+      patterns are on. This is also the SHORT (~2 step) reference flow
+      interface_interference_cancel_maze's restriction/disparate_treatment
+      evidence is paired against -- see that entry's expected_evidence.
+    expected_evidence: >-
+      covertness stays not_assessable from code (see known_gap) -- fires
+      only via a manual Stage-2 ingest given the fine-print screenshot.
+      friction_metrics.steps ~= 2 (load /trial, click "Start My Free
+      Trial" -> navigates to /account) -- the denominator
+      interface_interference_cancel_maze's friction_ratio is computed
+      against.
     expected_attributes: [covertness]
     enabled_when: "on"
     requires_revisit: false
@@ -113,6 +161,10 @@ patterns:
       with a pre-checked "Keep plan" checkbox the user never explicitly
       selected on the product page (CartContext.tsx's
       withProtectionPlan=darkPatternsEnabled).
+    expected_evidence: >-
+      No evidence signal exists to check (see known_gap) -- not detectable
+      by any current code agent or Stage-2 prompt role; expected_attributes
+      is deliberately empty.
     expected_attributes: []
     enabled_when: "on"
     requires_revisit: false
@@ -132,6 +184,14 @@ patterns:
       (data-pattern="false_urgency_social_proof") with two lines that
       independently increment/decrement on timers driven by
       Math.random(), with no real backing signal.
+    expected_evidence: >-
+      No structured claim-identity signal currently tracks this counter's
+      values across revisits (claim_persistence groups by (claim_type,
+      selector), and a Math.random()-driven counter has no stable
+      "implausible" byte-identical value to key off) -- expected_attributes
+      lists deception for conceptual completeness (this IS a fabricated
+      claim), but in practice false_urgency_countdown_reset above is the
+      code-detectable instance of this pattern_id's ccpa_category.
     expected_attributes: [deception]
     enabled_when: "on"
     requires_revisit: true
@@ -145,15 +205,157 @@ patterns:
     goal: cancel_subscription
     expected_steps_hint: >-
       /account/subscription -> /account/subscription/retention-offer ->
-      /account/subscription/confirm-cancel -> /account/subscription/cancelled;
-      each intermediate screen pairs a large data-pattern="interface_interference"
-      "Keep subscription" button against a tiny underlined "Cancel" link.
-      OFF mode skips both intermediate screens entirely (a single direct
-      Cancel button on /account/subscription).
-    expected_attributes: [asymmetry, restriction]
+      /account/subscription/exit-survey -> /account/subscription/confirm-cancel ->
+      /account/subscription/final-confirm -> /account/subscription/cancelled;
+      retention-offer and confirm-cancel each pair a large
+      data-pattern="interface_interference" "Keep subscription" button
+      against a tiny underlined "Cancel" link (asymmetry.py's reference
+      pair, unchanged by this enrichment pass). OFF mode skips every
+      intermediate screen entirely (a single direct Cancel button on
+      /account/subscription).
+    expected_attributes: [asymmetry, restriction, disparate_treatment]
+    expected_evidence: >-
+      asymmetry: fires, 2 opposing-choice pairs (steps at retention-offer
+      and confirm-cancel), evidence_pointers on both
+      btn-keep-subscription/btn-cancel-link at each step, region
+      cancellation_flow, finding_strength strong.
+      restriction: fires via friction_metrics.friction_ratio alone,
+      computed against the paired complete_signup episode (see
+      subscription_trap_trial above) -- lands ~4x (cancel 8 steps vs
+      signup 2 steps), clearing restriction_friction_ratio_threshold.p75 *
+      restriction_p75_factor. The path_deviation/forced_interstitial
+      dimension (ExitSurveyPage.tsx and FinalConfirmPage.tsx are both
+      role="dialog") does NOT independently fire -- see known_gap; the
+      ratio dimension alone is sufficient and was verified sufficient on
+      real recorded data.
+      disparate_treatment: Stage-2 only (code agent always
+      not_assessable) -- judged from the SAME
+      group_evidence.paired_flow_comparison restriction reads: does the
+      cancel flow's friction disadvantage the user beyond what's
+      structurally inherent to "cancelling" vs "signing up" being
+      different tasks.
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      NOT about this pattern's own staging -- a genuine, pre-existing
+      DETECTOR bug discovered while validating it, present for every
+      episode ever recorded via InteractiveRecorderV2, not just this one:
+      signals/dom_text.py's has_interstitial() keyword-matches "overlay"
+      against an element's id/class substring, and the recorder's own
+      injected control overlay (id="__dpa_overlay__") matches "overlay" on
+      EVERY captured step from step 1 onward. previous_had_interstitial in
+      signals/path_deviation.py is therefore already True by step 2 of
+      every episode and never returns to False, so forced_interstitial can
+      only ever fire once, on step 1, for a reason unrelated to any real
+      interstitial -- genuine role="dialog"/modal-classed screens later in
+      a flow (like ExitSurveyPage.tsx and FinalConfirmPage.tsx here) can
+      never register. Flagged, not silently patched, per instruction.
+      restriction still fires correctly here via the friction_ratio
+      dimension alone, which is unaffected by this bug.
+
+  - pattern_id: deception_dead_unsubscribe_control
+    name: "\"Unsubscribe from marketing emails\" button that shows success but does nothing"
+    ccpa_category: "Deception"
+    goal: cancel_subscription
+    expected_steps_hint: >-
+      /account/subscription/final-confirm (FinalConfirmPage.tsx): a
+      secondary "Unsubscribe from marketing emails" button. On click, a
+      local-only "You've been unsubscribed from marketing emails." message
+      appears -- no fetch/XHR/beacon, no react-router navigate(), no
+      AccountContext state mutation. OFF mode never reaches this page at
+      all (redirected back to /account/subscription), so the control does
+      not exist there.
+    expected_evidence: >-
+      episode.evidence.stated_vs_actual carries an entry for this click
+      (claimed_action matches STATE_CHANGE_VERBS on "unsubscribe") with
+      network_fired=false AND route_changed=false. deception fires with
+      that entry as its evidence_pointer (deception_min_evidence_count
+      median is 1, so this alone is sufficient regardless of what the
+      countdown-timer revisit path above also finds).
+    expected_attributes: [deception]
     enabled_when: "on"
     requires_revisit: false
     known_gap: null
+
+  - pattern_id: complexity_overloaded_exit_survey
+    name: "14-checkbox \"why are you leaving\" survey forced before cancellation completes"
+    ccpa_category: "Interface Interference"
+    goal: cancel_subscription
+    expected_steps_hint: >-
+      /account/subscription/exit-survey (ExitSurveyPage.tsx): 14 reason
+      checkboxes plus page chrome (nav/cart/toggle/etc, ~14 more) push
+      this step's interactive-element count well past an ordinary page's.
+      OFF mode never renders this page.
+    expected_evidence: >-
+      complexity_metrics.option_counts has a step with option_count >=
+      ~28 (14 survey checkboxes + ~14 chrome elements), clearing
+      complexity_option_count_threshold.p75 (14) *
+      complexity_option_count_p75_factor (1.5) = 21. complexity fires on
+      the option_count dimension, severity scaled by how far past 21 the
+      actual count lands.
+    expected_attributes: [complexity]
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: null
+
+  - pattern_id: covertness_camouflaged_winback_optin
+    name: "Pre-checked win-back email opt-in, worded as a double negative and styled to blend into the page"
+    ccpa_category: "Interface Interference"
+    goal: cancel_subscription
+    expected_steps_hint: >-
+      /account/subscription/exit-survey (ExitSurveyPage.tsx): a
+      pre-checked checkbox styled text-[11px] text-gray-300 (low contrast,
+      no border, smaller than surrounding body text), reading "Uncheck
+      this box if you do not want to not receive occasional win-back
+      offers..." -- both a double-negative (also feeds
+      complexity_metrics.copy_readability's negation_count/
+      double_negative_count on this page) and a visually camouflaged,
+      pre-selected opt-in a user has to notice and parse to actually
+      decline. OFF mode never renders this page or control.
+    expected_evidence: >-
+      covertness stays not_assessable from code (see known_gap) -- fires
+      only via a manual Stage-2 ingest, given the exit-survey screenshot
+      as image input: a human/LLM judge should call the low-contrast,
+      pre-checked, double-negative-worded control genuinely covert,
+      distinct from asymmetry.py's purely visual (contrast/area/position)
+      check, which this element is not part of (it isn't one half of an
+      opposing-choice pair).
+    expected_attributes: [covertness]
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      covertness is an explicit Stage-2-only stub
+      (attribute_agents/covertness.py always returns not_assessable) --
+      only detectable via a manual LLM ingest.
+
+  - pattern_id: information_hiding_late_cancellation_fee
+    name: "₹199 early cancellation fee disclosed only on the final confirmation screen"
+    ccpa_category: "Drip Pricing"
+    goal: cancel_subscription
+    expected_steps_hint: >-
+      /account/subscription/final-confirm (FinalConfirmPage.tsx) is the
+      FIRST and only screen in the ON maze that mentions the fee;
+      /account/subscription, retention-offer, exit-survey, and
+      confirm-cancel never mention it. OFF mode discloses the identical
+      fee upfront on /account/subscription itself (SubscriptionPage.tsx),
+      the honest counterpart.
+    expected_evidence: >-
+      information_hiding stays not_assessable from code (see known_gap) --
+      fires only via a manual Stage-2 ingest. episode.evidence.price_drift
+      is NOT expected to show this cleanly as a numeric "increase" (no
+      earlier step displays a comparable baseline price to drift from --
+      RetentionOfferPage's unrelated "₹249.50/month" retention-offer price
+      appears mid-flow and is larger than the ₹199 fee, so
+      price_drift.increases would not include this step); the Stage-2
+      LLM judgement, given the full step sequence, is the expected and
+      primary evidence, not price_drift.
+    expected_attributes: [information_hiding]
+    enabled_when: "on"
+    requires_revisit: false
+    known_gap: >-
+      information_hiding is an explicit Stage-2-only stub
+      (attribute_agents/information_hiding.py always returns
+      not_assessable) -- only detectable via a manual LLM ingest.
 
   - pattern_id: nagging_modal
     name: "Notification-permission modal that reappears repeatedly after being dismissed"
@@ -163,6 +365,9 @@ patterns:
       Any page; nagging modal (data-pattern="nagging") first appears
       after 5s, reappears every 22s after "Not now" is clicked, up to 5
       times per session.
+    expected_evidence: >-
+      No code-agent signal fires (see known_gap); expected_attributes is
+      deliberately empty.
     expected_attributes: []
     enabled_when: "on"
     requires_revisit: false

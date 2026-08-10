@@ -17,7 +17,7 @@ from config.settings import Config
 from journey.attribute_runner import run_attributes
 from journey.evidence_extractor import extract_evidence
 from journey.group_evidence_extractor import extract_group_evidence
-from llm.payload_builder import PayloadBuildError, _build_coordinator, build_payload
+from llm.payload_builder import MAX_ENTRIES_PER_LIST, PayloadBuildError, _build_coordinator, _tagged_elements, build_payload
 from recorder.interactive_v2 import InteractiveRecorderV2
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,6 +45,7 @@ CANCEL_STEP2_HTML = """<!DOCTYPE html>
 <p>Notwithstanding any prior communication, failure to not decline this retention offer
 shall not be deemed an unequivocal, irrevocable non-acceptance of continued billing
 absent explicit, unambiguous disaffirmance hereof.</p>
+<p data-disclosure="cancellation-fee">Cancelling now will incur a fee, charged to your card on file.</p>
 <button id="unsub-btn" type="button">Cancel my membership</button>
 </body></html>
 """
@@ -291,6 +292,162 @@ def test_stub_attribute_still_surfaces_its_raw_evidence_even_though_code_result_
     assert evidence_summary["relevant_evidence"]["visual_asymmetry"]  # non-empty raw evidence
     assert evidence_summary["evidence_pointers"]  # synthesized from raw evidence, not empty
     assert manifest["screenshot_step_mapping"]  # screenshots derived from those synthesized pointers
+
+
+def test_information_hiding_falls_back_to_every_step_screenshot_when_price_drift_is_empty(pipeline):
+    # information_hiding is mapped to price_drift only -- this fixture's
+    # cancel episode has no price data at all (price_drift.increases is
+    # empty), so the narrow evidence-key routing produces zero
+    # screenshots on its own. A withheld term that isn't a numeric price
+    # (the real shape of this project's planted instance -- a late fee
+    # disclosure) would otherwise reach the judge with NO visual grounding
+    # at all. Must fall back to every step in the episode instead.
+    manifest = build_payload(
+        pipeline["cancel_dir"], role="attribute", attribute="information_hiding",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    evidence_summary = json.load(
+        open(os.path.join(manifest["payload_dir"], "evidence_summary.json"), encoding="utf-8")
+    )
+    assert evidence_summary["relevant_evidence"].get("price_drift", {}).get("increases") == []
+    mapped_step_ids = {e["step_id"] for e in manifest["screenshot_step_mapping"]}
+    assert mapped_step_ids == {1, 2, 3}  # every step in this 3-step episode, not zero
+
+
+def test_information_hiding_surfaces_disclosure_tagged_elements_from_ui_regions(pipeline):
+    # CANCEL_STEP2_HTML's fee <p> carries data-disclosure="cancellation-fee"
+    # -- non-interactive text recorder/evidence_probe.py's capture never
+    # sees, so it has no computed_styles entry and never reaches
+    # relevant_evidence via price_drift/claims. signals/ui_regions.py's
+    # disclosure pass still gives it a real selector in
+    # episode.evidence.ui_regions; this is what makes that selector (and
+    # its text) actually visible in the payload text a judge reads, not
+    # just in the backend region_map used for ingest-time validation.
+    manifest = build_payload(
+        pipeline["cancel_dir"], role="attribute", attribute="information_hiding",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    evidence_summary = json.load(
+        open(os.path.join(manifest["payload_dir"], "evidence_summary.json"), encoding="utf-8")
+    )
+    disclosure_elements = evidence_summary["relevant_evidence"]["disclosure_elements"]
+    # cancel2.html (and its fee <p>) is on screen across both step 2 (the
+    # navigation that lands there) and step 3 (#unsub-btn doesn't navigate
+    # away) -- one entry per step the element was actually captured at,
+    # same as an interactive element persisting across steps would produce.
+    assert {e["step_id"] for e in disclosure_elements} == {2, 3}
+    for entry in disclosure_elements:
+        assert entry["selector"]  # a real, non-empty, taggable selector
+        assert entry["text"] == "Cancelling now will incur a fee, charged to your card on file."
+        assert entry["region"] == "cancellation_flow"
+
+
+def test_covertness_does_not_get_disclosure_elements(pipeline):
+    # Scoped to information_hiding only -- covertness's payload (already
+    # validated on a real run) must stay exactly as it was; this new field
+    # must never appear in its evidence_summary.json.
+    manifest = build_payload(
+        pipeline["cancel_dir"], role="attribute", attribute="covertness",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    evidence_summary = json.load(
+        open(os.path.join(manifest["payload_dir"], "evidence_summary.json"), encoding="utf-8")
+    )
+    assert "disclosure_elements" not in evidence_summary["relevant_evidence"]
+
+
+def test_tagged_elements_lists_the_real_region_vocabulary_for_information_hiding(pipeline):
+    # tagged_elements is the general prevention fix (Issue: LLM invents a
+    # plausible ui_region for a screenshot-only element instead of writing
+    # "unclassified") -- it must expose the REAL (step_id, selector) ->
+    # region vocabulary for every step this payload shows a screenshot
+    # for, not just the disclosure-tagged fee.
+    manifest = build_payload(
+        pipeline["cancel_dir"], role="attribute", attribute="information_hiding",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    evidence_summary = json.load(
+        open(os.path.join(manifest["payload_dir"], "evidence_summary.json"), encoding="utf-8")
+    )
+    tagged_elements = evidence_summary["tagged_elements"]
+    assert tagged_elements  # non-empty: real interactive + disclosure tags exist in this fixture
+    for entry in tagged_elements:
+        assert set(entry) >= {"step_id", "selector", "region"}
+    # the disclosure-tagged fee selector is itself part of the real
+    # vocabulary, same region as disclosure_elements reported it
+    fee_entries = [e for e in tagged_elements if e.get("text") == "Cancelling now will incur a fee, charged to your card on file."]
+    assert fee_entries and all(e["region"] == "cancellation_flow" for e in fee_entries)
+
+
+def test_tagged_elements_is_present_for_every_attribute_not_only_information_hiding(pipeline):
+    # Unlike disclosure_elements (scoped to information_hiding only),
+    # tagged_elements is the general anti-hallucination vocabulary and
+    # must be given to every attribute's payload.
+    manifest = build_payload(
+        pipeline["cancel_dir"], role="attribute", attribute="covertness",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    evidence_summary = json.load(
+        open(os.path.join(manifest["payload_dir"], "evidence_summary.json"), encoding="utf-8")
+    )
+    assert evidence_summary["tagged_elements"]
+
+
+def test_tagged_elements_never_truncates_out_a_disclosure_entry():
+    # Regression: a busy page can have well over MAX_ENTRIES_PER_LIST
+    # interactive tags before the flow even reaches a disclosure element
+    # several steps later. If the disclosure entry got capped away too,
+    # tagged_elements would contradict relevant_evidence.disclosure_elements
+    # (uncapped) -- the model would see the fee's real region in one place
+    # and "not listed, so use unclassified" in the other, exactly the
+    # self-inflicted mistake this mechanism exists to prevent.
+    plenty_of_interactive_tags = [
+        {"step_id": 1, "selector": f"button.nav-{i}", "region": "unclassified"} for i in range(MAX_ENTRIES_PER_LIST + 10)
+    ]
+    disclosure_tag = {
+        "step_id": 6, "selector": "p.fee-disclosure", "region": "cancellation_flow", "text": "A ₹199 fee applies.",
+    }
+    episode = {"evidence": {"ui_regions": plenty_of_interactive_tags + [disclosure_tag]}}
+
+    tagged_elements, truncated = _tagged_elements(episode, step_ids=[1, 6])
+
+    assert truncated == MAX_ENTRIES_PER_LIST + 10 - MAX_ENTRIES_PER_LIST  # only the interactive overflow counted
+    assert disclosure_tag in tagged_elements  # never dropped, regardless of interactive tag volume
+    assert len(tagged_elements) == MAX_ENTRIES_PER_LIST + 1  # capped interactive + the one disclosure entry
+
+
+def test_covertness_falls_back_to_every_step_screenshot_in_addition_to_any_asymmetry_pairs(pipeline):
+    # covertness is mapped to visual_asymmetry only -- this fixture's
+    # cancel episode has no accept/reject button pair at all (a single
+    # "Cancel my membership" button), so the narrow evidence-key routing
+    # produces zero screenshots on its own. A covert element that isn't
+    # part of an asymmetric pair (the real shape of this project's
+    # planted instance -- a buried, pre-checked opt-in) would otherwise
+    # never be shown to the judge. Must fall back to every step.
+    manifest = build_payload(
+        pipeline["cancel_dir"], role="attribute", attribute="covertness",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    evidence_summary = json.load(
+        open(os.path.join(manifest["payload_dir"], "evidence_summary.json"), encoding="utf-8")
+    )
+    assert evidence_summary["relevant_evidence"].get("visual_asymmetry") == []
+    mapped_step_ids = {e["step_id"] for e in manifest["screenshot_step_mapping"]}
+    assert mapped_step_ids == {1, 2, 3}
+
+
+def test_other_attributes_are_not_affected_by_the_full_flow_screenshot_fallback(pipeline):
+    # The fallback is scoped to exactly covertness/information_hiding --
+    # restriction (which DOES have real, non-empty evidence in this
+    # fixture) must stay narrowly scoped to its own evidence_pointers'
+    # steps, not silently widen to every step too.
+    manifest = build_payload(
+        pipeline["cancel_dir"], role="attribute", attribute="restriction",
+        storage_dir=pipeline["storage_dir"], payload_root=pipeline["payload_root"],
+    )
+    mapped_step_ids = {e["step_id"] for e in manifest["screenshot_step_mapping"]}
+    assert mapped_step_ids  # restriction has real evidence in this fixture
+    assert mapped_step_ids != {1, 2, 3}  # narrowly scoped, not widened by the full-flow fallback
 
 
 def test_prompt_definition_and_code_agent_note_come_from_the_versioned_prompt_files(pipeline):

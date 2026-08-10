@@ -52,6 +52,7 @@ COMMAND_TABLE = {
     "build-payload":           ("build_payload", [], "Assemble an offline LLM payload for one episode/role"),
     "ingest-response":         ("ingest_response", [], "Ingest a manually-pasted LLM response.json"),
     "build-output":            ("build_output", [], "Compute the unified audit output (overall verdict + region-grouped findings)"),
+    "auto-audit":              ("auto_audit", [], "Fully automated: evidence -> attributes -> real Stage-2 LLM pass (spends money) -> output -> report"),
     "compare-verdicts":        ("compare_verdicts", [], "Reconcile code-agent vs manually-ingested LLM verdicts"),
     "export-for-annotation":   ("export_for_annotation", [], "Flat episode/attribute export for human annotation"),
     "validate-against-truth":  ("validate_against_truth", [], "Compare an episode against ground_truth.yaml"),

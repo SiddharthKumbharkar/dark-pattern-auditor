@@ -1,12 +1,17 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccount } from "@/context/AccountContext";
 import { useDarkPatternMode } from "@/context/DarkPatternModeContext";
 
 // CCPA category: Interface Interference (second confirmation screen)
+//
+// confirmCancel navigates to /account/subscription/final-confirm instead of
+// cancelling directly -- the maze has a third screen now (the late fee
+// disclosure + the dead unsubscribe control), so the actual
+// cancelSubscription() call moved to FinalConfirmPage.tsx. The buttons
+// below (class/text/data-pattern) are unchanged from before, so this stays
+// exactly the same asymmetry pair asymmetry.py already scores correctly.
 export default function ConfirmCancelPage() {
   const navigate = useNavigate();
-  const { cancelSubscription } = useAccount();
   const { darkPatternsEnabled } = useDarkPatternMode();
 
   useEffect(() => {
@@ -16,8 +21,7 @@ export default function ConfirmCancelPage() {
   }, [darkPatternsEnabled, navigate]);
 
   const confirmCancel = () => {
-    cancelSubscription();
-    navigate("/account/subscription/cancelled");
+    navigate("/account/subscription/final-confirm");
   };
 
   if (!darkPatternsEnabled) return null;

@@ -60,12 +60,20 @@ STRICT INSTRUCTIONS — follow all of these:
    correct verdict is "no" or "not_assessable" instead.
 
 4. Every evidence_pointers entry needs a ui_region, in addition to
-   step_id/selector/signal. Copy it from the matching pointer already
-   shown to you in evidence_summary.json (every relevant_evidence /
-   code_agent_result pointer there already carries one) — do not invent
-   or guess a region. If you are pointing at something that has no
-   matching tagged pointer in evidence_summary.json, use "unclassified"
-   rather than picking the closest-sounding region.
+   step_id/selector/signal. evidence_summary.json's tagged_elements list
+   is the COMPLETE, real (step_id, selector) -> region vocabulary for
+   this payload — the ONLY source of truth for what region a specific
+   element belongs to. Before writing a named (non-"unclassified")
+   region for a pointer, find that exact (step_id, selector) pair in
+   tagged_elements and copy its region verbatim. If the exact pair you
+   want to cite is NOT listed in tagged_elements — including anything you
+   only noticed by looking at a screenshot — you MUST write
+   "unclassified". Never invent or guess a region for an element just
+   because it visually resembles one used elsewhere: a named region that
+   contradicts what an element was actually tagged (or wasn't tagged at
+   all) gets your entire response rejected — "unclassified" is always
+   the safe, correct choice when you are not reading a region straight
+   out of tagged_elements.
 
 5. severity is an integer 1-5, required when verdict is "fires", and MUST
    be null for every other verdict. Scale it by how clear-cut and how

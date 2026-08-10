@@ -21,6 +21,17 @@ coordinator, which assess the whole episode rather than one attribute).
 Re-ingesting the same (role, attribute) REPLACES its entry rather than
 appending a duplicate -- each ingest-response call represents the current
 manual verdict for that role, not a growing log of every attempt.
+
+Before the ui_region provenance check runs, coerce_untagged_evidence_pointer_regions()
+silently fixes up (and logs) one specific, common mistake rather than
+rejecting the whole verdict over it: a model naming a plausible-sounding
+region for an element it only ever saw in a screenshot, one
+signals/ui_regions.py never tagged at all. That element's real region IS
+"unclassified" -- coercing the label to match, instead of rejecting,
+means an otherwise-correct judgement doesn't get thrown out over one
+untagged element's LABEL. A claim that disagrees with a region the
+element genuinely WAS tagged with is a different, real grounding error --
+that still gets rejected, unchanged.
 """
 
 import json
@@ -32,6 +43,7 @@ from jsonschema import Draft202012Validator
 
 from attribute_agents.base import ATTRIBUTES, build_region_map
 from config.settings import PROJECT_ROOT
+from config.ui_regions import UNCLASSIFIED_REGION
 from journey.schema_migration import load_episode, validate_mechanism_verdict, validate_v2
 from journey.verdict_output_builder import compute_region_groups, select_authoritative_verdicts
 from llm.payload_builder import ROLES
@@ -93,6 +105,56 @@ def validate_evidence_pointers(response: Dict, valid_step_ids: set) -> List[str]
                 f"(known step_ids: {sorted(valid_step_ids)}) -- fabricated pointer rejected."
             )
     return errors
+
+
+def coerce_untagged_evidence_pointer_regions(response: Dict, region_map: Dict) -> List[str]:
+    """Mutates response["evidence_pointers"] IN PLACE, before
+    validate_evidence_pointer_regions() runs: any pointer whose exact
+    (step_id, selector) has NO entry in region_map at all -- an element
+    signals/ui_regions.py never tagged, typically because it's plain text
+    or structure the model only ever saw in a screenshot -- legitimately
+    has no region but "unclassified" to report. A model citing one of
+    these correctly identified WHICH element it's pointing at; the only
+    thing wrong is a plausible-sounding LABEL it invented for an element
+    that was never classified in the first place (see
+    prompts/attribute_prompt.v1.txt's rule 4 and evidence_summary.json's
+    tagged_elements list, which together are meant to prevent this at the
+    source -- this function is the backstop for when a model does it
+    anyway). Rejecting an otherwise-correct verdict over that one label
+    would poison real judgements at exactly the rate real sites present
+    untagged visual elements -- i.e. constantly -- filling a corpus with
+    not_assessable where detection actually worked.
+
+    Deliberately narrower than "any mismatch": a pointer whose (step_id,
+    selector) DOES have a real region_map entry that the claim simply
+    disagrees with is a genuine grounding error (the model mislabeled an
+    element that WAS classified), not an absent-tag artifact -- that case
+    is left alone here and still fails validate_evidence_pointer_regions()
+    below, on purpose.
+
+    Returns one human-readable log line per pointer actually coerced, so
+    how often this fires is visible to whoever ingests, not silent --
+    print()'d by the caller (see ingest_response()).
+    """
+    pointers = response.get("evidence_pointers")
+    if not isinstance(pointers, list):
+        return []
+    coercions: List[str] = []
+    for i, pointer in enumerate(pointers):
+        if not isinstance(pointer, dict):
+            continue
+        key = (pointer.get("step_id"), pointer.get("selector"))
+        if key in region_map:
+            continue  # a real tag exists here -- a mismatch is a genuine error, not an absent-tag artifact
+        claimed = pointer.get("ui_region")
+        if claimed != UNCLASSIFIED_REGION:
+            coercions.append(
+                f"evidence_pointers[{i}].ui_region: coerced {claimed!r} -> {UNCLASSIFIED_REGION!r} "
+                f"(step_id={pointer.get('step_id')!r}, selector={pointer.get('selector')!r} has no real "
+                f"tag in this episode's region_map -- an untagged element, not an invented region)."
+            )
+            pointer["ui_region"] = UNCLASSIFIED_REGION
+    return coercions
 
 
 def validate_evidence_pointer_regions(response: Dict, region_map: Dict) -> List[str]:
@@ -317,7 +379,12 @@ def ingest_response(
     if pointer_errors:
         raise IngestError(pointer_errors)
 
-    region_errors = validate_evidence_pointer_regions(response, build_region_map(episode))
+    region_map = build_region_map(episode)
+    coercions = coerce_untagged_evidence_pointer_regions(response, region_map)
+    for line in coercions:
+        print(f"  Coerced: {line}")
+
+    region_errors = validate_evidence_pointer_regions(response, region_map)
     if region_errors:
         raise IngestError(region_errors)
 

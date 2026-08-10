@@ -36,10 +36,10 @@
   },
   "complexity_option_count_threshold": {
     "description": "Distribution of complexity_metrics.option_counts[].option_count per decision point; goal-scoped lookups supported the same way as complexity_reading_grade_threshold.",
-    "median": 4.0,
-    "n": 0,
-    "p25": 2.0,
-    "p75": 7.0
+    "median": 14,
+    "n": 1,
+    "p25": 14,
+    "p75": 14
   },
   "complexity_reading_grade_threshold": {
     "description": "Global default distribution of Flesch-Kincaid grade level for consent/cancellation copy. Goal-scoped overrides (\"complexity_reading_grade_threshold::<goal_id>\") are tried first by attribute_agents/complexity.py -- see e.g. the cancel_subscription entry below -- so inherent per-goal complexity isn't measured against an unrelated goal's norm.",

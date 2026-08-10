@@ -26,12 +26,16 @@ def _all_no_results(exclude=()):
     return [_verdict(a, "no") for a in ATTRIBUTES if a not in exclude]
 
 
-def _episode(results, mechanism_verdict=None, ui_regions=None):
+def _episode(results, mechanism_verdict=None, ui_regions=None, claim_extraction=None):
     return {
         "attributes": {"results": results},
         "mechanism_verdict": mechanism_verdict or {},
-        "evidence": {"ui_regions": ui_regions or []},
+        "evidence": {"ui_regions": ui_regions or [], "claim_extraction": claim_extraction or []},
     }
+
+
+def _claim(claim_text, claim_type, step_id, selector="div.timer"):
+    return {"claim_text": claim_text, "claim_type": claim_type, "step_id": step_id, "selector": selector, "normalized_value": None}
 
 
 def _coordinator_mv(patterns):
@@ -65,7 +69,7 @@ def test_region_with_only_unsure_is_included():
     verdicts.append(_verdict("restriction", "unsure", evidence_pointers=[_pointer(2, "#b", "checkout_price_summary")]))
     regions = build_regions(verdicts, [])
     assert len(regions) == 1
-    assert regions[0]["attributes_unsure"] == ["restriction"]
+    assert regions[0]["attributes_unsure"] == [{"attribute": "restriction", "step_id": 2, "selector": "#b"}]
     assert regions[0]["attributes_fired"] == []
 
 
@@ -124,6 +128,145 @@ def test_finding_strength_moderate_not_strong_for_two_fired_without_severity_5()
     verdicts.append(_verdict("deception", "fires", severity=3, evidence_pointers=[_pointer(1, "#b", "signup_form")]))
     regions = build_regions(verdicts, [])
     assert regions[0]["finding_strength"] == "moderate"
+
+
+# -- per-attribute location (step_id/selector) -------------------------------
+
+
+def test_attributes_fired_entries_carry_their_own_step_id_and_selector():
+    verdicts = _all_no_results(exclude=("asymmetry",))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["attributes_fired"][0]["step_id"] == 4
+    assert regions[0]["attributes_fired"][0]["selector"] == "#cancel"
+
+
+def test_attributes_fired_location_is_null_for_group_level_evidence_with_no_selector():
+    verdicts = _all_no_results(exclude=("deception",))
+    verdicts.append(_verdict("deception", "fires", severity=3, evidence_pointers=[_pointer(6, None, "unclassified")]))
+    regions = build_regions(verdicts, [])
+    entry = regions[0]["attributes_fired"][0]
+    assert entry["step_id"] == 6
+    assert entry["selector"] is None
+
+
+def test_attributes_fired_location_is_fully_null_when_evidence_has_no_step_id_either():
+    verdicts = _all_no_results(exclude=("restriction",))
+    verdicts.append(_verdict("restriction", "fires", severity=3, evidence_pointers=[_pointer(None, None, "unclassified")]))
+    regions = build_regions(verdicts, [])
+    entry = regions[0]["attributes_fired"][0]
+    assert entry["step_id"] is None
+    assert entry["selector"] is None
+
+
+# -- a verdict's evidence spanning multiple locations in one region ----------
+# (regression coverage for the under-reporting bug: a verdict that fired on
+# multiple pairs/elements within one region was previously collapsed down to
+# its single FIRST evidence pointer in attributes_fired, and scored as a
+# lone/"weak" fire regardless of how much evidence it actually carried.)
+
+
+def test_attributes_fired_carries_one_entry_per_distinct_location_not_just_the_first():
+    verdicts = _all_no_results(exclude=("asymmetry",))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[
+        _pointer(4, "#keep", "cancellation_flow"), _pointer(4, "#cancel", "cancellation_flow"),
+        _pointer(5, "#keep", "cancellation_flow"), _pointer(5, "#cancel", "cancellation_flow"),
+    ]))
+    regions = build_regions(verdicts, [])
+    locations = {(a["step_id"], a["selector"]) for a in regions[0]["attributes_fired"]}
+    assert locations == {(4, "#keep"), (4, "#cancel"), (5, "#keep"), (5, "#cancel")}
+    assert all(a["attribute"] == "asymmetry" for a in regions[0]["attributes_fired"])
+    assert regions[0]["steps"] == [4, 5]
+
+
+def test_attributes_unsure_also_carries_one_entry_per_distinct_location():
+    verdicts = _all_no_results(exclude=("restriction",))
+    verdicts.append(_verdict("restriction", "unsure", evidence_pointers=[
+        _pointer(4, "#a", "checkout_price_summary"), _pointer(5, "#b", "checkout_price_summary"),
+    ]))
+    regions = build_regions(verdicts, [])
+    locations = {(a["step_id"], a["selector"]) for a in regions[0]["attributes_unsure"]}
+    assert locations == {(4, "#a"), (5, "#b")}
+
+
+def test_finding_strength_strong_for_a_single_attribute_firing_across_enough_distinct_locations():
+    # Same fixture as the discrimination-run bug report: one attribute
+    # (asymmetry), 2 pairs, both buttons of each, across 2 steps -- 4
+    # distinct locations. A single-verdict region like this used to be
+    # scored "weak" (n=1 distinct attribute); breadth of evidence must be
+    # able to reach "strong" on its own, same threshold as 3 distinct
+    # attributes converging.
+    verdicts = _all_no_results(exclude=("asymmetry",))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[
+        _pointer(4, "#keep", "cancellation_flow"), _pointer(4, "#cancel", "cancellation_flow"),
+        _pointer(5, "#keep", "cancellation_flow"), _pointer(5, "#cancel", "cancellation_flow"),
+    ]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["finding_strength"] == "strong"
+
+
+def test_finding_strength_moderate_for_a_single_attribute_firing_at_exactly_two_distinct_locations():
+    verdicts = _all_no_results(exclude=("asymmetry",))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[
+        _pointer(4, "#cancel", "cancellation_flow"), _pointer(5, "#cancel", "cancellation_flow"),
+    ]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["finding_strength"] == "moderate"
+
+
+def test_finding_strength_still_weak_for_a_single_attribute_at_a_single_location():
+    # Unchanged baseline case: breadth of 1 does not get upgraded.
+    verdicts = _all_no_results(exclude=("asymmetry",))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["finding_strength"] == "weak"
+
+
+# -- shared_elements: >=2 fired attributes on the EXACT SAME element ---------
+
+
+def test_shared_element_detected_when_two_attributes_fire_on_the_same_selector():
+    verdicts = _all_no_results(exclude=("asymmetry", "deception"))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    verdicts.append(_verdict("deception", "fires", severity=2, evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["shared_elements"] == [{"step_id": 4, "selector": "#cancel", "attributes": ["asymmetry", "deception"]}]
+
+
+def test_shared_element_forces_strong_even_with_only_two_low_severity_fires():
+    # Neither the ">=3 fired" nor the "severity==5" strong rules apply here
+    # (2 fired, max severity 2) -- the shared element alone must be enough.
+    verdicts = _all_no_results(exclude=("asymmetry", "deception"))
+    verdicts.append(_verdict("asymmetry", "fires", severity=2, evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    verdicts.append(_verdict("deception", "fires", severity=2, evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["finding_strength"] == "strong"
+
+
+def test_no_shared_element_when_attributes_fire_on_different_selectors():
+    verdicts = _all_no_results(exclude=("asymmetry", "deception"))
+    verdicts.append(_verdict("asymmetry", "fires", severity=2, evidence_pointers=[_pointer(4, "#a", "cancellation_flow")]))
+    verdicts.append(_verdict("deception", "fires", severity=2, evidence_pointers=[_pointer(4, "#b", "cancellation_flow")]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["shared_elements"] == []
+    assert regions[0]["finding_strength"] == "moderate"  # falls back to the plain 2-fired rule
+
+
+def test_shared_element_requires_two_distinct_attributes_not_two_pointers_from_one():
+    verdicts = _all_no_results(exclude=("asymmetry",))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[
+        _pointer(4, "#cancel", "cancellation_flow"), _pointer(5, "#cancel", "cancellation_flow"),
+    ]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["shared_elements"] == []
+
+
+def test_shared_element_ignores_unsure_attributes_only_counts_fires():
+    verdicts = _all_no_results(exclude=("asymmetry", "restriction"))
+    verdicts.append(_verdict("asymmetry", "fires", severity=3, evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    verdicts.append(_verdict("restriction", "unsure", evidence_pointers=[_pointer(4, "#cancel", "cancellation_flow")]))
+    regions = build_regions(verdicts, [])
+    assert regions[0]["shared_elements"] == []
 
 
 # -- likely_pattern gating ----------------------------------------------------
@@ -253,7 +396,12 @@ def test_coverage_limited_true_flows_through_to_overall():
     overall = build_overall(_episode([]), verdicts, regions)
     assert overall["coverage_limited"] is True
     assert overall["human_review_recommended"] is True
-    assert overall["summary"].startswith("Coverage is limited")
+    assert overall["summary"].startswith("Human review needed")
+    assert "limited coverage" in overall["summary"]
+    # the terse summary never repeats the X-of-7/Y-not-assessed breakdown --
+    # that detail lives in overall.coverage / the Coverage table's per-attribute reasoning
+    assert "of 7" not in overall["summary"]
+    assert "not assessed" not in overall["summary"]
 
 
 def test_coverage_not_limited_below_threshold():
@@ -272,6 +420,86 @@ def test_human_review_recommended_for_high_severity_fires_even_with_good_coverag
     overall = build_overall(_episode([]), verdicts, regions)
     assert overall["coverage_limited"] is False
     assert overall["human_review_recommended"] is True
+
+
+# -- urgency_claims: no attribute agent judges these, so surface + flag ------
+
+
+def test_urgency_claim_detected_and_deduplicated_with_all_its_step_ids():
+    verdicts = [_verdict(a, "no") for a in ATTRIBUTES]
+    claims = [
+        _claim("Sale ends in:", "urgency_phrase", 1, selector="#timer"),
+        _claim("Sale ends in:", "urgency_phrase", 2, selector="#timer"),
+        _claim("Sale ends in:", "urgency_phrase", 3, selector="#timer"),
+    ]
+    episode = _episode([], claim_extraction=claims)
+    regions = build_regions(verdicts, [])
+    overall = build_overall(episode, verdicts, regions)
+    assert overall["urgency_claims"] == [
+        {"claim_text": "Sale ends in:", "claim_type": "urgency_phrase", "selector": "#timer", "step_ids": [1, 2, 3]}
+    ]
+
+
+def test_urgency_claim_forces_human_review_even_with_good_coverage_and_no_findings():
+    verdicts = [_verdict(a, "no") for a in ATTRIBUTES]
+    claims = [_claim("Hurry", "urgency_phrase", 1)]
+    episode = _episode([], claim_extraction=claims)
+    regions = build_regions(verdicts, [])
+    overall = build_overall(episode, verdicts, regions)
+    assert overall["coverage_limited"] is False
+    assert overall["human_review_recommended"] is True
+    assert "urgency/countdown claim" in overall["summary"]
+
+
+def test_no_urgency_claims_leaves_human_review_recommended_false_when_otherwise_clean():
+    verdicts = [_verdict(a, "no") for a in ATTRIBUTES]
+    episode = _episode([], claim_extraction=[])
+    regions = build_regions(verdicts, [])
+    overall = build_overall(episode, verdicts, regions)
+    assert overall["urgency_claims"] == []
+    assert overall["human_review_recommended"] is False
+
+
+def test_non_urgency_claim_types_are_excluded():
+    verdicts = [_verdict(a, "no") for a in ATTRIBUTES]
+    claims = [
+        _claim("Best seller", "social_proof", 1),
+        _claim("Low stock - 1 item left", "stock_count", 1),
+        _claim("32 people viewing", "viewer_count", 1),
+    ]
+    episode = _episode([], claim_extraction=claims)
+    regions = build_regions(verdicts, [])
+    overall = build_overall(episode, verdicts, regions)
+    assert overall["urgency_claims"] == []
+    assert overall["human_review_recommended"] is False
+
+
+def test_urgency_claims_at_different_selectors_are_not_merged():
+    verdicts = [_verdict(a, "no") for a in ATTRIBUTES]
+    claims = [
+        _claim("Hurry", "urgency_phrase", 1, selector="#top-banner"),
+        _claim("Hurry", "urgency_phrase", 1, selector="#product-widget"),
+    ]
+    episode = _episode([], claim_extraction=claims)
+    regions = build_regions(verdicts, [])
+    overall = build_overall(episode, verdicts, regions)
+    assert len(overall["urgency_claims"]) == 2
+
+
+def test_summary_stays_terse_even_with_a_long_claim_text_which_stays_full_in_the_data():
+    # A regex can match a short urgent phrase inside a much longer text
+    # node (e.g. a whole marketing paragraph) -- the terse one-line
+    # summary never quotes claim text at all (that detail lives in the
+    # HTML report's dedicated urgency-claims callout), but the full text
+    # is still preserved, untouched, in overall.urgency_claims itself.
+    long_text = "Hurry, this offer is only valid for the next 24 hours so act now before it's gone forever and ever!"
+    verdicts = [_verdict(a, "no") for a in ATTRIBUTES]
+    episode = _episode([], claim_extraction=[_claim(long_text, "urgency_phrase", 1)])
+    regions = build_regions(verdicts, [])
+    overall = build_overall(episode, verdicts, regions)
+    assert overall["urgency_claims"][0]["claim_text"] == long_text  # untouched in the data
+    assert long_text not in overall["summary"]
+    assert overall["summary"] == "Human review needed — urgency/countdown claims found. No dark patterns found."
 
 
 # -- regions_summary: clean regions counted, never listed --------------------
@@ -308,8 +536,8 @@ def test_regions_summary_zero_examined_zero_findings_for_a_fully_clean_episode()
 # -- full document assembly / schema conformance -----------------------------
 
 
-def _episode_with_code_results(results, mechanism_verdict=None, ui_regions=None):
-    return _episode(results, mechanism_verdict, ui_regions)
+def _episode_with_code_results(results, mechanism_verdict=None, ui_regions=None, claim_extraction=None):
+    return _episode(results, mechanism_verdict, ui_regions, claim_extraction)
 
 
 def test_clean_episode_produces_exactly_empty_regions_and_no_dark_patterns_found():
@@ -336,13 +564,20 @@ def test_full_output_conforms_to_computed_output_schema_with_findings():
     mechanism_verdict = _coordinator_mv([
         {"ui_region": "cancellation_flow", "attributes": ["asymmetry", "complexity"], "pattern_name": "confirmshaming_retention_trap", "description": "d"},
     ])
-    episode = _episode_with_code_results(results, mechanism_verdict=mechanism_verdict, ui_regions=[
-        {"step_id": 4, "selector": "#x", "region": "cancellation_flow"},
-        {"step_id": 4, "selector": "#y", "region": "cancellation_flow"},
-        {"step_id": 2, "selector": "#z", "region": "login_form"},
-    ])
+    episode = _episode_with_code_results(
+        results, mechanism_verdict=mechanism_verdict,
+        ui_regions=[
+            {"step_id": 4, "selector": "#x", "region": "cancellation_flow"},
+            {"step_id": 4, "selector": "#y", "region": "cancellation_flow"},
+            {"step_id": 2, "selector": "#z", "region": "login_form"},
+        ],
+        claim_extraction=[_claim("Offer ends soon", "deadline_phrase", 1)],
+    )
     output = build_episode_output(episode)
     errors = validate_computed_output(output)
     assert errors == [], errors
     assert output["overall"]["verdict"] == "dark_patterns_present"
     assert output["regions"][0]["likely_pattern"]["name"] == "confirmshaming_retention_trap"
+    assert output["overall"]["urgency_claims"] == [
+        {"claim_text": "Offer ends soon", "claim_type": "deadline_phrase", "selector": "div.timer", "step_ids": [1]}
+    ]

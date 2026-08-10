@@ -32,10 +32,10 @@ REAL_GROUND_TRUTH_PATH = os.path.join(REPO_ROOT, "ground_truth.yaml")
 # -- loading / validating ground_truth.yaml --------------------------------
 
 
-def test_the_real_ground_truth_file_loads_and_has_exactly_8_patterns():
+def test_the_real_ground_truth_file_loads_and_has_exactly_12_patterns():
     doc = load_ground_truth(REAL_GROUND_TRUTH_PATH)
-    assert len(doc["patterns"]) == 8
-    assert len({p["pattern_id"] for p in doc["patterns"]}) == 8
+    assert len(doc["patterns"]) == 12
+    assert len({p["pattern_id"] for p in doc["patterns"]}) == 12
 
 
 def test_every_expected_attribute_in_the_real_file_is_a_known_attribute():
@@ -164,14 +164,22 @@ def test_deception_miss_cites_requires_revisit(ground_truth):
     assert "revisit" in row["notes"]
 
 
-def test_cancel_subscription_true_positive_on_both_expected_attributes(ground_truth):
+def test_cancel_subscription_true_positive_on_the_two_code_first_expected_attributes(ground_truth):
+    # cancel_subscription now expects all 7 attributes (one planted
+    # instance of each lives in this goal after the enrichment pass --
+    # see interface_interference_cancel_maze, deception_dead_unsubscribe_control,
+    # complexity_overloaded_exit_survey, covertness_camouflaged_winback_optin,
+    # and information_hiding_late_cancellation_fee in ground_truth.yaml).
+    # This fixture only fires the two code-first ones asymmetry/restriction
+    # detect on their own -- precision stays perfect (nothing false-fired),
+    # recall reflects the other 5 (3 Stage-2-only stubs + deception +
+    # complexity) not having fired in THIS minimal fixture.
     episode = _episode("cancel_subscription", "auralis-on.local", {"asymmetry": "fires", "restriction": "fires"})
     result = validate_against_truth(episode, ground_truth)
     assert result["tp"] == 2
-    assert result["fn"] == 0
+    assert result["fn"] == 5
     assert result["precision"] == 1.0
-    assert result["recall"] == 1.0
-    assert result["f1"] == 1.0
+    assert result["recall"] == pytest.approx(2 / 7)
 
 
 def test_unresolvable_mode_raises(ground_truth):

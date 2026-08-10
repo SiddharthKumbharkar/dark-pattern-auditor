@@ -1,11 +1,12 @@
 from signals.stated_vs_actual import find_stated_vs_actual
 
 
-def _step(step_id, action_type, selector=None, network_events=None):
+def _step(step_id, action_type, selector=None, network_events=None, url=None):
     return {
         "step_id": step_id,
         "action": {"type": action_type, "selector": selector},
         "network_events": network_events or [],
+        "page_url_redacted": url,
     }
 
 
@@ -28,6 +29,43 @@ def test_cancel_click_with_no_network_activity_flags_network_fired_false():
     results = find_stated_vs_actual(steps, styles)
     assert results[0]["network_fired"] is False
     assert results[0]["request_ids"] == []
+
+
+# -- route_changed: a genuinely client-side-only action (no backend at --
+# -- all, e.g. a mock demo's React-state-only cancel) still needs to -------
+# -- register as a real state change without any network activity ---------
+
+
+def test_client_side_route_change_with_no_network_activity_is_still_verified():
+    steps = [
+        _step(1, "navigate", url="http://x/account/subscription/confirm-cancel"),
+        _step(2, "click", selector="#cancel-btn", network_events=[], url="http://x/account/subscription/cancelled"),
+    ]
+    styles = {1: [{"selector": "#cancel-btn", "text": "yes, cancel my membership"}]}
+    results = find_stated_vs_actual(steps, styles)
+    assert results[0]["network_fired"] is False
+    assert results[0]["route_changed"] is True
+
+
+def test_no_network_and_no_route_change_is_the_genuine_dead_button_case():
+    steps = [
+        _step(1, "navigate", url="http://x/account/subscription/confirm-cancel"),
+        _step(2, "click", selector="#cancel-btn", network_events=[], url="http://x/account/subscription/confirm-cancel"),
+    ]
+    styles = {1: [{"selector": "#cancel-btn", "text": "yes, cancel my membership"}]}
+    results = find_stated_vs_actual(steps, styles)
+    assert results[0]["network_fired"] is False
+    assert results[0]["route_changed"] is False
+
+
+def test_route_changed_false_when_either_url_is_missing():
+    steps = [
+        _step(1, "navigate", url=None),
+        _step(2, "click", selector="#cancel-btn", network_events=[], url="http://x/cancelled"),
+    ]
+    styles = {1: [{"selector": "#cancel-btn", "text": "Cancel my plan"}]}
+    results = find_stated_vs_actual(steps, styles)
+    assert results[0]["route_changed"] is False
 
 
 def test_click_on_non_state_change_label_is_ignored():

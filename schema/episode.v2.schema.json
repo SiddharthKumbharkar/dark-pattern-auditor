@@ -295,6 +295,11 @@
       "properties": {
         "step_id": { "type": "integer" },
         "selector": { "type": "string", "minLength": 1 },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Only present for a DISCLOSURE-tagged element (signals/ui_regions.py's data-disclosure opt-in pass) -- interactive elements omit this, their text already reaches evidence via computed_styles/the code agent's own evidence_pointers. Optional (additive), not required, so older stored episodes without it still validate."
+        },
         "region": {
           "enum": [
             "cookie_consent_banner", "checkout_price_summary", "cancellation_flow",
@@ -458,11 +463,16 @@
     "StatedVsActualEntry": {
       "type": "object",
       "additionalProperties": false,
+      "description": "route_changed is additive (not required) so already-stored v2 episodes whose stated_vs_actual predates this field still load -- journey/evidence_extractor.py always populates it for anything freshly extracted; attribute_agents/deception.py treats it as False when absent (same as never having route-changed).",
       "required": ["claimed_action", "step_id", "network_fired", "request_ids"],
       "properties": {
         "claimed_action": { "type": "string" },
         "step_id": { "type": "integer" },
         "network_fired": { "type": "boolean" },
+        "route_changed": {
+          "type": "boolean",
+          "description": "True if this step's URL differs from the immediately preceding step's -- a second, independent way a genuinely client-side-only action (no backend, e.g. a mock demo's React-state-only cancel) can show up without network_fired. attribute_agents/deception.py only treats an action as suspicious when NEITHER this nor network_fired is true."
+        },
         "request_ids": { "type": "array", "items": { "type": "string" } }
       }
     },

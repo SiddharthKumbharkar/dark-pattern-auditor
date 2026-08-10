@@ -7,11 +7,16 @@ Usage:
 labels.json: {"clean_episode_ids": ["episode_abc", "episode_def", ...]}
 -- episode_ids a human has labelled as coming from honest sites (no dark
 patterns), used as the reference population for "what does normal look
-like" that group-evidence thresholds are calibrated against.
+like" that thresholds are calibrated against.
 
-Every listed episode is grouped by its own (site_id, goal); a group needs
-2+ episodes to contribute any cross-revisit samples (a single visit can't
-show how a claim behaves over time), so smaller groups are skipped.
+Two kinds of signal, two collection paths:
+  - Cross-revisit signals (claim persistence, timer drift) need 2+
+    episodes of the same (site_id, goal) to compare across -- a single
+    visit can't show how a claim behaves over time, so episodes are
+    grouped first and groups smaller than 2 are skipped.
+  - Single-episode signals (complexity's option_count) don't need a
+    group at all -- every labelled-clean episode contributes
+    independently, see _collect_complexity_samples().
 """
 
 import argparse
@@ -68,6 +73,36 @@ def _group_by_site_and_goal(episodes: List[Dict]) -> Dict[Tuple[str, str], List[
         meta = entry["episode"]["episode"]
         groups[(meta["site_id"], meta["goal"])].append(entry)
     return {key: value for key, value in groups.items() if len(value) >= 2}
+
+
+def _collect_complexity_samples(episodes: List[Dict]) -> Dict[str, List[float]]:
+    """Unlike _collect_samples() below, these don't need a 2+ (site_id,
+    goal) group -- option_count/reading_grade/total_actions are single-
+    episode measurements, not cross-revisit comparisons, so every
+    labelled-clean episode contributes independently.
+
+    Per-episode MAX (not every step's own count) for option_count and
+    reading_grade -- matching exactly what attribute_agents/complexity.py's
+    _option_count_dimension/_reading_level_dimension actually threshold
+    against (each takes the worst step in the episode), so the baseline is
+    built from the same statistic it's compared to, not a different one.
+
+    option_count is pooled GLOBALLY (not goal-scoped): real measured data
+    across two different goals on this project's demo site showed the
+    identical peak (14), confirming the dominant driver is constant,
+    goal-independent page chrome (nav/cart/notification-prompt/a recorder
+    testing overlay), not anything specific to the goal being pursued --
+    unlike reading_grade, which genuinely does vary by goal (legal/
+    cancellation copy reads denser than casual copy even on an honest
+    site) and stays goal-scoped."""
+    option_count_maxes: List[float] = []
+    for entry in episodes:
+        complexity_metrics = (entry["episode"].get("evidence") or {}).get("complexity_metrics") or {}
+        option_counts = complexity_metrics.get("option_counts") or []
+        if option_counts:
+            option_count_maxes.append(max(o["option_count"] for o in option_counts))
+
+    return {"complexity_option_count_threshold": option_count_maxes}
 
 
 def _collect_samples(groups: Dict[Tuple[str, str], List[Dict]]) -> Dict[str, List[float]]:
@@ -132,12 +167,18 @@ def main(argv=None) -> int:
 
     if not groups:
         print(
-            "FAIL: no (site_id, goal) group in the labelled-clean set has 2+ episodes "
-            "-- nothing to compute a distribution from"
+            "  Note: no (site_id, goal) group in the labelled-clean set has 2+ episodes -- "
+            "cross-revisit signals (claim persistence, timer drift) can't be computed this run, "
+            "but single-episode signals (complexity) don't need a group."
         )
-        return 1
 
-    samples = _collect_samples(groups)
+    # Cross-revisit signals need 2+ episodes of the same (site_id, goal) to
+    # compare across; single-episode signals (complexity) don't, so they're
+    # collected from the full labelled-clean set regardless of grouping.
+    samples: Dict[str, List[float]] = {}
+    if groups:
+        samples.update(_collect_samples(groups))
+    samples.update(_collect_complexity_samples(episodes))
 
     store = BaselineStore(path=args.baselines_path)
     updated = []

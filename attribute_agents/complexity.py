@@ -20,6 +20,12 @@ is empty -- e.g. no consent/cancellation copy existed on the page at all,
 so there's nothing to grade. The agent's overall verdict is the
 strongest tier reached by any assessable dimension; not_assessable only
 if NONE of the three had anything to measure.
+
+option_count is the odd one out: it uses its own factor-scaled single
+"fires" bar instead of the shared median/p75 two-tier _tier() the other
+two dimensions use -- see _option_count_dimension's docstring for why a
+noisy, chrome-dominated raw count needs a different, more conservative
+comparison than reading grade or action count do.
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -39,18 +45,32 @@ def _tier(value: float, threshold: Baseline) -> Optional[str]:
 
 
 def _option_count_dimension(complexity_metrics: Dict, goal: Optional[str], baselines: BaselineStore) -> Optional[Tuple]:
+    """Deliberately does NOT use the shared _tier() two-tier (median/p75)
+    scheme every other dimension uses. Raw option_count is dominated by
+    constant, goal-independent page chrome (nav/cart/notification-prompt/
+    a recorder testing overlay) rather than genuine decision options -- on
+    real measured clean-site data, an honest page's own peak step already
+    sits at/above a naive p75 computed from a handful of labelled-clean
+    episodes (the max of a small sample is, definitionally, close to that
+    sample's own upper percentiles). A single "fires at p75 * factor,
+    nothing below that" bar -- no "unsure" middle tier for this one
+    dimension -- gives the real headroom needed so an ordinary clean page
+    reads as clean outright, while a genuinely excessive count (well
+    beyond anything observed on a clean page) still fires. See
+    journey/baselines.py's complexity_option_count_p75_factor docstring."""
     option_counts = complexity_metrics.get("option_counts") or []
     if not option_counts:
         return None
     threshold = baselines.get("complexity_option_count_threshold", goal=goal)
+    factor = baselines.get("complexity_option_count_p75_factor", goal=goal).median
     worst = max(option_counts, key=lambda o: o["option_count"])
-    tier = _tier(worst["option_count"], threshold)
-    if tier is None:
+    fires_bar = threshold.p75 * factor
+    if worst["option_count"] < fires_bar:
         return None
     pointer = {"step_id": worst["step_id"], "selector": None, "signal": "complexity_metrics.option_counts.option_count"}
-    ratio = (worst["option_count"] / threshold.p75) if threshold.p75 else 1.0
+    ratio = (worst["option_count"] / fires_bar) if fires_bar else 1.0
     detail = f"option_count={worst['option_count']} at step {worst['step_id']}"
-    return "option_count", tier, [pointer], ratio, detail
+    return "option_count", "fires", [pointer], ratio, detail
 
 
 def _reading_level_dimension(complexity_metrics: Dict, goal: Optional[str], baselines: BaselineStore) -> Optional[Tuple]:

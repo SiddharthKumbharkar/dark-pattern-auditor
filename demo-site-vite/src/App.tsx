@@ -18,7 +18,9 @@ import TrialPage from "@/pages/TrialPage";
 import AccountPage from "@/pages/account/AccountPage";
 import SubscriptionPage from "@/pages/account/SubscriptionPage";
 import RetentionOfferPage from "@/pages/account/RetentionOfferPage";
+import ExitSurveyPage from "@/pages/account/ExitSurveyPage";
 import ConfirmCancelPage from "@/pages/account/ConfirmCancelPage";
+import FinalConfirmPage from "@/pages/account/FinalConfirmPage";
 import CancelledPage from "@/pages/account/CancelledPage";
 
 export default function App() {
@@ -40,7 +42,9 @@ export default function App() {
               <Route path="/account" element={<AccountPage />} />
               <Route path="/account/subscription" element={<SubscriptionPage />} />
               <Route path="/account/subscription/retention-offer" element={<RetentionOfferPage />} />
+              <Route path="/account/subscription/exit-survey" element={<ExitSurveyPage />} />
               <Route path="/account/subscription/confirm-cancel" element={<ConfirmCancelPage />} />
+              <Route path="/account/subscription/final-confirm" element={<FinalConfirmPage />} />
               <Route path="/account/subscription/cancelled" element={<CancelledPage />} />
             </Routes>
           </main>

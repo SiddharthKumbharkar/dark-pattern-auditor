@@ -13,6 +13,17 @@ def test_classify_region_matches_by_selector_keyword():
     assert region == "cancellation_flow"
 
 
+def test_classify_region_matches_the_keep_side_of_a_keep_cancel_pair():
+    # The "keep subscription" button has no "cancel"-shaped text of its
+    # own, but it's structurally the other half of the SAME cancellation
+    # decision point as the cancel link right next to it -- without this
+    # keyword, a single visual_asymmetry pair's two evidence_pointers
+    # (positive: keep, negative: cancel) would split across two different
+    # regions purely because only one side's selector says "cancel".
+    region = classify_region("button.btn-keep-subscription.mt-8", "Keep my membership", "", "")
+    assert region == "cancellation_flow"
+
+
 def test_classify_region_matches_by_text_keyword():
     region = classify_region("#x", "Accept cookies", "", "")
     assert region == "cookie_consent_banner"
@@ -55,6 +66,7 @@ def test_compute_ui_regions_one_entry_per_interactive_element():
     assert tags[0]["step_id"] == 1
     assert tags[0]["selector"] == "nav > button.save-btn"
     assert tags[0]["region"] == "account_settings"
+    assert "text" not in tags[0]  # interactive-element tags omit text; only disclosure tags carry it
 
 
 def test_compute_ui_regions_skips_steps_with_no_dom_or_no_computed_styles():
@@ -77,3 +89,68 @@ def test_compute_ui_regions_unresolvable_selector_degrades_to_keyword_only_not_a
     computed_styles = [[{"selector": "button.cancel-btn", "text": "Cancel", "role": ""}]]
     tags = compute_ui_regions(steps, dom_htmls, computed_styles)
     assert tags[0]["region"] == "cancellation_flow"  # keyword match on selector still works
+
+
+# -- disclosure-element tagging (non-interactive text, opt-in) ---------------
+
+
+def test_disclosure_marked_element_gets_a_real_selector_and_region():
+    # recorder/evidence_probe.py's interactive-elements capture never sees
+    # a plain <p> -- but a page that explicitly marks one with
+    # data-disclosure must still get a real, taggable selector so an LLM
+    # judge that reads the text in a screenshot has something legitimate
+    # to cite (see journey/mechanism_verdict_ingest.py's grounding check).
+    html = (
+        '<html><body><div class="cancellation-flow-page">'
+        '<p data-disclosure="cancellation-fee">Cancelling now will incur a fee.</p>'
+        "</div></body></html>"
+    )
+    steps = [{"step_id": 6}]
+    dom_htmls = [html]
+    computed_styles = [[{"selector": "button.confirm-btn", "text": "Confirm cancellation", "role": ""}]]
+
+    tags = compute_ui_regions(steps, dom_htmls, computed_styles)
+    disclosure_tags = [t for t in tags if t["selector"] != "button.confirm-btn"]
+    assert len(disclosure_tags) == 1
+    assert disclosure_tags[0]["step_id"] == 6
+    assert disclosure_tags[0]["selector"]  # a real, non-empty selector was resolved
+    assert disclosure_tags[0]["region"] == "cancellation_flow"  # "Cancelling" matches the cancel keyword
+    assert disclosure_tags[0]["text"] == "Cancelling now will incur a fee."
+
+
+def test_disclosure_tagging_runs_even_when_computed_styles_is_missing_for_that_step():
+    # Unlike the interactive-elements pass, disclosure tagging reads the
+    # DOM directly -- it must not depend on the interactive-elements probe
+    # having succeeded for this step.
+    html = '<html><body><p data-disclosure="fee">Cancelling now will incur a fee.</p></body></html>'
+    steps = [{"step_id": 1}]
+    dom_htmls = [html]
+    computed_styles = [None]
+
+    tags = compute_ui_regions(steps, dom_htmls, computed_styles)
+    assert len(tags) == 1
+    assert tags[0]["region"] == "cancellation_flow"
+    assert tags[0]["text"] == "Cancelling now will incur a fee."
+
+
+def test_disclosure_tagging_finds_nothing_without_the_opt_in_marker():
+    # Not "tag every <p> on the page" -- only elements the page itself
+    # explicitly marked.
+    html = "<html><body><p>Cancelling now will incur a fee.</p></body></html>"
+    steps = [{"step_id": 1}]
+    dom_htmls = [html]
+    computed_styles = [None]
+    assert compute_ui_regions(steps, dom_htmls, computed_styles) == []
+
+
+def test_disclosure_element_already_captured_as_interactive_is_not_double_tagged():
+    # If the SAME element somehow carries both a computed_styles capture
+    # (interactive) and the disclosure marker, it must not produce two
+    # entries for the identical (step_id, selector).
+    html = '<html><body><button id="fee-btn" data-disclosure="fee">Fee info</button></body></html>'
+    steps = [{"step_id": 1}]
+    dom_htmls = [html]
+    computed_styles = [[{"selector": "#fee-btn", "text": "Fee info", "role": ""}]]
+
+    tags = compute_ui_regions(steps, dom_htmls, computed_styles)
+    assert len(tags) == 1

@@ -93,7 +93,20 @@ _SEED_BASELINES: Dict[str, Dict] = {
     },
     "complexity_option_count_threshold": {
         "median": 4.0, "p25": 2.0, "p75": 7.0, "n": 0,
-        "description": "Distribution of complexity_metrics.option_counts[].option_count per decision point; goal-scoped lookups supported the same way as complexity_reading_grade_threshold.",
+        "description": "Distribution of complexity_metrics.option_counts[].option_count per decision point; goal-scoped lookups supported the same way as complexity_reading_grade_threshold. Recalibrate via update_baselines.py once real labelled-clean episodes exist -- see complexity_option_count_p75_factor for why this dimension alone doesn't use the plain median/p75 two-tier _tier() every other dimension uses.",
+    },
+    "complexity_option_count_p75_factor": {
+        "median": 1.5, "p25": 1.3, "p75": 2.0, "n": 0,
+        "description": (
+            "Multiplier applied to complexity_option_count_threshold.p75 before "
+            "attribute_agents/complexity.py's option_count dimension fires -- same 'configurable "
+            "factor' pattern as restriction_p75_factor. Needed because raw option_count is "
+            "dominated by constant, goal-independent page chrome (nav/cart/notification-prompt/"
+            "recorder overlay), so even an honest clean page's own peak step sits at or above a "
+            "naive p75 computed from a small labelled-clean sample -- median=1.5 (higher than "
+            "restriction's 1.3) reflects that this raw signal is noisier and needs more headroom "
+            "before a count is trusted as evidence of genuine decision overload rather than chrome."
+        ),
     },
     "complexity_total_actions_threshold": {
         "median": 6.0, "p25": 3.0, "p75": 10.0, "n": 0,

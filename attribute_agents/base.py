@@ -22,6 +22,11 @@ evidence_pointers, reasoning}. run_agent() below fills in
   4. every surviving evidence_pointer is stamped with the ui_region the
      evidence extractor already assigned its (step_id, selector) --
      agents never classify a region themselves, see build_region_map.
+     A pointer with no resolvable element (typically no selector at all --
+     many flow-level/group-level findings) falls back to the episode's own
+     flow region (derived from its goal, see flow_region_for_episode())
+     rather than straight to "unclassified", when that goal has one and
+     the episode's own captured elements actually confirm it.
   5. a code agent's reasoning may never read like it inspected a
      screenshot -- code agents are never given one, so that would always
      be a bug in the agent, not a legitimate finding (see
@@ -36,7 +41,7 @@ file I/O happens inside assess() or run_agent() -- the caller
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from config.ui_regions import UNCLASSIFIED_REGION
+from config.ui_regions import GOAL_TO_FLOW_REGION, UNCLASSIFIED_REGION
 from journey.baselines import BaselineStore
 from signals.visual_claims import has_visual_claim
 
@@ -149,16 +154,46 @@ def build_region_map(episode: Dict) -> Dict[Tuple[Optional[int], Optional[str]],
     return {(tag["step_id"], tag["selector"]): tag["region"] for tag in tags}
 
 
-def enrich_evidence_pointers(pointers: List[Dict], region_map: Dict[Tuple[Optional[int], Optional[str]], str]) -> List[Dict]:
-    """Stamps ui_region onto every pointer from `region_map`, defaulting to
-    "unclassified" -- never invented, never left off. A pointer with no
-    selector (many group-evidence-sourced pointers, e.g.
-    deception.py's claim_persistence pointers) has no element to look up,
-    so it is honestly "unclassified" too, same as a selector the region
-    tagger never saw."""
+def flow_region_for_episode(episode: Dict, region_map: Dict[Tuple[Optional[int], Optional[str]], str]) -> Optional[str]:
+    """The ui_region a FLOW-level/group-level evidence_pointer (no
+    resolvable (step_id, selector) in region_map -- typically because it
+    has no selector at all, e.g. restriction's friction_ratio, complexity's
+    total_actions_required, deception's dead-control check) falls back to,
+    instead of "unclassified" -- see enrich_evidence_pointers().
+
+    Derived from the episode's own goal (config.ui_regions.GOAL_TO_FLOW_REGION),
+    but only trusted if that region genuinely appears among THIS episode's
+    own real per-element tags (region_map's values) -- i.e. actually
+    grounded in the steps this episode's flow was measured over, not a
+    static string asserted independent of what was actually captured. A
+    goal with no entry (purchase_cheapest, unsubscribe_email -- genuinely
+    multi-region flows) or a goal whose mapped region never showed up
+    anywhere in this specific episode returns None, and the caller keeps
+    the honest "unclassified" default -- reserved for findings genuinely
+    not attributable to any known flow, not a catch-all."""
+    goal = (episode.get("episode") or {}).get("goal")
+    candidate = GOAL_TO_FLOW_REGION.get(goal)
+    if candidate and candidate in region_map.values():
+        return candidate
+    return None
+
+
+def enrich_evidence_pointers(
+    pointers: List[Dict],
+    region_map: Dict[Tuple[Optional[int], Optional[str]], str],
+    flow_region: Optional[str] = None,
+) -> List[Dict]:
+    """Stamps ui_region onto every pointer from `region_map`. A pointer
+    whose own (step_id, selector) isn't in region_map -- typically a
+    flow-level/group-level pointer with no selector at all, e.g. many
+    group-evidence-sourced pointers like deception.py's claim_persistence
+    ones -- falls back to `flow_region` when the caller supplied one (see
+    flow_region_for_episode()), and only to "unclassified" when it didn't
+    -- never invented, never left off."""
+    default = flow_region or UNCLASSIFIED_REGION
     enriched = []
     for pointer in pointers:
-        region = region_map.get((pointer.get("step_id"), pointer.get("selector")), UNCLASSIFIED_REGION)
+        region = region_map.get((pointer.get("step_id"), pointer.get("selector")), default)
         enriched.append({**pointer, "ui_region": region})
     return enriched
 
@@ -226,12 +261,13 @@ def run_agent(
             raw["severity"] = None
 
     region_map = build_region_map(episode)
+    flow_region = flow_region_for_episode(episode, region_map)
     result = {
         "attribute": agent.attribute,
         "verdict": raw["verdict"],
         "severity": raw["severity"],
         "confidence": raw["confidence"],
-        "evidence_pointers": enrich_evidence_pointers(raw["evidence_pointers"], region_map),
+        "evidence_pointers": enrich_evidence_pointers(raw["evidence_pointers"], region_map, flow_region),
         "reasoning": raw["reasoning"],
         "agent_version": agent.agent_version,
         "agent_type": agent.agent_type,

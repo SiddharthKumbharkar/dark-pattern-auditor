@@ -109,12 +109,15 @@ def main(argv=None) -> int:
     if regions:
         print("  regions (strong first):")
         for region in regions:
-            fired = ", ".join(f"{a['attribute']}(sev {a['severity']})" for a in region["attributes_fired"])
+            fired = ", ".join(a["attribute"] for a in region["attributes_fired"])
             pattern = region["likely_pattern"]["name"] if region["likely_pattern"] else "(none)"
             print(
                 f"    [{region['finding_strength']:>8}] {region['ui_region']:<24} "
                 f"fired: {fired or '(none)'}  likely_pattern: {pattern}"
             )
+            for shared in region["shared_elements"]:
+                where = f"{shared['selector']} (step {shared['step_id']})" if shared["step_id"] is not None else shared["selector"]
+                print(f"               same element -- {', '.join(shared['attributes'])}: {where}")
     else:
         print("  regions: (none)")
     return 0

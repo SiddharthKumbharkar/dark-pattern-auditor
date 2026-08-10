@@ -53,6 +53,14 @@ REGION_KEYWORDS: Dict[str, List[str]] = {
     ],
     "cancellation_flow": [
         "cancel", "unsubscribe", "end-membership", "end-subscription", "terminate",
+        # The "keep"/"stay subscribed" side of a keep-vs-cancel accept/reject
+        # pair has no "cancel"-shaped text of its own, but it's structurally
+        # part of the SAME cancellation decision point -- without this, a
+        # single visual_asymmetry pair's two evidence_pointers (positive:
+        # keep, negative: cancel) split across two different regions
+        # (cancellation_flow + unclassified) purely because only one side's
+        # selector happens to say "cancel".
+        "keep-subscription", "keep-membership", "stay-subscribed", "stay-member",
     ],
     "addon_upsell": [
         "addon", "add-on", "upsell", "upgrade", "bundle", "cross-sell",
@@ -80,3 +88,24 @@ LANDMARK_TAGS: Tuple[str, ...] = ("header", "nav", "main", "footer", "aside", "s
 LANDMARK_ROLES: Tuple[str, ...] = ("banner", "navigation", "main", "contentinfo", "complementary", "dialog", "alertdialog", "form")
 
 UNCLASSIFIED_REGION = "unclassified"
+
+# Goal -> the single ui_region a FLOW-level/group-level finding for that
+# goal belongs to (a finding whose own evidence_pointer has no single
+# representative element to classify -- e.g. restriction's friction_ratio,
+# complexity's total_actions_required, deception's dead-control check --
+# see attribute_agents/base.py's _flow_region()). Only goals with an
+# honest, unambiguous SINGLE region get an entry here -- a goal like
+# purchase_cheapest genuinely spans several real regions across one
+# episode (product page, cart, checkout_price_summary), so there is no
+# single truthful answer for it; omitting it (rather than guessing) means
+# its flow-level findings correctly stay "unclassified" -- the same
+# "never invented" principle REGION_KEYWORDS above already follows.
+# attribute_agents/base.py cross-checks a goal's candidate region against
+# the episode's OWN real per-element ui_regions tags before trusting it --
+# an entry here is necessary but not sufficient.
+GOAL_TO_FLOW_REGION: Dict[str, str] = {
+    "cancel_subscription": "cancellation_flow",
+    "complete_signup": "signup_form",
+    "reject_cookies": "cookie_consent_banner",
+    "decline_addon": "addon_upsell",
+}

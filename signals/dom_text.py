@@ -16,7 +16,13 @@ _INTERSTITIAL_KEYWORDS = ["modal", "dialog", "popup", "confirm", "overlay"]
 _INTERACTIVE_SELECTOR = 'button, a, input, select, textarea, [role="button"]'
 
 
-def _css_selector(tag) -> Optional[str]:
+def css_selector(tag) -> Optional[str]:
+    """Public (not module-private) because more than one signal now needs
+    to compute a selector for an arbitrary bs4 tag it found by walking the
+    DOM directly, rather than one already handed to it with a selector
+    attached -- see signals/ui_regions.py's disclosure-element tagging,
+    which resolves a selector for an element recorder/evidence_probe.py's
+    interactive-elements-only capture never saw in the first place."""
     if tag is None or not getattr(tag, "name", None):
         return None
     if tag.get("id"):
@@ -52,7 +58,7 @@ def extract_text_candidates(dom_html: str) -> List[Dict]:
         parent = node.parent
         if parent is None or parent.name in ("script", "style"):
             continue
-        results.append({"text": node.strip(), "selector": _css_selector(parent)})
+        results.append({"text": node.strip(), "selector": css_selector(parent)})
     return results
 
 

@@ -269,6 +269,82 @@ def test_evidence_pointer_with_null_selector_defaults_to_unclassified(baselines)
     assert result["evidence_pointers"][0]["ui_region"] == "unclassified"
 
 
+def test_selectorless_pointer_falls_back_to_the_episodes_flow_region(baselines):
+    # FIX 1: restriction/complexity/deception-shaped flow-level pointers
+    # (no selector at all) should land in the episode's own flow region
+    # (cancel_subscription -> cancellation_flow) instead of "unclassified",
+    # as long as the episode's own real per-element tags confirm that
+    # region actually shows up somewhere in this episode.
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": None, "selector": None, "signal": "friction_metrics.friction_ratio"}],
+        "reasoning": "measured finding",
+    })
+    episode = {
+        "episode": {"goal": "cancel_subscription"},
+        "evidence": {"ui_regions": [{"step_id": 3, "selector": "#cancel-link", "region": "cancellation_flow"}]},
+    }
+    result, _ = run_agent(agent, episode, None, baselines)
+    assert result["evidence_pointers"][0]["ui_region"] == "cancellation_flow"
+
+
+def test_flow_region_fallback_only_applies_when_the_episode_actually_shows_that_region(baselines):
+    # cancel_subscription maps to cancellation_flow, but if THIS episode's
+    # own captured elements never actually showed cancellation_flow
+    # anywhere, the mapping isn't trusted -- stays honestly unclassified
+    # rather than asserting a region nothing in the episode backs up.
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": None, "selector": None, "signal": "friction_metrics.friction_ratio"}],
+        "reasoning": "measured finding",
+    })
+    episode = {
+        "episode": {"goal": "cancel_subscription"},
+        "evidence": {"ui_regions": [{"step_id": 1, "selector": "#nav-link", "region": "account_settings"}]},
+    }
+    result, _ = run_agent(agent, episode, None, baselines)
+    assert result["evidence_pointers"][0]["ui_region"] == "unclassified"
+
+
+def test_flow_region_fallback_does_not_apply_to_goals_with_no_single_honest_region(baselines):
+    # purchase_cheapest genuinely spans several real regions in one
+    # episode (product page, cart, checkout) -- no entry in
+    # GOAL_TO_FLOW_REGION means selectorless pointers correctly stay
+    # unclassified rather than a guessed region.
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": None, "selector": None, "signal": "test.signal"}],
+        "reasoning": "measured finding",
+    })
+    episode = {
+        "episode": {"goal": "purchase_cheapest"},
+        "evidence": {"ui_regions": [{"step_id": 1, "selector": "#x", "region": "checkout_price_summary"}]},
+    }
+    result, _ = run_agent(agent, episode, None, baselines)
+    assert result["evidence_pointers"][0]["ui_region"] == "unclassified"
+
+
+def test_flow_region_fallback_never_overrides_a_real_per_element_tag(baselines):
+    # An element that WAS classified (even as "unclassified" for real,
+    # e.g. a camouflaged control no keyword matches) is a different case
+    # from "no element to classify at all" -- the flow-region fallback
+    # only kicks in when (step_id, selector) isn't in region_map at all.
+    agent = _agent(lambda e, g, b: {
+        "verdict": "fires", "severity": 3, "confidence": 0.8,
+        "evidence_pointers": [{"step_id": 4, "selector": "#camouflaged", "signal": "test.signal"}],
+        "reasoning": "measured finding",
+    })
+    episode = {
+        "episode": {"goal": "cancel_subscription"},
+        "evidence": {"ui_regions": [
+            {"step_id": 3, "selector": "#cancel-link", "region": "cancellation_flow"},
+            {"step_id": 4, "selector": "#camouflaged", "region": "unclassified"},
+        ]},
+    }
+    result, _ = run_agent(agent, episode, None, baselines)
+    assert result["evidence_pointers"][0]["ui_region"] == "unclassified"
+
+
 def test_downgraded_no_result_has_no_pointers_to_enrich(baselines):
     agent = _agent(lambda e, g, b: {
         "verdict": "fires", "severity": 4, "confidence": 0.9, "evidence_pointers": [], "reasoning": "bug",

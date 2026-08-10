@@ -116,12 +116,43 @@
 
     "FiredAttributeSummary": {
       "type": "object",
+      "description": "severity/confidence are real data (they drive finding_strength/sorting/human_review_recommended) but the human-facing HTML report deliberately never renders them -- see journey/episode_output_builder.py's module docstring. step_id/selector are what the report DOES show: exactly where this attribute's own evidence points within this region.",
       "additionalProperties": false,
-      "required": ["attribute", "severity", "confidence"],
+      "required": ["attribute", "severity", "confidence", "step_id", "selector"],
       "properties": {
         "attribute": { "enum": ["asymmetry", "covertness", "deception", "information_hiding", "restriction", "disparate_treatment", "complexity"] },
         "severity": { "type": "integer", "minimum": 1, "maximum": 5 },
-        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "step_id": { "type": ["integer", "null"] },
+        "selector": { "type": ["string", "null"] }
+      }
+    },
+
+    "AttributeLocation": {
+      "type": "object",
+      "description": "attribute + where its evidence points within this region -- used for attributes_unsure (fired attributes get the richer FiredAttributeSummary instead).",
+      "additionalProperties": false,
+      "required": ["attribute", "step_id", "selector"],
+      "properties": {
+        "attribute": { "enum": ["asymmetry", "covertness", "deception", "information_hiding", "restriction", "disparate_treatment", "complexity"] },
+        "step_id": { "type": ["integer", "null"] },
+        "selector": { "type": ["string", "null"] }
+      }
+    },
+
+    "SharedElement": {
+      "type": "object",
+      "description": "The strongest, most locatable signal this pipeline produces: >=2 DISTINCT attributes fired with evidence pointing at the EXACT SAME (step_id, selector) -- independent measurements converging on one spot, not merely co-occurring in the same broad region.",
+      "additionalProperties": false,
+      "required": ["step_id", "selector", "attributes"],
+      "properties": {
+        "step_id": { "type": ["integer", "null"] },
+        "selector": { "type": "string", "minLength": 1 },
+        "attributes": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "enum": ["asymmetry", "covertness", "deception", "information_hiding", "restriction", "disparate_treatment", "complexity"] }
+        }
       }
     },
 
@@ -144,7 +175,7 @@
       "description": "The findings view: one entry per ui_region that had >=1 fired or unsure attribute, built by journey/episode_output_builder.py::build_regions() from `verdicts` alone. A region with everything \"no\"/\"not_assessable\" never appears here.",
       "additionalProperties": false,
       "required": [
-        "ui_region", "representative_element", "steps", "attributes_fired", "attributes_unsure",
+        "ui_region", "representative_element", "steps", "shared_elements", "attributes_fired", "attributes_unsure",
         "attributes_absent", "attributes_not_assessed", "likely_pattern", "finding_strength", "assessment"
       ],
       "properties": {
@@ -160,8 +191,9 @@
           "description": "Selector of the highest-severity fired element in this region; the first unsure element's selector if nothing fired here."
         },
         "steps": { "type": "array", "items": { "type": "integer" } },
+        "shared_elements": { "type": "array", "items": { "$ref": "#/$defs/SharedElement" } },
         "attributes_fired": { "type": "array", "items": { "$ref": "#/$defs/FiredAttributeSummary" } },
-        "attributes_unsure": { "type": "array", "items": { "type": "string" } },
+        "attributes_unsure": { "type": "array", "items": { "$ref": "#/$defs/AttributeLocation" } },
         "attributes_absent": { "type": "array", "items": { "type": "string" } },
         "attributes_not_assessed": { "type": "array", "items": { "type": "string" } },
         "likely_pattern": { "anyOf": [{ "$ref": "#/$defs/LikelyPattern" }, { "type": "null" }] },
@@ -184,11 +216,24 @@
       }
     },
 
+    "UrgencyClaim": {
+      "type": "object",
+      "description": "A countdown-timer/urgency/deadline-phrase claim signals/claims.py already extracted into episode.evidence.claim_extraction, surfaced here because no attribute agent judges these today (the 7-attribute framework has no dedicated false-urgency attribute) -- presence alone flags human_review_recommended rather than an invented auto-verdict. Deduplicated by (claim_text, selector); step_ids shows every step it appeared at, so a human can see at a glance whether it's static across the whole episode.",
+      "additionalProperties": false,
+      "required": ["claim_text", "claim_type", "selector", "step_ids"],
+      "properties": {
+        "claim_text": { "type": ["string", "null"] },
+        "claim_type": { "enum": ["urgency_phrase", "countdown_timer", "deadline_phrase"] },
+        "selector": { "type": ["string", "null"] },
+        "step_ids": { "type": "array", "items": { "type": "integer" } }
+      }
+    },
+
     "Overall": {
       "type": "object",
       "description": "The honestly-scoped headline -- computed from `regions`/`verdicts`, never a hand-authored summary.",
       "additionalProperties": false,
-      "required": ["verdict", "coverage_limited", "human_review_recommended", "coverage", "regions_summary", "summary"],
+      "required": ["verdict", "coverage_limited", "human_review_recommended", "coverage", "regions_summary", "urgency_claims", "summary"],
       "properties": {
         "verdict": { "enum": ["dark_patterns_present", "no_dark_patterns_found", "inconclusive"] },
         "coverage_limited": {
@@ -198,6 +243,7 @@
         "human_review_recommended": { "type": "boolean" },
         "coverage": { "$ref": "#/$defs/Coverage" },
         "regions_summary": { "$ref": "#/$defs/RegionsSummary" },
+        "urgency_claims": { "type": "array", "items": { "$ref": "#/$defs/UrgencyClaim" } },
         "summary": { "type": "string", "minLength": 1 }
       }
     },

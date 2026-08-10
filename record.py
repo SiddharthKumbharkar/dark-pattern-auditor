@@ -102,6 +102,19 @@ def cmd_record(args, cfg) -> int:
         print(f"Unknown --goal {args.goal!r}. Valid goal ids: {valid_ids}", file=sys.stderr)
         return 1
 
+    if args.auto_audit:
+        # Fail before launching the browser, not after a 10-minute session --
+        # auto_audit.py checks this too, but only once the session is already over.
+        from dotenv import load_dotenv
+        load_dotenv()
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            print(
+                "FAIL: --auto-audit requires ANTHROPIC_API_KEY (set it in .env at the project "
+                "root, or export it) -- checked now so a missing key doesn't cost you the session.",
+                file=sys.stderr,
+            )
+            return 1
+
     storage_dir = resolve_path(cfg.output.root)
 
     if args.pair_with and not os.path.isdir(os.path.join(storage_dir, args.pair_with)):
@@ -130,6 +143,20 @@ def cmd_record(args, cfg) -> int:
         paired_episode_id=args.pair_with,
     )
     recorder.start()
+
+    if args.auto_audit:
+        import auto_audit
+
+        episode_dir = os.path.join(storage_dir, episode_id)
+        print(f"\n--auto-audit: running the full pipeline for {episode_id} now...\n")
+        audit_argv = [episode_dir]
+        if args.model:
+            audit_argv += ["--model", args.model]
+        config_path = getattr(args, "config", None)
+        if config_path:
+            audit_argv += ["--config", config_path]
+        return auto_audit.main(audit_argv)
+
     return 0
 
 
@@ -176,6 +203,21 @@ def parse_args(argv=None):
     record_parser.add_argument("--locale", default=None, help="Locale tag, e.g. en-IN (default: unset)")
     record_parser.add_argument(
         "--operator", default=None, help="Name/id of the human running this session (default: $DARK_PATTERN_OPERATOR or OS username)"
+    )
+    record_parser.add_argument(
+        "--auto-audit", action="store_true",
+        help=(
+            "Once the session ends (Ctrl+C or the overlay's End session button), automatically "
+            "run the full auto_audit.py pipeline (extract-evidence -> run-attributes -> a real "
+            "Stage-2 LLM pass on all 7 attributes + coordinator -> build-output -> report). "
+            "Spends money (calls a real LLM API with ANTHROPIC_API_KEY) -- checked up front, "
+            "before the browser even launches, so a missing key fails fast rather than after "
+            "you've spent the session traversing the site."
+        ),
+    )
+    record_parser.add_argument(
+        "--model", default=None,
+        help="Anthropic model id for the auto-audit Stage-2 pass (only used with --auto-audit; default: llm.api_client.DEFAULT_MODEL)",
     )
 
     list_goals_parser = subparsers.add_parser("list-goals", help="List the configured goal library")

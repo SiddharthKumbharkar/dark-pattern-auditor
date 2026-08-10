@@ -6,6 +6,19 @@ governing heading, and keyword matches on the element's own selector/
 text/role. See config/ui_regions.py for the vocabulary and rule tables
 this module is driven by.
 
+A second, narrower pass also tags DISCLOSURE elements -- non-interactive
+text (a cost, term, or condition) the page has explicitly opted into
+region tagging for via a data-disclosure attribute, e.g.
+<p data-disclosure="cancellation-fee">...</p>. recorder/evidence_probe.py's
+capture is interactive-elements-only by design (buttons/links/inputs), so
+a material disclosure rendered as plain text was previously invisible to
+every downstream evidence_pointer -- an LLM judge that correctly READ such
+text in a screenshot had no real, taggable element to cite, and any
+selector it invented for one was (correctly) rejected at ingest time by
+journey/mechanism_verdict_ingest.py's grounding check. This is deliberately
+opt-in (an explicit attribute the page author adds), not "tag every <p> on
+the page" -- see compute_ui_regions()'s docstring.
+
 Deterministic and episode/revisit-stable by construction: the same
 (selector, surrounding DOM) always classifies the same way, no randomness,
 no LLM call, no dependency on which agent later reads the tag.
@@ -24,8 +37,17 @@ from typing import Dict, List, Optional
 from bs4 import BeautifulSoup
 
 from config.ui_regions import LANDMARK_ROLES, LANDMARK_TAGS, REGION_KEYWORDS, UNCLASSIFIED_REGION
+from signals.dom_text import css_selector
 
 _HEADING_TAGS = ("h1", "h2", "h3", "h4")
+
+# Opt-in marker a page author adds to a non-interactive element carrying
+# evidentially important text (a cost/term/condition disclosure) so it
+# gets a real, taggable selector even though recorder/evidence_probe.py's
+# interactive-elements capture never sees it. The attribute's VALUE is
+# free-form (a human-readable label, e.g. "cancellation-fee") and is
+# never read by this module -- only its presence matters.
+DISCLOSURE_ATTR = "data-disclosure"
 
 
 def _ancestor_context_text(soup: BeautifulSoup, selector: str) -> str:
@@ -87,12 +109,16 @@ def classify_region(selector: Optional[str], text: str, role: str, ancestor_cont
 
 def compute_ui_regions(steps: List[Dict], dom_htmls: List[Optional[str]], computed_styles: List[Optional[List[Dict]]]) -> List[Dict]:
     """One entry per (step, interactive element) captured by
-    recorder/evidence_probe.py, zipped positionally with `steps` the same
-    way journey/evidence_extractor.py already zips dom_htmls/computed_styles
-    for every other signal. A step with no DOM or no computed_styles
-    (capture_error, pre-instrumentation-era data) contributes nothing --
-    not a fabricated "unclassified" entry for elements that were never
-    even seen.
+    recorder/evidence_probe.py, PLUS one entry per (step, disclosure
+    element) explicitly marked with DISCLOSURE_ATTR -- zipped positionally
+    with `steps` the same way journey/evidence_extractor.py already zips
+    dom_htmls/computed_styles for every other signal. A step with no DOM
+    contributes nothing at all; a step with DOM but no computed_styles
+    (capture_error on that one capture, or pre-instrumentation-era data)
+    still gets scanned for disclosure elements, since that pass reads the
+    DOM directly and doesn't depend on the interactive-elements probe
+    having succeeded -- never a fabricated "unclassified" entry for an
+    element that was never even seen, in either pass.
 
     Returns [{"step_id": int, "selector": str, "region": str}, ...],
     stored verbatim into episode.evidence.ui_regions by
@@ -100,14 +126,35 @@ def compute_ui_regions(steps: List[Dict], dom_htmls: List[Optional[str]], comput
     """
     tags: List[Dict] = []
     for step, html, elements in zip(steps, dom_htmls, computed_styles):
-        if not html or not elements:
+        if not html:
             continue
         soup = BeautifulSoup(html, "html.parser")
-        for element in elements:
+        seen_selectors = set()
+
+        for element in elements or []:
             selector = element.get("selector")
             if not selector:
                 continue
+            seen_selectors.add(selector)
             ancestor_context = _ancestor_context_text(soup, selector)
             region = classify_region(selector, element.get("text") or "", element.get("role") or "", ancestor_context)
             tags.append({"step_id": step["step_id"], "selector": selector, "region": region})
+
+        for disclosure_el in soup.select(f"[{DISCLOSURE_ATTR}]"):
+            selector = css_selector(disclosure_el)
+            if not selector or selector in seen_selectors:
+                continue
+            text = disclosure_el.get_text(" ", strip=True)
+            if not text:
+                continue
+            seen_selectors.add(selector)
+            ancestor_context = _ancestor_context_text(soup, selector)
+            region = classify_region(selector, text, "", ancestor_context)
+            # "text" is carried on the tag itself (unlike an interactive
+            # element's tag, which omits it) so a downstream payload can
+            # show a human/LLM judge a real (selector, text) pair to cite
+            # -- without this, the selector existing in region_map alone
+            # wouldn't help: nothing tells the model what string to write.
+            # See llm/payload_builder.py's _disclosure_elements().
+            tags.append({"step_id": step["step_id"], "selector": selector, "region": region, "text": text})
     return tags

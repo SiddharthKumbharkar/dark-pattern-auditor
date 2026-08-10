@@ -19,6 +19,16 @@ export default function SubscriptionPage() {
         Auralis+ Membership — {status === "trial_active" ? "Free trial active" : "Active"}
       </p>
 
+      {!darkPatternsEnabled && (
+        // Same data-disclosure marker as FinalConfirmPage.tsx's ON-side fee
+        // text -- see signals/ui_regions.py. Same fact, disclosed upfront
+        // here instead of hidden until commitment.
+        <p className="mt-2 text-sm text-brand-muted" data-disclosure="cancellation-fee">
+          Note: cancelling before your renewal date may incur a ₹199 early cancellation fee, charged to
+          your card on file.
+        </p>
+      )}
+
       <div className="mt-8 flex flex-col gap-3">
         {darkPatternsEnabled ? (
           <Link

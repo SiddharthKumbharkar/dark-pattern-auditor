@@ -58,9 +58,12 @@ code { background: #8882; padding: 0.05rem 0.3rem; border-radius: 3px; font-size
 .region-thumb { width: 220px; flex-shrink: 0; }
 .region-thumb-empty { width: 220px; flex-shrink: 0; opacity: 0.6; font-style: italic; font-size: 0.85rem; }
 .region-body { flex: 1; min-width: 240px; }
-.fired-attr { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; font-size: 0.9rem; }
-.sev-bar-track { width: 90px; height: 8px; background: #8883; border-radius: 4px; overflow: hidden; }
-.sev-bar-fill { height: 100%; background: #e5484d; }
+.fired-attr, .unsure-attr { margin-bottom: 0.3rem; font-size: 0.9rem; }
+.unsure-attr { opacity: 0.85; }
+.no-element { opacity: 0.65; font-style: italic; }
+.shared-element { border: 1px solid #e5484d55; background: #e5484d11; border-radius: 6px;
+  padding: 0.5rem 0.7rem; margin-bottom: 0.5rem; font-size: 0.9rem; }
+.shared-element strong { color: #e5484d; }
 .likely-pattern { font-size: 0.9rem; }
 .assessment { font-size: 0.88rem; opacity: 0.9; }
 .badge.strength-strong { background: #e5484d22; color: #e5484d; }
@@ -70,18 +73,56 @@ code { background: #8882; padding: 0.05rem 0.3rem; border-radius: 3px; font-size
 .overall-banner.verdict-dark_patterns_present { border-left: 4px solid #e5484d; }
 .overall-banner.verdict-inconclusive { border-left: 4px solid #f5a623; }
 .overall-banner.verdict-no_dark_patterns_found { border-left: 4px solid #30a46c; }
+.coverage-list { margin: 0; padding-left: 1.1rem; }
+.coverage-list li { margin-bottom: 0.4rem; }
+.urgency-flag { border: 1px solid #f5a62355; background: #f5a62311; border-radius: 6px;
+  padding: 0.6rem 0.8rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+.urgency-flag strong:first-child { color: #b5750a; }
 """
 
 
-def _badge(verdict: str) -> str:
-    return f'<span class="badge {escape(verdict)}">{escape(verdict)}</span>'
+def _is_stub(section: Dict) -> bool:
+    from attribute_agents.base import STAGE2_STUB_REASON
+
+    return section.get("agent_type") == "code" and section.get("reasoning") == STAGE2_STUB_REASON
+
+
+def _badge(section: Dict) -> str:
+    """Three distinct not_assessable-shaped states need three distinct
+    labels, or "not_assessable" reads like "skipped" across the board:
+      - verdict=="no": a real agent ran and concluded clean -- "checked,
+        no evidence found" is reserved for exactly this case.
+      - verdict=="not_assessable" and it's a genuine stub (covertness/
+        information_hiding/disparate_treatment before their Stage-2 pass):
+        never even ran -- "not assessed -- pending Stage 2".
+      - verdict=="not_assessable" for any other reason (a real agent ran,
+        the RIGHT KIND of evidence just wasn't there): "checked --
+        insufficient evidence", distinct from both of the above.
+    fires/unsure read fine as their raw verdict already."""
+    verdict = section["verdict"]
+    if verdict == "no":
+        label = "checked, no evidence found"
+    elif verdict == "not_assessable" and _is_stub(section):
+        label = "not assessed — pending Stage 2"
+    elif verdict == "not_assessable":
+        label = "checked — insufficient evidence"
+    else:
+        label = verdict
+    return f'<span class="badge {escape(verdict)}">{escape(label)}</span>'
 
 
 def _meta_table(episode_meta: Dict, outcome: Dict) -> str:
     rows = []
     for key in ("episode_id", "site_id", "site_domain", "sector", "goal", "revisit_index", "device_context", "operator", "paired_episode_id"):
         rows.append(f"<tr><td>{escape(key)}</td><td>{escape(str(episode_meta.get(key)))}</td></tr>")
-    rows.append(f"<tr><td>goal_achieved</td><td>{escape(str(outcome.get('goal_achieved')))}</td></tr>")
+    goal_achieved = outcome.get("goal_achieved")
+    # goal_achieved is set only via the recording overlay's "Mark goal
+    # achieved"/"Abandon" buttons -- a deliberate human judgment call, by
+    # design (see recorder/interactive_v2.py) -- so None is a real,
+    # expected state (operator never clicked either), not a bug to hide;
+    # it just shouldn't render as a bare, unexplained Python "None".
+    goal_achieved_display = "not recorded (operator didn't mark achieved/abandoned)" if goal_achieved is None else str(goal_achieved)
+    rows.append(f"<tr><td>goal_achieved</td><td>{escape(goal_achieved_display)}</td></tr>")
     rows.append(f"<tr><td>steps_to_complete</td><td>{escape(str(outcome.get('steps_to_complete')))}</td></tr>")
     return f'<table class="meta-table">{"".join(rows)}</table>'
 
@@ -188,22 +229,40 @@ def _render_attribute_section(section: Dict) -> str:
         f'<ul class="pointer-list">{"".join(_render_pointer(p) for p in section["resolved_pointers"])}</ul>'
         if section["resolved_pointers"] else '<p class="section-empty">(no evidence pointers)</p>'
     )
-    severity = section["severity"] if section["severity"] is not None else "—"
     return (
         f'<div class="attribute-card">'
-        f'<h3>{escape(section["attribute"])} {_badge(section["verdict"])}</h3>'
-        f'<div>severity: {escape(str(severity))} &middot; confidence: {escape(str(section["confidence"]))} '
-        f'&middot; agent: {escape(section["agent_version"])} ({escape(section["agent_type"])})</div>'
+        f'<h3>{escape(section["attribute"])} {_badge(section)}</h3>'
+        f'<div>agent: {escape(section["agent_version"])} ({escape(section["agent_type"])})</div>'
         f'<p class="reasoning">{escape(section["reasoning"])}</p>'
         f"{pointers_html}</div>"
     )
 
 
-def _severity_bar(severity: Optional[int]) -> str:
-    if severity is None:
-        return ""
-    pct = severity / 5 * 100
-    return f'<div class="sev-bar-track"><div class="sev-bar-fill" style="width:{pct:.0f}%"></div></div>'
+def _location_html(location: Dict) -> str:
+    """{'step_id', 'selector', ...} -> where to look: the selector as
+    code, linked to the exact filmstrip step if we have one (the
+    filmstrip already draws a box on this exact element -- see
+    journey/report_builder.py's _boxes_by_step). Honest, not invented,
+    when a signal has neither (e.g. a friction-ratio measurement with no
+    single element)."""
+    parts = []
+    if location.get("selector"):
+        parts.append(f'<code>{escape(location["selector"])}</code>')
+    if location.get("step_id") is not None:
+        parts.append(f'<a href="#step-{location["step_id"]}">step {location["step_id"]}</a>')
+    if not parts:
+        return '<span class="no-element">(page/flow-level signal, no specific element)</span>'
+    return " &middot; ".join(parts)
+
+
+def _render_shared_element(shared: Dict) -> str:
+    attrs = ", ".join(f"<code>{escape(a)}</code>" for a in shared["attributes"])
+    return (
+        f'<div class="shared-element">'
+        f"<strong>Multiple patterns on the same element:</strong> {attrs}<br>"
+        f"{_location_html(shared)}"
+        f"</div>"
+    )
 
 
 def _region_thumbnail(region: Dict, filmstrip_by_step: Dict[int, Dict]) -> str:
@@ -223,35 +282,95 @@ def _region_thumbnail(region: Dict, filmstrip_by_step: Dict[int, Dict]) -> str:
 
 
 def _render_region_card(region: Dict, filmstrip_by_step: Dict[int, Dict]) -> str:
+    shared_html = "".join(_render_shared_element(s) for s in region["shared_elements"])
+    shared_attrs = {a for s in region["shared_elements"] for a in s["attributes"]}
+
+    remaining_fired = [a for a in region["attributes_fired"] if a["attribute"] not in shared_attrs]
     fired_html = "".join(
-        f'<div class="fired-attr"><code>{escape(a["attribute"])}</code> severity {a["severity"]} '
-        f'{_severity_bar(a["severity"])}</div>'
-        for a in region["attributes_fired"]
-    ) or '<p class="section-empty">(nothing fired here)</p>'
-    unsure_html = (
-        f'<p>Unsure: {", ".join(escape(a) for a in region["attributes_unsure"])}</p>'
-        if region["attributes_unsure"] else ""
+        f'<div class="fired-attr"><code>{escape(a["attribute"])}</code> fired &middot; {_location_html(a)}</div>'
+        for a in remaining_fired
     )
+    if not shared_html and not fired_html:
+        fired_html = '<p class="section-empty">(nothing fired here)</p>'
+
+    unsure_html = "".join(
+        f'<div class="unsure-attr"><code>{escape(a["attribute"])}</code> unsure &middot; {_location_html(a)}</div>'
+        for a in region["attributes_unsure"]
+    )
+
     pattern = region["likely_pattern"]
     pattern_html = (
         f'<p class="likely-pattern">Likely pattern: <strong>{escape(pattern["name"])}</strong> '
         f'(source: {escape(pattern["source"])})</p>'
         if pattern else '<p class="section-empty">No likely_pattern.</p>'
     )
-    steps_html = ", ".join(f'<a href="#step-{s}">{s}</a>' for s in region["steps"]) or "—"
     return (
         f'<div class="region-card">'
         f'<h3>{escape(region["ui_region"])} '
         f'<span class="badge strength-{escape(region["finding_strength"])}">{escape(region["finding_strength"])}</span></h3>'
         f'{_region_thumbnail(region, filmstrip_by_step)}'
-        f'<div class="region-body">{fired_html}{unsure_html}{pattern_html}'
+        f'<div class="region-body">{shared_html}{fired_html}{unsure_html}{pattern_html}'
         f'<p class="assessment">{escape(region["assessment"])}</p>'
-        f'<p class="step-meta">steps: {steps_html}</p>'
         f"</div></div>"
     )
 
 
-def _render_overall(overall: Optional[Dict]) -> str:
+def _render_coverage_list(names: List[str], reasoning_by_attribute: Dict[str, str]) -> str:
+    """Each attribute in this coverage bucket alongside the actual reason
+    it landed there -- so "not assessable" reads as "checked for this,
+    specifically didn't find it" rather than "skipped"."""
+    if not names:
+        return "—"
+    items = []
+    for name in names:
+        reasoning = reasoning_by_attribute.get(name)
+        if reasoning:
+            items.append(f"<li><strong>{escape(name)}</strong> — {escape(reasoning)}</li>")
+        else:
+            items.append(f"<li><strong>{escape(name)}</strong></li>")
+    return f'<ul class="coverage-list">{"".join(items)}</ul>'
+
+
+_URGENCY_CLAIM_TEXT_MAX_CHARS = 160
+
+
+def _shorten(text: str, max_chars: int) -> str:
+    """For DISPLAY only -- a long text node (e.g. a whole marketing
+    paragraph the urgency regex happened to match a phrase inside of)
+    would otherwise swamp the card; the full text is always still in the
+    underlying computed_output JSON, and available here via the title
+    tooltip."""
+    return text if len(text) <= max_chars else text[: max_chars - 1].rstrip() + "…"
+
+
+def _render_urgency_claim(claim: Dict) -> str:
+    steps = ", ".join(f'<a href="#step-{s}">{s}</a>' for s in claim["step_ids"]) or "—"
+    location = f' &middot; <code>{escape(claim["selector"])}</code>' if claim["selector"] else ""
+    full_text = claim["claim_text"] or claim["claim_type"]
+    shown_text = _shorten(full_text, _URGENCY_CLAIM_TEXT_MAX_CHARS)
+    title_attr = f' title="{escape(full_text)}"' if shown_text != full_text else ""
+    return (
+        f'<li><strong{title_attr}>{escape(shown_text)}</strong> '
+        f"({escape(claim['claim_type'])}){location}<br>"
+        f"seen at steps: {steps}</li>"
+    )
+
+
+def _render_urgency_claims(claims: List[Dict]) -> str:
+    if not claims:
+        return ""
+    items = "".join(_render_urgency_claim(c) for c in claims)
+    return (
+        f'<div class="urgency-flag">'
+        f"<strong>Urgency/countdown claims found — flagged for human review</strong> "
+        f"(no attribute agent judges these automatically; check whether they're static/fake "
+        f"or a genuine time-limited offer)"
+        f'<ul class="coverage-list">{items}</ul>'
+        f"</div>"
+    )
+
+
+def _render_overall(overall: Optional[Dict], reasoning_by_attribute: Dict[str, str]) -> str:
     if not overall:
         return '<p class="section-empty">No computed output yet -- run build-output.</p>'
     coverage = overall["coverage"]
@@ -266,13 +385,16 @@ def _render_overall(overall: Optional[Dict]) -> str:
         f'<div class="overall-banner verdict-{escape(overall["verdict"])}">'
         f'<div><strong>{escape(overall["verdict"])}</strong>{flags_html}</div>'
         f'<p>{escape(overall["summary"])}</p>'
+        f'{_render_urgency_claims(overall["urgency_claims"])}'
         f'<table class="meta-table">'
         f'<tr><td>regions examined</td><td>{rs["total_regions_examined"]}</td></tr>'
         f'<tr><td>regions with findings</td><td>{rs["regions_with_findings"]}</td></tr>'
         f'<tr><td>regions clean</td><td>{rs["regions_clean"]}</td></tr>'
-        f'<tr><td>assessed</td><td>{escape(", ".join(coverage["assessed"]) or "—")}</td></tr>'
-        f'<tr><td>not assessable</td><td>{escape(", ".join(coverage["not_assessable"]) or "—")}</td></tr>'
-        f'<tr><td>stubbed (pending Stage 2)</td><td>{escape(", ".join(coverage["stubbed_pending_stage2"]) or "—")}</td></tr>'
+        f'<tr><td>assessed</td><td>{_render_coverage_list(coverage["assessed"], reasoning_by_attribute)}</td></tr>'
+        f'<tr><td>checked — insufficient evidence</td>'
+        f'<td>{_render_coverage_list(coverage["not_assessable"], reasoning_by_attribute)}</td></tr>'
+        f'<tr><td>not assessed — pending Stage 2</td>'
+        f'<td>{_render_coverage_list(coverage["stubbed_pending_stage2"], reasoning_by_attribute)}</td></tr>'
         f"</table></div>"
     )
 
@@ -301,6 +423,7 @@ def render_html(data: Dict) -> str:
     filmstrip_html = "".join(_render_step(s) for s in data["filmstrip"]) or '<p class="section-empty">(no steps)</p>'
     attributes_html = "".join(_render_attribute_section(s) for s in data["attribute_sections"]) or '<p class="section-empty">No attribute results yet -- run run-attributes.</p>'
     mechanism_html = "".join(_render_mechanism_entry(e) for e in data["mechanism_verdict_entries"]) or '<p class="section-empty">No manually-ingested LLM verdicts yet -- run build-payload / ingest-response.</p>'
+    reasoning_by_attribute = {s["attribute"]: s["reasoning"] for s in data["attribute_sections"]}
 
     return f"""<!doctype html>
 <html lang="en">
@@ -317,7 +440,7 @@ def render_html(data: Dict) -> str:
 {regions_html}
 
 <h2>Coverage</h2>
-{_render_overall(data["overall"])}
+{_render_overall(data["overall"], reasoning_by_attribute)}
 
 <h2>All Verdicts</h2>
 {attributes_html}
