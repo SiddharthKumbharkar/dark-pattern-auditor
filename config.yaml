@@ -65,6 +65,11 @@ goals:
       site's own notification/communication preference settings.
   - id: track_flight
     description: "Search for and view a specific flight's live tracking/status page."
+  - id: build_and_download_document
+    description: >-
+      Build a complete document (resume, cover letter, etc.) using the
+      site's free builder/wizard tool, then attempt to download or export
+      the finished result.
 
 revisit:
   offsets_hours: [24, 72]
