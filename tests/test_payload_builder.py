@@ -41,12 +41,14 @@ CANCEL_STEP1_HTML = """<!DOCTYPE html>
 
 CANCEL_STEP2_HTML = """<!DOCTYPE html>
 <html><body>
+<div role="dialog" aria-modal="true">
 <h1>Before you go</h1>
 <p>Notwithstanding any prior communication, failure to not decline this retention offer
 shall not be deemed an unequivocal, irrevocable non-acceptance of continued billing
 absent explicit, unambiguous disaffirmance hereof.</p>
 <p data-disclosure="cancellation-fee">Cancelling now will incur a fee, charged to your card on file.</p>
 <button id="unsub-btn" type="button">Cancel my membership</button>
+</div>
 </body></html>
 """
 

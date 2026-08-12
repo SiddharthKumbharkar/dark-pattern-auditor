@@ -119,18 +119,21 @@ def test_build_messages_embeds_every_screenshot_as_a_real_image_block(tmp_path, 
 def test_image_over_the_api_limit_is_downscaled_to_fit(tmp_path):
     from PIL import Image
 
-    from llm.api_client import _MAX_LONG_EDGE_PX, _image_block
+    from llm.api_client import _MAX_LONG_EDGE_PX, _MAX_TOTAL_IMAGE_BYTES_B64, _image_block_within_budget
 
     # A real full-page screenshot of a long page can genuinely exceed 8000px
     # tall (seen in practice on a real e-commerce category listing page) --
     # synthesize one at that same aspect ratio rather than depending on
-    # Playwright producing a page long enough to trigger it.
+    # Playwright producing a page long enough to trigger it. A generous
+    # budget isolates this test to the per-image pixel cap alone -- the
+    # combined-total budget has its own tests below.
     oversized_path = tmp_path / "tall_screenshot.png"
     Image.new("RGB", (1440, 9489), color="white").save(oversized_path)
 
-    block = _image_block(str(oversized_path))
+    block, encoded_len = _image_block_within_budget(str(oversized_path), _MAX_TOTAL_IMAGE_BYTES_B64)
 
     decoded = base64.standard_b64decode(block["source"]["data"])
+    assert encoded_len == len(block["source"]["data"])
     with Image.open(io.BytesIO(decoded)) as resized:
         assert max(resized.width, resized.height) <= _MAX_LONG_EDGE_PX
         # aspect ratio preserved within rounding
@@ -141,15 +144,72 @@ def test_image_over_the_api_limit_is_downscaled_to_fit(tmp_path):
 def test_image_under_the_api_limit_is_sent_unmodified(tmp_path):
     from PIL import Image
 
-    from llm.api_client import _image_block
+    from llm.api_client import _MAX_TOTAL_IMAGE_BYTES_B64, _image_block_within_budget
 
     normal_path = tmp_path / "normal_screenshot.png"
     Image.new("RGB", (1440, 900), color="white").save(normal_path)
     original_bytes = normal_path.read_bytes()
 
-    block = _image_block(str(normal_path))
+    block, _ = _image_block_within_budget(str(normal_path), _MAX_TOTAL_IMAGE_BYTES_B64)
     decoded = base64.standard_b64decode(block["source"]["data"])
     assert decoded == original_bytes  # byte-for-byte passthrough, no re-encode
+
+
+# -- the combined-total budget: separate from the per-image pixel cap above --
+
+
+def _noisy_png(path, size):
+    """A solid-color PNG compresses to near-nothing regardless of
+    resolution (PNG's DEFLATE crushes uniform runs), which would make
+    encoded size barely track pixel dimensions -- useless for testing
+    budget-driven shrinking. Random noise doesn't compress away, so
+    encoded size actually scales with resolution the way a real,
+    detailed screenshot's does."""
+    from PIL import Image
+
+    img = Image.frombytes("RGB", size, os.urandom(size[0] * size[1] * 3))
+    img.save(path)
+
+
+def test_many_screenshots_are_shrunk_to_fit_a_combined_total_budget(tmp_path):
+    """The real gap this closes: an 18-screenshot episode where every
+    single image is well under the per-image 8000px limit, but the
+    COMBINED base64 payload still exceeds the API's total request size and
+    gets a 413 -- see llm/api_client.py's _MAX_TOTAL_IMAGE_BYTES_B64
+    docstring for the real run that hit this."""
+    from PIL import Image
+
+    from llm.api_client import _image_block_within_budget
+
+    path = tmp_path / "screenshot.png"
+    _noisy_png(path, (600, 1200))
+    unshrunk_len = len(base64.standard_b64encode(path.read_bytes()))
+
+    tight_budget = unshrunk_len // 4
+    block, encoded_len = _image_block_within_budget(str(path), tight_budget)
+
+    assert encoded_len < unshrunk_len  # actually shrunk, not passed through
+    decoded = base64.standard_b64decode(block["source"]["data"])
+    with Image.open(io.BytesIO(decoded)) as shrunk:
+        assert max(shrunk.width, shrunk.height) < 1200
+
+
+def test_shrinking_stops_at_the_minimum_edge_even_if_still_over_budget(tmp_path):
+    """A budget so tight nothing could ever fit it must not loop forever or
+    shrink an image into illegible mush -- it stops at _MIN_LONG_EDGE_PX
+    and sends that, over budget or not (see that constant's docstring)."""
+    from PIL import Image
+
+    from llm.api_client import _MIN_LONG_EDGE_PX, _image_block_within_budget
+
+    path = tmp_path / "screenshot.png"
+    _noisy_png(path, (600, 1200))
+
+    block, _ = _image_block_within_budget(str(path), byte_budget=1)  # impossible to satisfy
+
+    decoded = base64.standard_b64decode(block["source"]["data"])
+    with Image.open(io.BytesIO(decoded)) as shrunk:
+        assert max(shrunk.width, shrunk.height) == _MIN_LONG_EDGE_PX
 
 
 def test_build_messages_labels_each_screenshot_by_filename(tmp_path, episode_dir):

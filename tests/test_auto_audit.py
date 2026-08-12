@@ -277,3 +277,97 @@ def test_payload_build_failure_is_not_retried(monkeypatch, tmp_path, episode_dir
 
     assert result is False
     assert calls["judge"] == 0  # never even attempted -- the payload itself is invalid, retrying can't fix that
+
+
+# -- _looks_empty(): the spend guard for a session with nothing worth ------
+# -- judging (goal explicitly abandoned, or a single bot-walled step) ------
+
+
+def test_looks_empty_when_only_one_step():
+    episode = {"steps": [{"step_id": 1}], "outcome": {"goal_achieved": None}}
+    assert auto_audit._looks_empty(episode) == "only 1 step(s) captured"
+
+
+def test_looks_empty_when_goal_explicitly_abandoned():
+    episode = {"steps": [{"step_id": 1}, {"step_id": 2}, {"step_id": 3}], "outcome": {"goal_achieved": False}}
+    assert auto_audit._looks_empty(episode) == "goal was explicitly marked abandoned"
+
+
+def test_not_empty_with_multiple_steps_and_unmarked_outcome():
+    # goal_achieved is None (never clicked either overlay button) -- must
+    # NOT be treated the same as an explicit abandon.
+    episode = {"steps": [{"step_id": 1}, {"step_id": 2}], "outcome": {"goal_achieved": None}}
+    assert auto_audit._looks_empty(episode) is None
+
+
+def test_not_empty_when_goal_achieved_even_with_few_steps():
+    # A short, legitimately successful flow (e.g. a 2-step reject_cookies
+    # episode) must not be blocked by a step-count floor alone.
+    episode = {"steps": [{"step_id": 1}, {"step_id": 2}], "outcome": {"goal_achieved": True}}
+    assert auto_audit._looks_empty(episode) is None
+
+
+def test_looks_empty_missing_outcome_and_steps_defaults_safely():
+    assert auto_audit._looks_empty({}) == "only 0 step(s) captured"
+
+
+# -- main()'s wiring of the guard: skipped by default, --force-stage2 -----
+# -- overrides it, --dry-run is exempt (see test_dry_run_... above) --------
+
+
+def test_main_skips_stage2_for_a_one_step_episode_without_force(monkeypatch, tmp_path, episode_dir):
+    episode_path, storage_dir = episode_dir  # the fixture's own episode is exactly 1 step
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-never-used")
+    monkeypatch.setattr(auto_audit, "load_dotenv", lambda *a, **k: None)
+
+    def _fail_if_called(*args, **kwargs):
+        raise AssertionError("call_for_judgement must not be called when the episode looks empty")
+
+    monkeypatch.setattr(auto_audit, "call_for_judgement", _fail_if_called)
+
+    payload_root = str(tmp_path / "payload")
+    cfg_path = _config_path(tmp_path, storage_dir, payload_root)
+
+    exit_code = auto_audit.main([episode_path, "--config", cfg_path])
+    assert exit_code == 0
+
+    # the free stages still ran end to end despite the skip
+    episode = load_episode(os.path.join(episode_path, EPISODE_FILENAME))
+    assert episode.get("evidence")
+    assert (episode.get("mechanism_verdict") or {}).get("computed_output")
+    assert os.path.isfile(os.path.join(episode_path, "report.html"))
+
+    # no Stage-2 payload/response was ever written
+    episode_id = "episode_auto_audit_test"
+    assert not os.path.isfile(os.path.join(payload_root, episode_id, "coordinator", "response.json"))
+
+
+def test_main_force_stage2_overrides_the_skip(monkeypatch, tmp_path, episode_dir):
+    episode_path, storage_dir = episode_dir
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-never-used")
+    monkeypatch.setattr(auto_audit, "load_dotenv", lambda *a, **k: None)
+
+    calls = {"judge": 0}
+
+    def _fake_call_for_judgement(pd, model, max_calls=None):
+        # payload_dir is .../<episode_id>/attribute/<attribute_name> or
+        # .../<episode_id>/coordinator -- see llm/payload_builder.py's
+        # build_payload(). Its basename tells us which response shape to
+        # fake back.
+        calls["judge"] += 1
+        leaf = os.path.basename(pd.rstrip("/"))
+        if leaf == "coordinator":
+            return {"pattern_combinations": []}
+        return {
+            "attribute": leaf, "verdict": "no", "severity": None, "confidence": 0.5,
+            "evidence_pointers": [], "reasoning": "x",
+        }
+
+    monkeypatch.setattr(auto_audit, "call_for_judgement", _fake_call_for_judgement)
+
+    payload_root = str(tmp_path / "payload")
+    cfg_path = _config_path(tmp_path, storage_dir, payload_root)
+
+    exit_code = auto_audit.main([episode_path, "--force-stage2", "--config", cfg_path])
+    assert exit_code == 0
+    assert calls["judge"] == len(auto_audit.ATTRIBUTES) + 1  # every attribute + the coordinator

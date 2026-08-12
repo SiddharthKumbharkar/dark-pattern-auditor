@@ -31,7 +31,6 @@ multiple script runs, which an in-memory-only counter would silently miss.
 import base64
 import io
 import json
-import mimetypes
 import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -83,6 +82,28 @@ _PRICE_PER_MTOK_USD = {
 # on image size.
 _MAX_LONG_EDGE_PX = 7900
 
+# A SEPARATE limit from the per-image one above: even when every individual
+# screenshot is well under 8000px, a long, screenshot-heavy episode (an
+# 18-step full-page-screenshot hotel booking flow, say, observed at ~24MB
+# raw / >32MB once base64-encoded) can still blow past the API's TOTAL
+# request body cap -- a real 413 request_too_large hit against exactly this
+# shape of payload, see auto_audit.py's run log for episode_20260812T02...
+# and the covertness/information_hiding/complexity roles (18 screenshots
+# each) that all failed on it. This is a conservative internal budget for
+# combined base64 image bytes per request, not a published Anthropic
+# constant -- deliberately well under where the real 413 was observed, to
+# leave headroom for prompt/evidence text too. _image_block_within_budget()
+# enforces it by shrinking, never by dropping a screenshot outright: every
+# attribute still gets to see every step's screenshot, just at whatever
+# resolution fits.
+_MAX_TOTAL_IMAGE_BYTES_B64 = 25_000_000
+
+# The floor _image_block_within_budget() will shrink an image to before
+# giving up and sending it over-budget anyway -- below this a screenshot is
+# no longer legible enough to be useful evidence, so further shrinking to
+# force-fit the budget would defeat the point of attaching it at all.
+_MIN_LONG_EDGE_PX = 800
+
 
 class ApiCallError(RuntimeError):
     """The API call itself failed, or the model didn't return the forced
@@ -95,30 +116,50 @@ def _read_text(path: str) -> str:
         return f.read()
 
 
-def _downscaled_png_bytes(path: str) -> bytes:
+def _png_bytes_at(path: str, max_long_edge_px: int) -> bytes:
+    """Returns path's bytes, resized so its longer edge is at most
+    max_long_edge_px. When no resize is actually needed, returns the raw
+    file bytes UNCHANGED (no Pillow re-encode) -- re-encoding an already-
+    small-enough PNG through Pillow can legitimately produce a different
+    (still valid) byte stream than however it was originally saved, which
+    would needlessly perturb output for the common case where no shrinking
+    was ever required."""
     with Image.open(path) as img:
-        scale = _MAX_LONG_EDGE_PX / max(img.width, img.height)
-        new_size = (max(1, round(img.width * scale)), max(1, round(img.height * scale)))
-        resized = img.resize(new_size, Image.LANCZOS)
-        buf = io.BytesIO()
-        resized.save(buf, format="PNG")
-        return buf.getvalue()
+        long_edge = max(img.width, img.height)
+        if long_edge <= max_long_edge_px:
+            needs_resize = False
+        else:
+            needs_resize = True
+            scale = max_long_edge_px / long_edge
+            new_size = (max(1, round(img.width * scale)), max(1, round(img.height * scale)))
+            resized = img.resize(new_size, Image.LANCZOS)
+            buf = io.BytesIO()
+            resized.save(buf, format="PNG")
+            resized_bytes = buf.getvalue()
 
-
-def _image_block(path: str) -> Dict:
-    with Image.open(path) as img:
-        oversized = max(img.width, img.height) > _MAX_LONG_EDGE_PX
-
-    if oversized:
-        raw_bytes = _downscaled_png_bytes(path)
-        media_type = "image/png"
-    else:
-        media_type = mimetypes.guess_type(path)[0] or "image/png"
+    if not needs_resize:
         with open(path, "rb") as f:
-            raw_bytes = f.read()
+            return f.read()
+    return resized_bytes
 
-    data = base64.standard_b64encode(raw_bytes).decode("ascii")
-    return {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": data}}
+
+def _image_block_within_budget(path: str, byte_budget: int) -> Dict:
+    """Encodes one screenshot as a base64 image content block, shrinking
+    (a further 25% off the long edge each pass, starting from
+    _MAX_LONG_EDGE_PX) until its base64-encoded size fits within
+    byte_budget or hits _MIN_LONG_EDGE_PX, whichever comes first -- see
+    _MAX_TOTAL_IMAGE_BYTES_B64's docstring for why this exists alongside
+    the flat per-image _MAX_LONG_EDGE_PX cap. Returns (block, encoded_len)
+    so the caller (build_messages) can track how much of the shared total
+    budget is left for the screenshots still to come."""
+    long_edge_cap = _MAX_LONG_EDGE_PX
+    while True:
+        raw_bytes = _png_bytes_at(path, long_edge_cap)
+        data = base64.standard_b64encode(raw_bytes).decode("ascii")
+        if len(data) <= byte_budget or long_edge_cap <= _MIN_LONG_EDGE_PX:
+            block = {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": data}}
+            return block, len(data)
+        long_edge_cap = max(_MIN_LONG_EDGE_PX, round(long_edge_cap * 0.75))
 
 
 def response_schema_to_tool(response_schema: Dict) -> Dict:
@@ -137,7 +178,15 @@ def build_messages(payload_dir: str) -> List[Dict]:
     human to paste in -- prompt.txt, then evidence_summary.json, then every
     screenshot -- into one user message. No separate system message:
     prompt.txt already contains the full role/task framing (see
-    llm/payload_builder.py's prompt templates)."""
+    llm/payload_builder.py's prompt templates).
+
+    Screenshots share a single _MAX_TOTAL_IMAGE_BYTES_B64 budget, split
+    EVENLY across however many remain at each step (not decided up front)
+    -- an image that compresses smaller than its even share leaves the
+    surplus for the ones still to come, so a request with a few simple
+    screenshots and one complex one doesn't waste budget shrinking the
+    simple ones just because the average looks tight. Every screenshot
+    still gets attached; none are ever dropped to make budget."""
     prompt_text = _read_text(os.path.join(payload_dir, "prompt.txt"))
     evidence_summary = _read_text(os.path.join(payload_dir, "evidence_summary.json"))
 
@@ -147,10 +196,17 @@ def build_messages(payload_dir: str) -> List[Dict]:
     ]
 
     screenshots_dir = os.path.join(payload_dir, "screenshots")
-    if os.path.isdir(screenshots_dir):
-        for filename in sorted(os.listdir(screenshots_dir)):
-            content.append({"type": "text", "text": f"Screenshot: {filename}"})
-            content.append(_image_block(os.path.join(screenshots_dir, filename)))
+    filenames = sorted(os.listdir(screenshots_dir)) if os.path.isdir(screenshots_dir) else []
+
+    remaining_budget = _MAX_TOTAL_IMAGE_BYTES_B64
+    remaining_count = len(filenames)
+    for filename in filenames:
+        content.append({"type": "text", "text": f"Screenshot: {filename}"})
+        share = max(1, remaining_budget // remaining_count)
+        block, encoded_len = _image_block_within_budget(os.path.join(screenshots_dir, filename), share)
+        content.append(block)
+        remaining_budget -= encoded_len
+        remaining_count -= 1
 
     return [{"role": "user", "content": content}]
 

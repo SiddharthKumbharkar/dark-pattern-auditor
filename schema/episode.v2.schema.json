@@ -463,15 +463,19 @@
     "StatedVsActualEntry": {
       "type": "object",
       "additionalProperties": false,
-      "description": "route_changed is additive (not required) so already-stored v2 episodes whose stated_vs_actual predates this field still load -- journey/evidence_extractor.py always populates it for anything freshly extracted; attribute_agents/deception.py treats it as False when absent (same as never having route-changed).",
+      "description": "route_changed and claim_kind are both additive (not required) so already-stored v2 episodes whose stated_vs_actual predates them still load -- journey/evidence_extractor.py always populates both for anything freshly extracted; attribute_agents/deception.py treats a missing claim_kind as \"state_change\" (its original, only meaning before claim_kind existed) and a missing route_changed as False.",
       "required": ["claimed_action", "step_id", "network_fired", "request_ids"],
       "properties": {
         "claimed_action": { "type": "string" },
+        "claim_kind": {
+          "enum": ["state_change", "dismiss"],
+          "description": "state_change (unsubscribe/cancel/reject/etc.) claims something real happens, verified by network_fired OR route_changed. dismiss (close/×/skip/etc.) claims the OPPOSITE -- nothing beyond going away -- so network_fired OR route_changed there is itself the contradiction. See signals/stated_vs_actual.py's module docstring."
+        },
         "step_id": { "type": "integer" },
         "network_fired": { "type": "boolean" },
         "route_changed": {
           "type": "boolean",
-          "description": "True if this step's URL differs from the immediately preceding step's -- a second, independent way a genuinely client-side-only action (no backend, e.g. a mock demo's React-state-only cancel) can show up without network_fired. attribute_agents/deception.py only treats an action as suspicious when NEITHER this nor network_fired is true."
+          "description": "True if this step's URL differs from the immediately preceding step's -- a second, independent way a genuinely client-side-only action (no backend, e.g. a mock demo's React-state-only cancel) can show up without network_fired. For a state_change claim, attribute_agents/deception.py only treats it as suspicious when NEITHER this nor network_fired is true; for a dismiss claim, the opposite -- either one firing is itself suspicious."
         },
         "request_ids": { "type": "array", "items": { "type": "string" } }
       }

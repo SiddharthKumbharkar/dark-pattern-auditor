@@ -20,6 +20,26 @@ python3 -m playwright install chromium
 
 Requires Python 3.10+. No database, no external services — everything reads
 and writes plain files under `storage/` (configurable via `config.yaml`).
+These four commands are the entire setup — there's nothing else to install
+or configure to run this on a different machine.
+
+### API key (only needed for the paid Stage-2 pass)
+
+Recording, evidence extraction, the 7 code-based attribute agents, and every
+report are **free, local computation** — no key needed for any of that. A
+key is only required for `auto_audit.py` / `dpa.py auto-audit` and
+`record --auto-audit`, the commands that actually call the Anthropic API:
+
+```bash
+cp .env.example .env
+# then edit .env and paste in a real key from https://console.anthropic.com/settings/keys
+```
+
+`.env` is already gitignored — your key never gets committed. `python-dotenv`
+loads it automatically from the project root; no shell export needed (though
+`export ANTHROPIC_API_KEY=sk-ant-...` works too, if you'd rather not use a
+file). A missing key is caught up front, before anything runs — you'll never
+lose a recording session to a key you forgot to set.
 
 Every command is available two ways:
 
@@ -104,6 +124,52 @@ new revisit) and every command supports `--config <path>` to point at a
 different `config.yaml`, and (via `dpa.py --log-file <path> --log-level
 <level> <command> ...`) structured JSON logging of the whole run.
 
+## One-command automated audit (spends money)
+
+Steps 2, 4, 5, 7 above — plus a real Stage-2 LLM pass on all 7 attributes
+and the coordinator — collapsed into one command, once you've recorded a
+session. Requires `ANTHROPIC_API_KEY` (see **API key** above); this is the
+**only** command in this whole tool that spends real money.
+
+```bash
+python3 dpa.py auto-audit episode_20260729T120000000000Z
+#   -> extract-evidence -> run-attributes -> Stage-2 LLM pass (7 attributes
+#      + coordinator, real API calls) -> build-output -> report
+#   -> prints the final verdict and where report.html landed
+
+# See exactly what would be sent (token/image counts per call) and what it
+# would cost, without spending anything:
+python3 dpa.py auto-audit episode_20260729T120000000000Z --dry-run
+```
+
+Or trigger it automatically the moment a recording session ends:
+
+```bash
+python3 dpa.py record --site https://example-shop.com \
+    --goal purchase_cheapest --auto-audit
+```
+
+Every Stage-2 response is validated by the exact same grounding/evidence-
+pointer/visual-claim checks the manual `ingest-response` workflow uses (see
+below) — a rejected or ungrounded response is retried, then skipped (never
+silently forced through), same as the manual path. Two built-in safety
+nets, both overridable:
+
+- **A hard per-episode call budget** (`--max-llm-calls`, default 20) —
+  enforced inside the API-calling function itself, so it applies whether
+  you're running the orchestrated pipeline above or scripting direct calls
+  of your own; persists across separate process runs against the same
+  episode, not just in-memory for one invocation.
+- **An empty-episode skip** — if a session looks empty (goal explicitly
+  abandoned, or only a single step captured — e.g. a bot-walled landing
+  page and nothing else happened), the Stage-2 LLM pass is skipped
+  automatically so a dead session doesn't spend money finding out it had
+  nothing to judge. `extract-evidence`/`run-attributes`/`build-output`/
+  `report` still run either way, free. Override with `--force-stage2`.
+
+Real, per-call cost is logged (`payload/<episode_id>/.../usage.json`) —
+actual billed token counts and an estimated USD figure, not a guess.
+
 ## Recording a manual session
 
 Recording is always human-driven: the tool opens a real, visible browser and
@@ -130,6 +196,8 @@ Useful flags on `record`:
 | `--pair-with <episode_id>` | Link this episode to another (e.g. a cancel-flow episode paired with its signup-flow counterpart) so `restriction`/`disparate_treatment` can compare them. |
 | `--device desktop\|mobile` | Viewport preset. |
 | `--sector` / `--locale` / `--operator` | Metadata recorded on the episode. |
+| `--profile <name>` | Launch with a persistent browser profile (under `browser_profiles.root`, gitignored) instead of a fresh throwaway one — cookies/localStorage/site permissions from an earlier session recorded with the *same* profile name carry over. Useful for a bot-check/CAPTCHA you already cleared by hand, or a real logged-in session you want to reuse. Omit for the default one-off, cookie-less context. |
+| `--auto-audit` / `--model` | See **One-command automated audit** above — runs the full paid Stage-2 pipeline the moment the session ends. |
 
 ```bash
 python3 dpa.py list-episodes               # everything recorded so far
@@ -183,6 +251,29 @@ python3 dpa.py validate-episode <episode_id>/episode.json
 python3 dpa.py report <episode_id>
 # ...or roll up every goal/revisit for one site into one page:
 python3 dpa.py report-site <site_id>
+```
+
+### Presentation-ready report views
+
+`report`'s default output (`report.html`, above) is the technical report —
+raw evidence tables, selectors, every verdict's reasoning. For a non-
+technical audience (a live demo, a manager), two additional views read the
+exact same underlying data and translate it into plain language — no
+selectors, no JSON, no attribute codes outside a parenthetical next to
+their own plain-English label:
+
+```bash
+# One episode: a verdict banner, named findings in plain prose, and a
+# flagged screenshot filmstrip -- writes report_summary.html alongside
+# report.html (never touches report.html itself; run plain `report
+# <episode_id>` first/separately if that doesn't exist yet).
+python3 dpa.py report <episode_id> --summary
+
+# Two episodes side by side -- the ON/OFF demo artifact: same site, same
+# flow, opposite results. Column labels are auto-derived from each
+# episode's own site/id (e.g. this project's own "-on"/"-off" demo-site
+# convention), never a raw path. Writes report_compare.html.
+python3 dpa.py report --compare <on_episode_id> <off_episode_id>
 ```
 
 ## Handing a payload to an LLM and ingesting the response (Stage 2, manual)
@@ -329,7 +420,9 @@ storage/                                       # output.root
     steps.jsonl                                  # incremental per-step log, written during recording (crash recovery -- see `recover`)
     run_manifest.json                             # git hash, config snapshot, tool version, operator for this run
     screenshots/  dom/  computed_styles/          # masked artifacts only -- raw/unmasked never lands here
-    report.html                                   # written by `report` / `report-site`
+    report.html                                   # written by `report` / `report-site` (technical)
+    report_summary.html                           # written by `report --summary` (plain-language)
+    report_compare.html                           # written by `report --compare` (side-by-side ON/OFF; lands in the FIRST episode's own folder)
   groups/<group_id>/
     group_evidence.json                           # claim_persistence, timer_reset_detection, paired_flow_comparison for one (site_id, goal)
   site_reports/

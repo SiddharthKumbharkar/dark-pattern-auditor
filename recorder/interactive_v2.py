@@ -133,9 +133,16 @@ class InteractiveRecorderV2:
         device: str = "desktop",
         locale: Optional[str] = None,
         paired_episode_id: Optional[str] = None,
+        persistent_profile_dir: Optional[str] = None,
     ):
         self.config = config
         self.device = device
+        # None (the default) = a fresh, throwaway context every session,
+        # exactly the original behavior. A real directory = a persistent
+        # Chromium user-data-dir (see launch()) -- cookies/localStorage/
+        # site permissions carry over from whatever this same profile
+        # last did, same as a real returning visitor's own browser.
+        self.persistent_profile_dir = persistent_profile_dir
         self.episode_dir = os.path.join(storage_dir, episode_id)
         self.screenshots_dir = os.path.join(self.episode_dir, "screenshots")
         self.dom_dir = os.path.join(self.episode_dir, "dom")
@@ -193,18 +200,37 @@ class InteractiveRecorderV2:
         running the blocking poll loop -- headless defaults to False (a
         human must be able to see and control the browser in production;
         every real caller uses the default) and is only overridden by
-        tests that don't need a visible window."""
+        tests that don't need a visible window.
+
+        persistent_profile_dir (None by default) switches from
+        chromium.launch() + browser.new_context() (a fresh, throwaway
+        profile every session) to chromium.launch_persistent_context() (a
+        real, on-disk Chromium user-data-dir that's reused across
+        sessions). launch_persistent_context returns the BrowserContext
+        directly -- there's no separate Browser object to hold, and it may
+        already have opened one blank page of its own, so that's reused
+        instead of opening a second one. _teardown_browser()'s existing
+        "close context, then close browser if there is one" already
+        handles self._browser staying None here."""
         self._playwright = sync_playwright().start()
-        self._browser = self._playwright.chromium.launch(headless=headless)
 
         viewport = MOBILE_VIEWPORT if self.device == "mobile" else DESKTOP_VIEWPORT
         context_kwargs = {"viewport": viewport}
         if self.device == "mobile":
             context_kwargs["is_mobile"] = True
             context_kwargs["has_touch"] = True
-        self._context = self._browser.new_context(**context_kwargs)
 
-        main_page = self._context.new_page()
+        if self.persistent_profile_dir:
+            os.makedirs(self.persistent_profile_dir, exist_ok=True)
+            self._context = self._playwright.chromium.launch_persistent_context(
+                self.persistent_profile_dir, headless=headless, **context_kwargs
+            )
+            main_page = self._context.pages[0] if self._context.pages else self._context.new_page()
+        else:
+            self._browser = self._playwright.chromium.launch(headless=headless)
+            self._context = self._browser.new_context(**context_kwargs)
+            main_page = self._context.new_page()
+
         self._attach_page(main_page, tab_id="main")
         # Registered only after the main page exists: BrowserContext's
         # "page" event fires for every page created in the context,

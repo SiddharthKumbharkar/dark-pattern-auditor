@@ -297,6 +297,87 @@ def test_overlay_survives_navigation_without_manual_reinjection(recorder):
     assert page.evaluate("window.__dpaInitialized__") is True
 
 
+# -- overlay drag/collapse (real complaint: the fixed panel blocked page
+# content -- e.g. a bottom-anchored cookie-consent banner -- with no way
+# to move or hide it) --------------------------------------------------
+
+
+def test_overlay_collapse_toggle_hides_body_and_creates_no_page_click_step(recorder):
+    rec, page = recorder
+    rec._poll_tick()
+    assert page.is_visible("#__dpa_body__")
+
+    page.click("#__dpa_toggle__")
+    assert not page.is_visible("#__dpa_body__")
+    page.click("#__dpa_toggle__")
+    assert page.is_visible("#__dpa_body__")
+    rec._poll_tick()
+
+    episode_doc = rec.finalize()
+    # isInsideOverlay() must still exclude these clicks -- only the
+    # initial navigate should appear, same as before this feature existed.
+    assert [s["action"]["type"] for s in episode_doc["steps"]] == ["navigate"]
+
+
+def test_overlay_drag_moves_the_panel_and_position_persists_across_navigation(recorder):
+    rec, page = recorder
+    rec._poll_tick()
+
+    initial_box = page.locator("#__dpa_overlay__").bounding_box()
+    header_box = page.locator("#__dpa_header__").bounding_box()
+    start_x = header_box["x"] + header_box["width"] / 2
+    start_y = header_box["y"] + header_box["height"] / 2
+
+    page.mouse.move(start_x, start_y)
+    page.mouse.down()
+    page.mouse.move(start_x - 150, start_y - 120, steps=5)
+    page.mouse.up()
+
+    moved_box = page.locator("#__dpa_overlay__").bounding_box()
+    assert abs(moved_box["x"] - initial_box["x"]) > 50 or abs(moved_box["y"] - initial_box["y"]) > 50
+
+    # The overlay's entire DOM is torn down and rebuilt on every new
+    # document (buildOverlay() runs fresh each time) -- without the
+    # sessionStorage persistence this test would fail here, snapping back
+    # to the bottom-right default the moment the operator navigates.
+    page.click("#nav-link")
+    rec._poll_tick()
+    new_box = page.locator("#__dpa_overlay__").bounding_box()
+    assert abs(new_box["x"] - moved_box["x"]) < 5
+    assert abs(new_box["y"] - moved_box["y"]) < 5
+
+
+def test_overlay_collapsed_state_persists_across_navigation(recorder):
+    rec, page = recorder
+    rec._poll_tick()
+
+    page.click("#__dpa_toggle__")
+    assert not page.is_visible("#__dpa_body__")
+
+    page.click("#nav-link")
+    rec._poll_tick()
+    assert not page.is_visible("#__dpa_body__")
+
+
+def test_overlay_mousedown_on_toggle_button_does_not_start_a_drag(recorder):
+    rec, page = recorder
+    rec._poll_tick()
+
+    initial_box = page.locator("#__dpa_overlay__").bounding_box()
+    toggle_box = page.locator("#__dpa_toggle__").bounding_box()
+    x = toggle_box["x"] + toggle_box["width"] / 2
+    y = toggle_box["y"] + toggle_box["height"] / 2
+
+    page.mouse.move(x, y)
+    page.mouse.down()
+    page.mouse.move(x - 100, y - 100, steps=5)
+    page.mouse.up()
+
+    unmoved_box = page.locator("#__dpa_overlay__").bounding_box()
+    assert abs(unmoved_box["x"] - initial_box["x"]) < 2
+    assert abs(unmoved_box["y"] - initial_box["y"]) < 2
+
+
 # -- masking-specific end-to-end coverage ------------------------------
 
 
@@ -366,3 +447,71 @@ def test_strict_mode_aborts_session_on_residual_pii(tmp_path, site_dir):
     assert episode_doc["privacy"]["validation_passed"] is False
     assert episode_doc["steps"][0]["capture_error"] is not None
     assert episode_doc["steps"][0]["dom_snapshot_masked_path"] is None
+
+
+def _make_recorder_with_profile(tmp_path, site_dir, episode_id, profile_dir):
+    storage_dir = str(tmp_path / "storage")
+    rec = InteractiveRecorderV2(
+        storage_dir=storage_dir,
+        episode_id=episode_id,
+        site_url=(site_dir / "page1.html").as_uri(),
+        site_domain="local-test-site",
+        sector="ecommerce",
+        goal_id="purchase_cheapest",
+        goal_description="Find and complete purchase of the lowest-priced option.",
+        operator="test-operator",
+        config=Config(),
+        revisit_index=0,
+        device="desktop",
+        locale=None,
+        paired_episode_id=None,
+        persistent_profile_dir=profile_dir,
+    )
+    main_page = rec.launch(headless=True)
+    return rec, main_page
+
+
+def test_persistent_profile_carries_state_across_separate_sessions(tmp_path, site_dir):
+    """The whole point of --profile: something a human established in one
+    recording session (here, standing in for a cleared bot-check/consent
+    choice) is still there in a LATER, separate session that reuses the
+    same profile name -- unlike the default throwaway context, which
+    starts clean every time (see the sibling test below)."""
+    profile_dir = str(tmp_path / "browser_profiles" / "linkedin")
+
+    rec1, page1 = _make_recorder_with_profile(tmp_path, site_dir, "episode_profile_1", profile_dir)
+    try:
+        page1.evaluate("localStorage.setItem('cleared_challenge', 'yes')")
+    finally:
+        rec1._teardown_browser()
+        rec1._cleanup_raw_artifacts()
+
+    rec2, page2 = _make_recorder_with_profile(tmp_path, site_dir, "episode_profile_2", profile_dir)
+    try:
+        carried_over = page2.evaluate("localStorage.getItem('cleared_challenge')")
+    finally:
+        rec2._teardown_browser()
+        rec2._cleanup_raw_artifacts()
+
+    assert carried_over == "yes"
+
+
+def test_no_profile_still_gets_a_fresh_throwaway_context(tmp_path, site_dir):
+    """persistent_profile_dir=None (the default -- every other test in this
+    file uses it) must keep behaving exactly as before --profile existed:
+    nothing carries over between two separate recorder instances."""
+    rec1, page1 = _make_recorder(tmp_path, site_dir, "page1.html")
+    try:
+        page1.evaluate("localStorage.setItem('cleared_challenge', 'yes')")
+    finally:
+        rec1._teardown_browser()
+        rec1._cleanup_raw_artifacts()
+
+    rec2, page2 = _make_recorder(tmp_path, site_dir, "page1.html")
+    try:
+        carried_over = page2.evaluate("localStorage.getItem('cleared_challenge')")
+    finally:
+        rec2._teardown_browser()
+        rec2._cleanup_raw_artifacts()
+
+    assert carried_over is None

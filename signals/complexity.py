@@ -40,9 +40,24 @@ def _count_syllables(word: str) -> int:
 
 
 def flesch_kincaid_grade(text: str) -> Optional[float]:
+    """None when text has no real sentence-ending punctuation at all --
+    _SENTENCE_SPLIT_PATTERN.split() on a string with zero '.'/'!'/'?'
+    returns the WHOLE string as one "sentence", which is a parsing
+    artifact for concatenated UI text (a heading + a button label + a nav
+    link, stitched together by full_text() with no punctuation between
+    them -- never real prose), not a genuine single sentence. Trusting
+    that artifact makes words-per-sentence spike on short, punctuation-
+    free fragments: a real false positive found by fixing a SEPARATE bug
+    (signals/dom_text.py's recorder-overlay exclusion) -- a 4-word
+    fragment ("Manage membership Cancel membership", no punctuation)
+    scored ~15.5 (postgraduate level) purely from formula instability,
+    not genuine complexity. Real prose (actual consent/terms copy) always
+    has at least one period; this excludes only text that structurally
+    can't be real prose, not short-but-real sentences."""
+    has_real_sentence_boundary = bool(_SENTENCE_SPLIT_PATTERN.search(text))
     sentences = [s for s in _SENTENCE_SPLIT_PATTERN.split(text) if s.strip()]
     words = _WORD_PATTERN.findall(text)
-    if not sentences or not words:
+    if not has_real_sentence_boundary or not sentences or not words:
         return None
     syllables = sum(_count_syllables(w) for w in words)
     grade = 0.39 * (len(words) / len(sentences)) + 11.8 * (syllables / len(words)) - 15.59

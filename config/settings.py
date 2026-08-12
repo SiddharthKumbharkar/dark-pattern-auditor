@@ -102,6 +102,22 @@ class PayloadConfig:
 
 
 @dataclass(frozen=True)
+class BrowserProfilesConfig:
+    # Root directory record.py's --profile <name> resolves a persistent
+    # Chromium user-data-dir under (browser_profiles/<name>/) -- see
+    # recorder/interactive_v2.py's launch(). Opt-in: with no --profile, a
+    # session still gets a fresh, throwaway context exactly as before.
+    # Reusing a named profile across sessions carries over real cookies/
+    # localStorage/site-permission state (e.g. a Cloudflare "verified
+    # human" clearance already earned in a prior session driven by the
+    # SAME human operator) -- this is the same thing a real returning
+    # visitor's browser does on its own, not fingerprint spoofing. Never
+    # committed: gitignored, since a profile directory holds real session
+    # data.
+    root: str = "browser_profiles"
+
+
+@dataclass(frozen=True)
 class CostConfig:
     log_enabled: bool = False
 
@@ -125,6 +141,7 @@ class Config:
     cost: CostConfig = field(default_factory=CostConfig)
     attributes: AttributesConfig = field(default_factory=AttributesConfig)
     payload: PayloadConfig = field(default_factory=PayloadConfig)
+    browser_profiles: BrowserProfilesConfig = field(default_factory=BrowserProfilesConfig)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -240,6 +257,13 @@ def _build_payload(raw: Dict[str, Any]) -> PayloadConfig:
     return PayloadConfig(root=root)
 
 
+def _build_browser_profiles(raw: Dict[str, Any]) -> BrowserProfilesConfig:
+    root = raw.get("root", BrowserProfilesConfig.root)
+    if not isinstance(root, str) or not root:
+        raise ConfigError(f"browser_profiles.root must be a non-empty string, got {root!r}")
+    return BrowserProfilesConfig(root=root)
+
+
 def _build_cost(raw: Dict[str, Any]) -> CostConfig:
     defaults = CostConfig()
     return CostConfig(
@@ -282,4 +306,5 @@ def load_config(path: Optional[str] = None) -> Config:
         cost=_build_cost(raw.get("cost") or {}),
         attributes=_build_attributes(raw.get("attributes") or {}),
         payload=_build_payload(raw.get("payload") or {}),
+        browser_profiles=_build_browser_profiles(raw.get("browser_profiles") or {}),
     )

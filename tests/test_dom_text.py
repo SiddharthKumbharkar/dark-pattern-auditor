@@ -167,3 +167,71 @@ def test_has_retention_offer_false_for_ordinary_copy():
 
 def test_has_retention_offer_empty_html():
     assert has_retention_offer("") is False
+
+
+# -- recorder overlay exclusion (_parse_dom) ---------------------------------
+#
+# The recorder's own injected control panel (recorder/overlay.py,
+# id="__dpa_overlay__") is real DOM present on EVERY captured step of
+# EVERY episode -- confirmed via journey/ground_truth.py's
+# validate-against-truth notes on a real recorded episode. Left in, it
+# silently breaks every structure/text-based signal in this module.
+
+_OVERLAY_HTML = (
+    '<div id="__dpa_overlay__" class="dpa-recording-overlay">'
+    '<p>Goal: cancel your membership</p>'
+    '<button data-dpa-btn="achieved">Mark goal achieved</button>'
+    '<button data-dpa-btn="end">End session</button>'
+    "</div>"
+)
+
+
+def test_has_interstitial_ignores_the_recorder_overlay():
+    # The overlay's own id literally contains "overlay", one of
+    # _INTERSTITIAL_KEYWORDS -- without exclusion this is always True.
+    assert has_interstitial(_OVERLAY_HTML) is False
+
+
+def test_has_interstitial_still_detects_a_real_interstitial_alongside_the_overlay():
+    html = _OVERLAY_HTML + '<div role="dialog">Are you sure?</div>'
+    assert has_interstitial(html) is True
+
+
+def test_has_no_interactive_elements_ignores_the_recorder_overlays_own_buttons():
+    # The overlay contains real <button> elements -- without exclusion a
+    # genuinely dead page (zero real interactive elements) never reads as
+    # a dead end, because the overlay's buttons always match.
+    html = _OVERLAY_HTML + "<p>Nothing else to click.</p>"
+    assert has_no_interactive_elements(html) is True
+
+
+def test_has_no_interactive_elements_still_detects_a_real_button_alongside_the_overlay():
+    html = _OVERLAY_HTML + "<button>Continue</button>"
+    assert has_no_interactive_elements(html) is False
+
+
+def test_extract_text_candidates_excludes_the_overlays_own_text():
+    html = _OVERLAY_HTML + "<p>Real page content</p>"
+    texts = [c["text"] for c in extract_text_candidates(html)]
+    assert texts == ["Real page content"]
+    assert not any("Mark goal achieved" in t or "End session" in t for t in texts)
+
+
+def test_full_text_excludes_the_overlays_own_text():
+    html = _OVERLAY_HTML + "<p>Real page content</p>"
+    text = full_text(html)
+    assert "Real page content" in text
+    assert "Mark goal achieved" not in text
+    assert "End session" not in text
+
+
+def test_has_retention_offer_ignores_overlay_text_but_still_detects_real_copy():
+    html = _OVERLAY_HTML + "<p>Wait! Before you go, here's an offer.</p>"
+    assert has_retention_offer(html) is True
+    # and the negative case: overlay alone, no real retention copy
+    assert has_retention_offer(_OVERLAY_HTML) is False
+
+
+def test_required_field_count_unaffected_by_overlay_presence():
+    html = _OVERLAY_HTML + "<form><input required></form>"
+    assert required_field_count(html) == 1

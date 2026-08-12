@@ -106,3 +106,57 @@ def test_reject_opt_out_and_delete_are_all_recognized():
     }
     results = find_stated_vs_actual(steps, styles)
     assert len(results) == 3
+
+
+# -- claim_kind="dismiss": a close/×/skip control claims the OPPOSITE of a
+# -- state_change claim -- nothing beyond going away should happen, so a --
+# -- route change or network request there is itself the contradiction ----
+
+
+def test_close_button_that_navigates_is_flagged_as_a_dismiss_claim():
+    steps = [
+        _step(1, "navigate", url="http://x/page"),
+        _step(2, "click", selector="#close-x", url="http://x/premium"),
+    ]
+    styles = {1: [{"selector": "#close-x", "text": "×"}]}
+    results = find_stated_vs_actual(steps, styles)
+    assert len(results) == 1
+    assert results[0]["claim_kind"] == "dismiss"
+    assert results[0]["route_changed"] is True
+
+
+def test_genuine_close_with_no_navigation_and_no_network_is_still_captured():
+    steps = [_step(1, "navigate", url="http://x/page"), _step(2, "click", selector="#close-x", url="http://x/page")]
+    styles = {1: [{"selector": "#close-x", "text": "Close"}]}
+    results = find_stated_vs_actual(steps, styles)
+    assert results[0]["claim_kind"] == "dismiss"
+    assert results[0]["network_fired"] is False
+    assert results[0]["route_changed"] is False
+
+
+def test_icon_only_close_button_falls_back_to_aria_label():
+    # An SVG-icon close button has no innerText at all -- aria-label is
+    # the one other place its claimed purpose legitimately lives.
+    steps = [_step(1, "navigate", url="http://x/page"), _step(2, "click", selector="#icon-close", url="http://x/ads")]
+    styles = {1: [{"selector": "#icon-close", "text": "", "aria_label": "Close"}]}
+    results = find_stated_vs_actual(steps, styles)
+    assert len(results) == 1
+    assert results[0]["claimed_action"] == "Close"
+    assert results[0]["claim_kind"] == "dismiss"
+
+
+def test_empty_text_and_empty_aria_label_is_skipped_not_guessed():
+    steps = [_step(1, "navigate"), _step(2, "click", selector="#mystery-icon")]
+    styles = {1: [{"selector": "#mystery-icon", "text": "", "aria_label": ""}]}
+    assert find_stated_vs_actual(steps, styles) == []
+
+
+def test_close_inside_a_longer_label_matches_neither_claim_kind():
+    # "Close your account" is a real state-changing action, but "close" is
+    # deliberately not one of STATE_CHANGE_VERBS (to avoid colliding with
+    # the plain "Close" dismiss button), and DISMISS_LABELS only matches
+    # the full label, not a word inside it -- so this is honestly outside
+    # what either check covers today, not silently misclassified.
+    steps = [_step(1, "navigate"), _step(2, "click", selector="#close-acct")]
+    styles = {1: [{"selector": "#close-acct", "text": "Close your account"}]}
+    assert find_stated_vs_actual(steps, styles) == []

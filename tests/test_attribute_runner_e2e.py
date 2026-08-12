@@ -37,7 +37,10 @@ CANCEL_STEP2_HTML = """<!DOCTYPE html>
 <h1>Before you go</h1>
 <p>Notwithstanding any prior communication, failure to not decline this retention offer
 shall not be deemed an unequivocal, irrevocable non-acceptance of continued billing
-absent explicit, unambiguous disaffirmance hereof.</p>
+absent explicit, unambiguous disaffirmance hereof. Notwithstanding the aforementioned
+stipulations regarding irrevocable relinquishment, the undersigned party acknowledges that
+any purported non-disaffirmance shall remain contractually indistinguishable from an
+affirmative, unequivocal ratification hereof.</p>
 <button id="unsub-btn" type="button">Cancel my membership</button>
 </body></html>
 """

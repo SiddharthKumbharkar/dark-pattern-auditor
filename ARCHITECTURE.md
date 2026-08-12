@@ -27,7 +27,7 @@ writes artifacts.
 
 | File | Role |
 |---|---|
-| `interactive_v2.py` | **The** recorder. Human-driven: launches a headed browser, the human clicks around freely, this observes (click/input-commit/submit/navigation/significant-scroll) and captures a step. Never drives — no autonomous navigation. Handles new tabs/popups, survives SPA navigation, writes incrementally so a crashed session can be rebuilt (`recover_incomplete_episode`). |
+| `interactive_v2.py` | **The** recorder. Human-driven: launches a headed browser, the human clicks around freely, this observes (click/input-commit/submit/navigation/significant-scroll) and captures a step. Never drives — no autonomous navigation. Handles new tabs/popups, survives SPA navigation, writes incrementally so a crashed session can be rebuilt (`recover_incomplete_episode`). `record.py --profile <name>` opts a session into a persistent Chromium user-data-dir (`browser_profiles/<name>/`, gitignored) instead of a fresh throwaway context per session — real cookies/localStorage/site permissions (e.g. a bot-check challenge a human already cleared) carry over across separate recordings, the same way a returning visitor's own browser would. Still 100% human-driven; nothing here spoofs a browser fingerprint or automates past a site's own challenge. |
 | `evidence_probe.py` | Captures computed CSS + geometry (bounding boxes, colors, font sizes) for every interactive element on a step — feeds `signals/visual_asymmetry.py` and the HTML report's bounding-box overlays. |
 | `network_capture.py` | CDP Network-domain capture (method/url/status/resource_type only, never bodies). |
 | `overlay.py` | The on-page overlay UI (goal, step count, mark-achieved/abandon/note/end buttons) injected into the recorded page. |

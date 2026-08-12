@@ -75,3 +75,42 @@ def test_one_text_can_produce_multiple_claim_types():
     types = {c["claim_type"] for c in claims}
     assert "stock_count" in types
     assert "deadline_phrase" in types
+
+
+# -- countdown_timer false positives: a plain wall-clock timestamp/date is
+# NOT a countdown -- found testing against nytimes.com's real cookie-
+# consent vendor-disclosure text, which matched both of these as
+# "countdown_timer" before this guard existed.
+
+
+def test_article_byline_timestamp_is_not_a_countdown_timer():
+    claims = extract_claims(1, _candidates("Aug. 11, 2026, 11:09 a.m. ET"))
+    assert not any(c["claim_type"] == "countdown_timer" for c in claims)
+
+
+def test_time_of_day_mention_inside_a_long_sentence_is_not_a_countdown_timer():
+    text = (
+        "A car manufacturer wants to promote its electric vehicles to environmentally "
+        "conscious users living in the city after office hours. The advertising is "
+        "presented on a page with related content (such as an article on climate "
+        "change actions) after 6:30 p.m. to users whose non-precise location suggests "
+        "that they are in an urban zone."
+    )
+    claims = extract_claims(1, _candidates(text))
+    assert not any(c["claim_type"] == "countdown_timer" for c in claims)
+
+
+def test_bare_am_pm_time_with_no_date_is_still_not_a_countdown_timer():
+    # The am/pm check alone (no date/year needed) must be enough to reject it.
+    claims = extract_claims(1, _candidates("Doors open at 6:30 p.m. sharp."))
+    assert not any(c["claim_type"] == "countdown_timer" for c in claims)
+
+
+def test_short_countdown_display_with_no_am_pm_or_date_still_fires():
+    # The existing, real countdown tests (test_countdown_timer_*) already
+    # cover "Ends in HH:MM:SS" shapes; this covers the bare-digits-only
+    # shape a rendered timer widget's own text node commonly is.
+    claims = extract_claims(1, _candidates("13:42"))
+    timers = [c for c in claims if c["claim_type"] == "countdown_timer"]
+    assert len(timers) == 1
+    assert timers[0]["normalized_value"] == 13 * 60 + 42

@@ -15,6 +15,11 @@ record/extract-evidence/run-attributes are free, local computation. Use
 --dry-run to see exactly what would be sent (token/image counts per call)
 without calling the API or spending anything.
 
+Stage 2 is automatically skipped (evidence/attributes/output/report still
+run, free) when the episode looks empty -- goal explicitly abandoned via
+the overlay, or only a single step captured (e.g. a bot-walled landing
+page and nothing else happened). See _looks_empty() / --force-stage2.
+
 Each Stage-2 response is validated by journey/mechanism_verdict_ingest.py's
 ingest_response() -- the EXACT same grounding/evidence-pointer/visual-claim
 checks a human-pasted response.json goes through (see the manual workflow
@@ -31,6 +36,7 @@ import argparse
 import json
 import os
 import sys
+from typing import Dict, Optional
 
 from dotenv import load_dotenv
 
@@ -52,6 +58,28 @@ from report import build_episode_report
 # auto_audit.py-local counter -- see that module's docstring. A direct/
 # manual call_for_judgement() call outside this orchestrator hits the exact
 # same gate, which a counter living only here could never see.
+
+
+def _looks_empty(episode: Dict) -> Optional[str]:
+    """Returns a human-readable reason to skip the real Stage-2 spend, or
+    None if the episode has enough in it to be worth judging. Deliberately
+    narrow -- only the two unambiguous "nothing worth spending on" cases,
+    not a step-count floor in general (a legitimately short flow, e.g. a
+    2-step reject_cookies episode, is real evidence and must NOT be
+    blocked here):
+      - outcome.goal_achieved is False: the operator explicitly clicked
+        the overlay's Abandon button -- a deliberate signal, not a guess,
+        that this session didn't reach anything.
+      - exactly one step: a lone navigate (e.g. the initial page load
+        that hit a bot-check/access-denied wall and nothing else ever
+        happened) can never contain a real finding regardless of outcome.
+    See --force-stage2 to override."""
+    steps = episode.get("steps") or []
+    if len(steps) <= 1:
+        return f"only {len(steps)} step(s) captured"
+    if (episode.get("outcome") or {}).get("goal_achieved") is False:
+        return "goal was explicitly marked abandoned"
+    return None
 
 
 def _resolve_target(raw: str, storage_dir: str) -> str:
@@ -163,6 +191,16 @@ def main(argv=None) -> int:
              f"{DEFAULT_MAX_LLM_CALLS_PER_EPISODE})",
     )
     parser.add_argument("--config", default=None, help="Path to config.yaml")
+    parser.add_argument(
+        "--force-stage2", action="store_true",
+        help=(
+            "Run the Stage-2 LLM pass even when the episode looks empty -- goal explicitly "
+            "abandoned via the overlay, or only a single step captured (e.g. a bot-walled landing "
+            "page and nothing else). Without this flag, that case is skipped automatically (see "
+            "_looks_empty()) so a blocked/dead session doesn't spend money finding out it had "
+            "nothing to judge; evidence/attributes/output/report still run either way, free."
+        ),
+    )
     args = parser.parse_args(argv)
 
     if not args.dry_run and not os.environ.get("ANTHROPIC_API_KEY"):
@@ -192,22 +230,30 @@ def main(argv=None) -> int:
         print(f"FAIL: run-attributes failed -- {exc}")
         return 1
 
-    print(f"3/5  Stage-2 LLM pass ({args.model}){' [dry run]' if args.dry_run else ''}")
+    empty_reason = None if (args.dry_run or args.force_stage2) else _looks_empty(load_episode(episode_json_path))
     ok_count = 0
-    try:
-        for attribute in ATTRIBUTES:
-            if _run_stage2_call(
-                target, "attribute", attribute, args.model, operator, storage_dir, payload_root,
-                args.dry_run, args.max_attempts, args.max_llm_calls,
-            ):
-                ok_count += 1
-        coordinator_ok = _run_stage2_call(
-            target, "coordinator", None, args.model, operator, storage_dir, payload_root,
-            args.dry_run, args.max_attempts, args.max_llm_calls,
+    coordinator_ok = False
+    if empty_reason:
+        print(
+            f"3/5  Stage-2 LLM pass -- SKIPPED: {empty_reason}, nothing worth spending on "
+            f"(use --force-stage2 to run it anyway)"
         )
-    except BudgetExceededError as exc:
-        print(f"FAIL: {exc}")
-        return 1
+    else:
+        print(f"3/5  Stage-2 LLM pass ({args.model}){' [dry run]' if args.dry_run else ''}")
+        try:
+            for attribute in ATTRIBUTES:
+                if _run_stage2_call(
+                    target, "attribute", attribute, args.model, operator, storage_dir, payload_root,
+                    args.dry_run, args.max_attempts, args.max_llm_calls,
+                ):
+                    ok_count += 1
+            coordinator_ok = _run_stage2_call(
+                target, "coordinator", None, args.model, operator, storage_dir, payload_root,
+                args.dry_run, args.max_attempts, args.max_llm_calls,
+            )
+        except BudgetExceededError as exc:
+            print(f"FAIL: {exc}")
+            return 1
 
     if args.dry_run:
         print(
@@ -217,7 +263,8 @@ def main(argv=None) -> int:
         )
         return 0
 
-    print(f"    {ok_count}/{len(ATTRIBUTES)} attribute(s) ingested, coordinator {'ingested' if coordinator_ok else 'skipped/rejected'}")
+    if not empty_reason:
+        print(f"    {ok_count}/{len(ATTRIBUTES)} attribute(s) ingested, coordinator {'ingested' if coordinator_ok else 'skipped/rejected'}")
 
     print(f"4/5  build-output       {target}")
     episode = load_episode(episode_json_path)

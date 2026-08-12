@@ -8,10 +8,12 @@ Usage:
     python3 record.py recover <episode_id>   # rebuild episode.json for a session that crashed
 
 --site/--goal/--revisit-index/--pair-with/--device are exactly the flags
-specified for `record`. --sector/--locale/--operator/--config are optional
-additions beyond that spec (schema v2's episode.sector/locale/operator need
-a source, and every other entry point in this repo already takes
---operator/--config) -- all default sensibly if omitted.
+specified for `record`. --sector/--locale/--operator/--config/--profile are
+optional additions beyond that spec (schema v2's episode.sector/locale/
+operator need a source, every other entry point in this repo already takes
+--operator/--config, and --profile opts into a persistent browser context
+-- see recorder/interactive_v2.py's launch()) -- all default sensibly if
+omitted.
 """
 
 import argparse
@@ -117,6 +119,10 @@ def cmd_record(args, cfg) -> int:
 
     storage_dir = resolve_path(cfg.output.root)
 
+    persistent_profile_dir = None
+    if args.profile:
+        persistent_profile_dir = os.path.join(resolve_path(cfg.browser_profiles.root), args.profile)
+
     if args.pair_with and not os.path.isdir(os.path.join(storage_dir, args.pair_with)):
         print(
             f"Warning: --pair-with {args.pair_with!r} does not match any existing episode "
@@ -141,6 +147,7 @@ def cmd_record(args, cfg) -> int:
         device=args.device,
         locale=args.locale,
         paired_episode_id=args.pair_with,
+        persistent_profile_dir=persistent_profile_dir,
     )
     recorder.start()
 
@@ -203,6 +210,17 @@ def parse_args(argv=None):
     record_parser.add_argument("--locale", default=None, help="Locale tag, e.g. en-IN (default: unset)")
     record_parser.add_argument(
         "--operator", default=None, help="Name/id of the human running this session (default: $DARK_PATTERN_OPERATOR or OS username)"
+    )
+    record_parser.add_argument(
+        "--profile", default=None,
+        help=(
+            "Name of a persistent browser profile (under browser_profiles.root) to launch with "
+            "instead of a fresh, throwaway one. Cookies/localStorage/site permissions from any "
+            "earlier session recorded with the SAME --profile name carry over -- e.g. a bot-check "
+            "challenge you already cleared by hand stays cleared next time, the same way a real "
+            "returning visitor's own browser remembers it. Omit for the original throwaway-context "
+            "behavior. Never commit browser_profiles/ -- it holds real session data (gitignored)."
+        ),
     )
     record_parser.add_argument(
         "--auto-audit", action="store_true",

@@ -25,6 +25,22 @@ def test_flesch_kincaid_empty_text_is_null():
     assert flesch_kincaid_grade("   ") is None
 
 
+def test_flesch_kincaid_null_for_punctuation_free_concatenated_ui_text():
+    # A real false positive: concatenated heading + button label (exactly
+    # what full_text() produces for a trivial page) has no real sentence
+    # boundary at all -- treating it as "1 sentence" spiked the score to
+    # ~15.5 (postgraduate) from formula instability alone, not genuine
+    # complexity.
+    assert flesch_kincaid_grade("Manage membership Cancel membership") is None
+
+
+def test_flesch_kincaid_still_scores_a_short_but_real_single_sentence():
+    # The fix must not blind the detector to genuinely short real prose --
+    # only punctuation-free fragments are excluded.
+    grade = flesch_kincaid_grade("Cancel anytime.")
+    assert grade is not None
+
+
 def test_count_negations():
     assert count_negations("I do not want this. I never agreed.") == 2
     assert count_negations("Yes please") == 0

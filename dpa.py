@@ -57,7 +57,7 @@ COMMAND_TABLE = {
     "export-for-annotation":   ("export_for_annotation", [], "Flat episode/attribute export for human annotation"),
     "validate-against-truth":  ("validate_against_truth", [], "Compare an episode against ground_truth.yaml"),
     "run-demo-suite":          ("run_demo_suite", [], "Guided known-answer test suite for the Auralis demo site"),
-    "report":                  ("report", [], "Build a single-episode HTML report"),
+    "report":                  ("report", [], "Build a single-episode HTML report (--summary / --compare for presentation views)"),
     "report-site":             ("report_site", [], "Roll up every episode for one site_id into an HTML report"),
     "serve":                   ("serve", [], "Run the FastAPI dashboard backend (server.py) via uvicorn"),
 }

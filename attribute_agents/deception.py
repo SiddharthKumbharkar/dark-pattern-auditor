@@ -1,17 +1,29 @@
-"""deception: does a claimed state-change action (unsubscribe/cancel/
-reject/etc.) produce NEITHER a network request NOR a client-side route
-change, or does a (non-timer) claim show an implausible persistence
-pattern across revisits? Code agent, pure function over
+"""deception: three VERIFIED, structural contradictions between what a
+control claims and what was observed. Code agent, pure function over
 episode.evidence.stated_vs_actual and (when available)
 group_evidence.claim_persistence.
 
-A claimed action needs only ONE of network_fired / route_changed to count
-as verified -- a genuinely client-side-only app (no backend, e.g. a mock
-demo whose "cancel" is a React state update with no network call ever)
-can perform a completely real state change with zero network activity;
-requiring a network call there would flag every honest action in that
-app as deceptive. See signals/stated_vs_actual.py's module docstring for
-the full reasoning and its limits.
+  1. A claimed state-change action (unsubscribe/cancel/reject/etc.,
+     claim_kind=="state_change") produces NEITHER a network request NOR a
+     client-side route change -- it claimed something real happens, and
+     nothing observable did.
+  2. A claimed dismiss action (close/×/skip/etc., claim_kind=="dismiss")
+     produces EITHER a network request OR a client-side route change --
+     the opposite polarity of #1, because a dismiss claim promises the
+     opposite: nothing beyond going away happens. A "close" that force-
+     navigates you to a new page/tab did something other than what it
+     claimed, regardless of what that destination turns out to be.
+  3. A (non-timer) claim shows an implausible persistence pattern across
+     revisits.
+
+For #1, a claimed action needs only ONE of network_fired / route_changed
+to count as verified -- a genuinely client-side-only app (no backend,
+e.g. a mock demo whose "cancel" is a React state update with no network
+call ever) can perform a completely real state change with zero network
+activity; requiring a network call there would flag every honest action
+in that app as deceptive. See signals/stated_vs_actual.py's module
+docstring for the full reasoning and its limits, including why #2 is
+checked with the opposite polarity.
 
 Countdown/urgency timers are DELIBERATELY excluded from both evidence
 channels this module reads, by policy decision (not a detection gap):
@@ -27,7 +39,7 @@ does exactly that). An earlier version of this file DID auto-fire on
 group_evidence.timer_reset_detection's reset_detected flag -- removed
 here, not merely never-added; see git history if reconstructing why.
 
-Fires ONLY on these two VERIFIED, structural contradictions -- never on
+Fires ONLY on these three VERIFIED, structural contradictions -- never on
 how aggressive or manipulative a claim's wording sounds. Every check here
 reads a boolean/enum field (network_fired, claim_persistence.verdict)
 that was already computed by measurement in an earlier stage
@@ -50,7 +62,7 @@ from typing import Dict, List, Optional
 from attribute_agents.base import AttributeAgent, no_result, not_assessable_result, scale_severity
 from journey.baselines import BaselineStore
 
-AGENT_VERSION = "deception_code/1.0.0"
+AGENT_VERSION = "deception_code/1.1.0"
 
 
 def assess(episode: Dict, group_evidence: Optional[Dict], baselines: BaselineStore) -> Dict:
@@ -73,7 +85,13 @@ def assess(episode: Dict, group_evidence: Optional[Dict], baselines: BaselineSto
     evidence_pointers: List[Dict] = []
     reasons: List[str] = []
 
-    no_state_change = [s for s in stated_vs_actual if not s["network_fired"] and not s.get("route_changed")]
+    # claim_kind is additive (see schema); absent means the episode was
+    # extracted before it existed, when every entry here WAS a
+    # state_change claim by definition -- so absent reads as "state_change".
+    no_state_change = [
+        s for s in stated_vs_actual
+        if s.get("claim_kind", "state_change") == "state_change" and not s["network_fired"] and not s.get("route_changed")
+    ]
     if no_state_change:
         evidence_pointers.extend(
             {"step_id": s["step_id"], "selector": None, "signal": "stated_vs_actual.network_fired"}
@@ -84,6 +102,20 @@ def assess(episode: Dict, group_evidence: Optional[Dict], baselines: BaselineSto
             f"network request and produced no client-side route change"
         )
 
+    fake_dismiss = [
+        s for s in stated_vs_actual
+        if s.get("claim_kind") == "dismiss" and (s["network_fired"] or s.get("route_changed"))
+    ]
+    if fake_dismiss:
+        evidence_pointers.extend(
+            {"step_id": s["step_id"], "selector": None, "signal": "stated_vs_actual.route_changed"}
+            for s in fake_dismiss
+        )
+        reasons.append(
+            f"{len(fake_dismiss)} claimed dismiss/close action(s) (e.g. {fake_dismiss[0]['claimed_action']!r}) "
+            f"triggered a network request or a route change instead of just dismissing"
+        )
+
     implausible = [c for c in claim_persistence if c["verdict"] == "implausible"]
     if implausible:
         evidence_pointers.extend(
@@ -91,7 +123,7 @@ def assess(episode: Dict, group_evidence: Optional[Dict], baselines: BaselineSto
         )
         reasons.append(f"{len(implausible)} claim(s) showed an implausible persistence pattern across revisits")
 
-    total_findings = len(no_state_change) + len(implausible)
+    total_findings = len(no_state_change) + len(fake_dismiss) + len(implausible)
 
     if total_findings >= min_evidence.median:
         severity = scale_severity(total_findings, min_evidence.median)

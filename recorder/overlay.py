@@ -210,6 +210,35 @@ _TEMPLATE = r"""
     }, 500);
   }, true);
 
+  // -- overlay position/collapsed persistence --
+  // sessionStorage (not a plain JS global) specifically so a position the
+  // operator drags to, or a collapse they trigger, SURVIVES a same-origin
+  // navigation -- the overlay's whole DOM is torn down and rebuilt by
+  // buildOverlay() on every new document (see this module's docstring),
+  // so without this every navigation would silently snap the panel back
+  // to its bottom-right default, right back on top of whatever it was
+  // just moved/hidden to get away from. Wrapped in try/catch: some
+  // sandboxed/third-party-cookie-blocking contexts throw on storage
+  // access entirely, which must never break recording over a UI nicety.
+  const POS_KEY = '__dpa_overlay_pos__';
+  const COLLAPSED_KEY = '__dpa_overlay_collapsed__';
+
+  function readPos() {
+    try {
+      const raw = window.sessionStorage.getItem(POS_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function writePos(pos) {
+    try { window.sessionStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch (e) { /* ignore */ }
+  }
+  function readCollapsed() {
+    try { return window.sessionStorage.getItem(COLLAPSED_KEY) === '1'; } catch (e) { return false; }
+  }
+  function writeCollapsed(collapsed) {
+    try { window.sessionStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) { /* ignore */ }
+  }
+
   // -- always-visible overlay --
   function buildOverlay() {
     if (document.getElementById('__dpa_overlay__')) return;
@@ -220,10 +249,20 @@ _TEMPLATE = r"""
     box.setAttribute('data-dpa-overlay', 'true');
     box.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:2147483647;' +
       'background:#111827;color:#e5e7eb;font:12px/1.4 -apple-system,sans-serif;' +
-      'padding:10px 12px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:280px;' +
-      'max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;';
+      'border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:280px;' +
+      'max-height:calc(100vh - 24px);box-sizing:border-box;overflow:hidden;';
     box.innerHTML =
-      '<div style="font-weight:600;margin-bottom:4px;">Dark Pattern Recorder</div>' +
+      // Drag handle: the whole header row, not just an icon -- a bigger
+      // grab target is more forgiving, and "cursor:move" over the title
+      // itself is the clearest possible affordance that it's draggable.
+      '<div id="__dpa_header__" style="padding:8px 8px 8px 10px;cursor:move;display:flex;' +
+      'align-items:center;gap:6px;user-select:none;border-bottom:1px solid #ffffff14;">' +
+      '<span style="font-weight:600;flex:1;">Dark Pattern Recorder</span>' +
+      '<span id="__dpa_step_count_pill__" style="opacity:.75;">0</span>' +
+      '<button type="button" id="__dpa_toggle__" title="Hide/show panel" style="' + btnStyle +
+      'padding:1px 7px;line-height:1.3;">−</button>' +
+      '</div>' +
+      '<div id="__dpa_body__" style="padding:8px 12px 10px;max-height:calc(100vh - 60px);overflow-y:auto;">' +
       '<div>Goal: <span id="__dpa_goal__"></span></div>' +
       '<div>Steps: <span id="__dpa_step_count__">0</span></div>' +
       '<div id="__dpa_note_row__" style="display:none;margin-top:6px;">' +
@@ -235,9 +274,72 @@ _TEMPLATE = r"""
       '<button type="button" data-dpa-btn="abandon" style="' + btnStyle + '">Abandon</button>' +
       '<button type="button" data-dpa-btn="note" style="' + btnStyle + '">Add note</button>' +
       '<button type="button" data-dpa-btn="end" style="' + btnStyle + '">End session</button>' +
-      '</div>';
+      '</div></div>';
     document.documentElement.appendChild(box);
     document.getElementById('__dpa_goal__').textContent = GOAL_TEXT;
+
+    // -- restore persisted position (dragged away from the default corner) --
+    const savedPos = readPos();
+    if (savedPos) {
+      const maxLeft = Math.max(0, window.innerWidth - 40);
+      const maxTop = Math.max(0, window.innerHeight - 40);
+      const left = Math.min(Math.max(0, savedPos.left), maxLeft);
+      const top = Math.min(Math.max(0, savedPos.top), maxTop);
+      box.style.left = left + 'px';
+      box.style.top = top + 'px';
+      box.style.bottom = 'auto';
+      box.style.right = 'auto';
+    }
+
+    // -- collapse/hide toggle: shrinks to just the header row, freeing --
+    // -- whatever page content the full panel was covering             --
+    const body = document.getElementById('__dpa_body__');
+    const toggleBtn = document.getElementById('__dpa_toggle__');
+    const stepPill = document.getElementById('__dpa_step_count_pill__');
+    function applyCollapsed(collapsed) {
+      body.style.display = collapsed ? 'none' : 'block';
+      stepPill.style.display = collapsed ? 'inline' : 'none';
+      toggleBtn.textContent = collapsed ? '□' : '−';
+      box.style.maxWidth = collapsed ? '' : '280px';
+    }
+    applyCollapsed(readCollapsed());
+    toggleBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const next = body.style.display !== 'none' ? true : false;
+      applyCollapsed(next);
+      writeCollapsed(next);
+    });
+
+    // -- drag: mousedown on the header (not the toggle button) starts it --
+    const header = document.getElementById('__dpa_header__');
+    let dragState = null;
+    header.addEventListener('mousedown', (event) => {
+      if (event.target === toggleBtn) return;
+      const rect = box.getBoundingClientRect();
+      dragState = { startX: event.clientX, startY: event.clientY, startLeft: rect.left, startTop: rect.top };
+      box.style.left = rect.left + 'px';
+      box.style.top = rect.top + 'px';
+      box.style.bottom = 'auto';
+      box.style.right = 'auto';
+      event.preventDefault();
+    });
+    document.addEventListener('mousemove', (event) => {
+      if (!dragState) return;
+      const dx = event.clientX - dragState.startX;
+      const dy = event.clientY - dragState.startY;
+      const maxLeft = Math.max(0, window.innerWidth - box.offsetWidth);
+      const maxTop = Math.max(0, window.innerHeight - box.offsetHeight);
+      const left = Math.min(Math.max(0, dragState.startLeft + dx), maxLeft);
+      const top = Math.min(Math.max(0, dragState.startTop + dy), maxTop);
+      box.style.left = left + 'px';
+      box.style.top = top + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragState) return;
+      dragState = null;
+      const rect = box.getBoundingClientRect();
+      writePos({ left: rect.left, top: rect.top });
+    });
 
     box.querySelectorAll('[data-dpa-btn]').forEach((btn) => {
       btn.addEventListener('click', (event) => {
@@ -270,6 +372,8 @@ _TEMPLATE = r"""
   window.__dpaSetStepCount__ = function (n) {
     const el = document.getElementById('__dpa_step_count__');
     if (el) el.textContent = String(n);
+    const pill = document.getElementById('__dpa_step_count_pill__');
+    if (pill) pill.textContent = String(n);
   };
 
   if (document.body) {

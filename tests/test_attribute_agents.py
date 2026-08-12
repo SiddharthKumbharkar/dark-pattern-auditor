@@ -222,6 +222,69 @@ def test_deception_never_infers_from_aggressive_wording_alone(baselines):
     assert result["verdict"] == "no"
 
 
+# -- claim_kind="dismiss": opposite polarity of the state_change checks
+# -- above -- a close/×/skip control fires when it DID trigger a network
+# -- request or route change, not when it didn't -----------------------
+
+
+def test_deception_fires_when_a_dismiss_control_triggers_a_route_change(baselines):
+    episode = {"evidence": {"stated_vs_actual": [
+        {"claimed_action": "×", "claim_kind": "dismiss", "step_id": 4, "network_fired": False, "route_changed": True, "request_ids": []}
+    ]}}
+    result, _ = run_agent(DECEPTION_AGENT, episode, None, baselines)
+    assert result["verdict"] == "fires"
+    assert result["evidence_pointers"][0]["step_id"] == 4
+    assert result["evidence_pointers"][0]["signal"] == "stated_vs_actual.route_changed"
+
+
+def test_deception_no_when_a_dismiss_control_does_nothing_else(baselines):
+    # A genuine close button -- no network, no route change -- is exactly
+    # what a dismiss claim promises, so this must read clean, not flagged.
+    episode = {"evidence": {"stated_vs_actual": [
+        {"claimed_action": "Close", "claim_kind": "dismiss", "step_id": 4, "network_fired": False, "route_changed": False, "request_ids": []}
+    ]}}
+    result, _ = run_agent(DECEPTION_AGENT, episode, None, baselines)
+    assert result["verdict"] == "no"
+
+
+def test_deception_state_change_and_dismiss_findings_combine(baselines):
+    # A dead state_change control AND a navigating dismiss control in the
+    # same episode both count toward total_findings -- neither check
+    # shadows the other, and both show up in evidence_pointers.
+    episode = {"evidence": {"stated_vs_actual": [
+        {"claimed_action": "Unsubscribe", "claim_kind": "state_change", "step_id": 1, "network_fired": False, "route_changed": False, "request_ids": []},
+        {"claimed_action": "×", "claim_kind": "dismiss", "step_id": 2, "network_fired": False, "route_changed": True, "request_ids": []},
+    ]}}
+    result, _ = run_agent(DECEPTION_AGENT, episode, None, baselines)
+    assert result["verdict"] == "fires"
+    assert {p["step_id"] for p in result["evidence_pointers"]} == {1, 2}
+
+
+def test_deception_state_change_check_ignores_dismiss_entries_and_vice_versa(baselines):
+    # A dismiss entry that fired nothing must NOT be counted by the
+    # state_change ("no_state_change") path, and a state_change entry
+    # that fired a network request must NOT be counted by the dismiss
+    # ("fake_dismiss") path -- each check only ever looks at its own kind.
+    episode = {"evidence": {"stated_vs_actual": [
+        {"claimed_action": "Close", "claim_kind": "dismiss", "step_id": 1, "network_fired": False, "route_changed": False, "request_ids": []},
+        {"claimed_action": "Cancel", "claim_kind": "state_change", "step_id": 2, "network_fired": True, "route_changed": False, "request_ids": ["r1"]},
+    ]}}
+    result, _ = run_agent(DECEPTION_AGENT, episode, None, baselines)
+    assert result["verdict"] == "no"
+
+
+def test_deception_missing_claim_kind_defaults_to_state_change(baselines):
+    # Episodes extracted before claim_kind existed have no such field on
+    # any stated_vs_actual entry -- must keep behaving exactly as before:
+    # every entry read as a state_change claim, never as a dismiss claim.
+    episode = {"evidence": {"stated_vs_actual": [
+        {"claimed_action": "Unsubscribe", "step_id": 5, "network_fired": False, "route_changed": False, "request_ids": []}
+    ]}}
+    result, _ = run_agent(DECEPTION_AGENT, episode, None, baselines)
+    assert result["verdict"] == "fires"
+    assert result["evidence_pointers"][0]["signal"] == "stated_vs_actual.network_fired"
+
+
 # -- information_hiding (explicit Stage-2 stub -- never fakes a verdict) --
 
 

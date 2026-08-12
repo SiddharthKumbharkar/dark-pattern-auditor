@@ -2,6 +2,7 @@
 storage/
 storage_*/
 payload/
+browser_profiles/
 logs/
 __pycache__/
 *.pyc

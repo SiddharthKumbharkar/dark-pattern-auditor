@@ -59,6 +59,12 @@ goals:
     description: >-
       Decline an upsell, add-on, or bundled offer presented during checkout
       or signup.
+  - id: disable_notifications
+    description: >-
+      Turn off every notification (email, push, in-app, SMS) through the
+      site's own notification/communication preference settings.
+  - id: track_flight
+    description: "Search for and view a specific flight's live tracking/status page."
 
 revisit:
   offsets_hours: [24, 72]
@@ -84,3 +90,13 @@ payload:
   # throwaway, human-facing artifacts assembled for manual LLM use, not
   # part of the episode record itself.
   root: payload
+
+browser_profiles:
+  # Where record.py's --profile <name> stores a persistent Chromium
+  # user-data-dir (browser_profiles/<name>/). Opt-in -- omitting --profile
+  # still gets a fresh, throwaway browser context exactly as before. A
+  # named profile lets cookies/localStorage/site state (e.g. a "verified
+  # human" challenge already cleared) survive across separate recording
+  # sessions against the same site, the same way a returning visitor's own
+  # browser would -- never committed, see .gitignore.
+  root: browser_profiles

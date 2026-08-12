@@ -113,6 +113,8 @@ def test_repo_config_yaml_loads_and_validates():
         "reject_cookies",
         "unsubscribe_email",
         "decline_addon",
+        "disable_notifications",
+        "track_flight",
     ]
     assert cfg.revisit.offsets_hours == [24, 72]
     assert cfg.output.root == "storage"

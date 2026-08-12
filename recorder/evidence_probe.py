@@ -8,6 +8,14 @@ alongside screenshots/ and dom/, so the evidence extractor
 (journey/evidence_extractor.py) can compute everything from the stored
 episode alone, with no live page involved -- this file is the only place
 in the whole evidence-extraction path that touches Playwright.
+
+`aria_label` also feeds signals/stated_vs_actual.py: an icon-only control
+(e.g. an SVG "x" close button with no visible innerText) is otherwise
+invisible to that signal entirely -- `text` comes back empty, and an empty
+label is a real "nothing to label this with" result, not something to
+guess at from geometry/icon shape. aria-label is the one other place a
+control's own claimed purpose legitimately lives in the DOM, so it's
+captured as an explicit fallback source, not a substitute for `text`.
 """
 
 from typing import Dict, List
@@ -50,6 +58,7 @@ _INTERACTIVE_ELEMENTS_JS = r"""
       tag: el.tagName.toLowerCase(),
       role: el.getAttribute('role') || '',
       text: text,
+      aria_label: (el.getAttribute('aria-label') || '').trim().slice(0, 100),
       dom_order: index,
       tab_index: el.tabIndex,
       // document-relative, matching the full-page screenshot's pixel
