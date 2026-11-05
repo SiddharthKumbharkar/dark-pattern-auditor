@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Lint only -- never imported by the pipeline itself, `make lint` runs it.
+ruff==0.16.0

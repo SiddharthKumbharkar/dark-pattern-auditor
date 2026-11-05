@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TCS GPT-4o Client/Server Architecture</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1a1a2e;
+    margin: 0;
+    padding: 0;
+  }
+  h1 {
+    font-size: 17px;
+    margin: 0 0 2px 0;
+    color: #111827;
+  }
+  .subtitle {
+    font-size: 10.5px;
+    color: #6b7280;
+    margin: 0 0 10px 0;
+  }
+  .stage {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin: 0 0 6px 2px;
+  }
+  .columns {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .side-label {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 5px;
+  }
+  .label-client { background: #e0edff; color: #1d4ed8; }
+  .label-server { background: #fde7e7; color: #b42318; }
+
+  .box {
+    border: 1.5px solid #d1d5db;
+    border-radius: 7px;
+    padding: 7px 10px;
+    background: #fff;
+    position: relative;
+  }
+  .box .title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2px;
+  }
+  .box .file {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 9.5px;
+    color: #7c3aed;
+    margin-bottom: 3px;
+  }
+  .box .desc {
+    font-size: 9.8px;
+    color: #4b5563;
+    line-height: 1.35;
+  }
+  .box .desc code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 9.5px;
+    background: #f3f4f6;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .box.entry { border-color: #93c5fd; background: #f5f9ff; }
+  .box.core { border-color: #60a5fa; background: #eef5ff; }
+  .box.backend { border-color: #3b82f6; background: #e8f1ff; }
+  .box.helper { border-color: #bfdbfe; background: #f8fbff; }
+
+  .box.server-entry { border-color: #fca5a5; background: #fff6f6; }
+  .box.server-core { border-color: #f87171; background: #fff0f0; }
+  .box.server-helper { border-color: #fecaca; background: #fff8f8; }
+
+  .arrow-down {
+    align-self: center;
+    font-size: 13px;
+    color: #9ca3af;
+    line-height: 1;
+    margin: -3px 0;
+  }
+
+  .divider {
+    width: 170px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 80px;
+    flex-shrink: 0;
+  }
+  .divider .wire {
+    width: 2px;
+    flex: 1;
+    background: repeating-linear-gradient(to bottom, #9ca3af 0 6px, transparent 6px 12px);
+    min-height: 60px;
+  }
+  .divider .http-label {
+    font-size: 8.8px;
+    font-weight: 700;
+    color: #374151;
+    text-align: center;
+    padding: 5px 7px;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .divider .http-label code {
+    display: block;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 8.5px;
+    font-weight: 400;
+    margin-top: 3px;
+    word-break: break-all;
+  }
+  .divider .arrow-right {
+    font-size: 20px;
+    color: #374151;
+    margin: 4px 0;
+  }
+
+  .legend {
+    margin-top: 16px;
+    display: flex;
+    gap: 18px;
+    font-size: 10px;
+    color: #4b5563;
+  }
+  .legend .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 5px;
+    vertical-align: middle;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  .footnote {
+    margin-top: 8px;
+    font-size: 8.8px;
+    color: #6b7280;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 6px;
+    line-height: 1.4;
+  }
+
+  .alt-path {
+    margin-top: 7px;
+    border: 1.5px dashed #c4b5fd;
+    background: #faf8ff;
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 9.3px;
+    line-height: 1.35;
+    color: #5b21b6;
+  }
+  .alt-path .title { font-weight: 700; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<h1>Dark Pattern Auditor &mdash; TCS GPT-4o Client/Server Architecture</h1>
+<p class="subtitle">How one Stage-2 LLM call travels from auto_audit.py, through the TCS code-server proxy, to GPT-4o, and back.</p>
+
+<div class="columns">
+
+  <div class="col">
+    <span class="side-label label-client">CLIENT &mdash; this repo (runs wherever you execute dpa.py)</span>
+
+    <div class="box entry">
+      <div class="title">auto_audit.py / record.py --auto-audit</div>
+      <div class="desc">CLI entry point. Preflight-checks required credentials for the active backend before spending anything (<code>llm/backends/factory.py::preflight_message()</code>).</div>
+    </div>
+    <div class="arrow-down">&#8595;</div>
+
+    <div class="box core">
+      <div class="title">llm/api_client.py</div>
+      <div class="file">call_for_judgement(payload_dir, model, ...)</div>
+      <div class="desc">Enforces the per-episode LLM call budget first, <em>before</em> any network call. Then dispatches by <code>LLM_BACKEND</code> &mdash; an explicit <code>client=</code> kwarg always forces the legacy Anthropic path (test seam), otherwise reads the resolved backend.</div>
+    </div>
+    <div class="arrow-down">&#8595;</div>
+
+    <div class="box backend">
+      <div class="title">llm/backends/factory.py &rarr; TCSGPT4oBackend</div>
+      <div class="file">llm/backends/tcs_gpt4o_backend.py</div>
+      <div class="desc">Reads <code>TCS_LLM_URL</code> / <code>TCS_SESSION_COOKIE</code> from <code>.env</code>. Builds the multipart request: <code>prompt_id, text, system, images[], response_schema, temperature, seed, max_tokens</code>.</div>
+    </div>
+    <div class="arrow-down">&#8595;</div>
+
+    <div class="box helper">
+      <div class="title">llm/image_tiling.py &nbsp;+&nbsp; request handling</div>
+      <div class="desc">
+        Splits tall full-page screenshots into ~1280&times;2000px overlapping tiles, each labeled by page + position in the request text (GPT-4o downscales large images until text is unreadable &mdash; Claude's 8000px budget-based path doesn't need this).<br><br>
+        &bull; Retries on <strong>5xx / timeout only</strong>, exponential backoff (never on 4xx)<br>
+        &bull; Non-JSON response body &rarr; <code>TcsSessionExpiredError</code> (expired cookie)<br>
+        &bull; Malformed JSON output &rarr; one repair retry, then fails loudly<br>
+        &bull; Cookie sent via <code>cookies=</code>, never logged
+      </div>
+    </div>
+  </div>
+
+  <div class="divider">
+    <div class="http-label">
+      HTTPS via the code-server proxy
+      <code>POST {TCS_LLM_URL}/execute</code>
+      <code>Cookie: code-server-session=&hellip;</code>
+    </div>
+    <div class="wire"></div>
+    <div class="arrow-right">&#8596;</div>
+    <div class="wire"></div>
+  </div>
+
+  <div class="col">
+    <span class="side-label label-server">SERVER &mdash; server/ (runs inside the TCS dev workspace, port 8000)</span>
+
+    <div class="box server-entry">
+      <div class="title">https://rniazure.tcsapps.com/dev-workspaces/&lt;id&gt;/proxy/8000</div>
+      <div class="desc">TCS's code-server reverse proxy &mdash; authenticates the inbound cookie, forwards to <code>localhost:8000</code> inside the workspace.</div>
+    </div>
+    <div class="arrow-down">&#8595;</div>
+
+    <div class="box server-core">
+      <div class="title">server/app.py (FastAPI)</div>
+      <div class="file">POST /execute &middot; GET /health</div>
+      <div class="desc">Thin relay &mdash; validates image count/size, parses <code>response_schema</code>, and relays to GPT-4o. Does <strong>not</strong> store prompts/text/images; only <code>prompt_id</code> is logged.</div>
+    </div>
+    <div class="arrow-down">&#8595;</div>
+
+    <div class="box server-helper">
+      <div class="title">server/openai_client.py</div>
+      <div class="desc">Picks the transport by which env vars are set:<br>
+        &bull; <code>AZURE_OPENAI_ENDPOINT</code> present &rarr; Azure OpenAI<br>
+        &bull; else <code>OPENAI_API_KEY</code> present &rarr; OpenAI-compatible endpoint<br>
+        Requests structured output via <code>response_format: json_schema (strict)</code>; falls back to <code>json_object</code> if the deployment rejects it.
+      </div>
+    </div>
+    <div class="arrow-down">&#8595;</div>
+
+    <div class="box server-entry">
+      <div class="title">GPT-4o</div>
+      <div class="desc">Returns the completion. Response relayed back as: <code>ok, output_text, output_json, model, system_fingerprint, usage{prompt_tokens, completion_tokens}, latency_ms, request_id, error</code>.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="alt-path">
+  <div class="title">Alternate path &mdash; LLM_BACKEND=anthropic</div>
+  Bypasses server/ and the TCS proxy entirely: <code>llm/backends/anthropic_backend.py</code> calls <code>anthropic.Anthropic().messages.create(...)</code> directly with <code>ANTHROPIC_API_KEY</code>. Used for comparison runs against the original Claude results, or as a fallback if the TCS workspace is unavailable.
+</div>
+
+<div class="footnote">
+  Every call is logged to <code>payload/&lt;episode_id&gt;/&hellip;/usage.json</code> (tokens, latency, estimated cost) and aggregated per-episode via <code>dpa.py cost-report</code> (<code>llm/cost_aggregate.py</code>), for comparison against Sun et al. 2026's reported ~287k tokens / $0.52 per site.
+</div>
+
+</body>
+</html>

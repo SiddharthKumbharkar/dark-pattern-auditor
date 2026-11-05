@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "group_evidence.v1.schema.json",
+  "title": "Dark Pattern Audit Group Evidence (v1)",
+  "description": "Cross-episode evidence for a (site_id, goal) group -- signals that need more than one episode (claim_persistence, timer_reset_detection, paired_flow_comparison). Written by journey/group_evidence_extractor.py (the extract-group-evidence CLI) to output.root/groups/<group_id>/group_evidence.json; referenced by episode.group_evidence_path on each member episode (see episode.v2.schema.json).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "group_id", "site_id", "goal", "extractor_version", "extracted_at",
+    "episode_ids", "claim_persistence", "timer_reset_detection", "paired_flow_comparison"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "group_id": { "type": "string", "minLength": 1 },
+    "site_id": { "type": "string", "minLength": 1 },
+    "goal": { "type": ["string", "null"] },
+    "extractor_version": { "type": "string" },
+    "extracted_at": { "type": "string" },
+    "episode_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Every episode_id that was found matching (site_id, goal) at extraction time, in revisit_index order."
+    },
+    "claim_persistence": { "type": "array", "items": { "$ref": "#/$defs/ClaimPersistenceEntry" } },
+    "timer_reset_detection": { "type": "array", "items": { "$ref": "#/$defs/TimerResetEntry" } },
+    "paired_flow_comparison": { "type": "array", "items": { "$ref": "#/$defs/PairedFlowEntry" } }
+  },
+
+  "$defs": {
+    "AB": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["a", "b"],
+      "properties": { "a": { "type": "integer" }, "b": { "type": "integer" } }
+    },
+
+    "ClaimPersistenceEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_type", "selector", "revisit_indices", "values", "claim_texts", "elapsed_hours",
+        "unchanged_across_revisits", "plausible_change", "verdict"
+      ],
+      "properties": {
+        "claim_type": { "type": "string" },
+        "selector": { "type": "string" },
+        "revisit_indices": { "type": "array", "items": { "type": "integer" } },
+        "values": { "type": "array", "items": { "anyOf": [{ "type": "number" }, { "type": "string" }, { "type": "null" }] } },
+        "claim_texts": { "type": "array", "items": { "type": "string" } },
+        "elapsed_hours": { "type": ["number", "null"] },
+        "unchanged_across_revisits": { "type": "boolean" },
+        "plausible_change": {
+          "type": ["boolean", "null"],
+          "description": "Null exactly when verdict is insufficient_data -- there is no plausibility judgement to report either way without enough data, and forcing one would itself be an unmeasured conclusion."
+        },
+        "verdict": {
+          "enum": ["verified_true", "implausible", "insufficient_data"],
+          "description": "Never 'false' -- we measure whether a pattern is consistent with a genuine claim, we do not conclude the claim IS false."
+        }
+      }
+    },
+
+    "TimerResetEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selector", "from_revisit_index", "to_revisit_index", "elapsed_seconds",
+        "expected_remaining_seconds", "observed_remaining_seconds", "reset_detected"
+      ],
+      "properties": {
+        "selector": { "type": "string" },
+        "from_revisit_index": { "type": "integer" },
+        "to_revisit_index": { "type": "integer" },
+        "elapsed_seconds": { "type": "number" },
+        "expected_remaining_seconds": { "type": "number" },
+        "observed_remaining_seconds": { "type": "number" },
+        "reset_detected": { "type": "boolean" }
+      }
+    },
+
+    "PairedFlowEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["episode_a_id", "episode_b_id", "steps", "clicks", "fields", "interstitials", "ratios"],
+      "properties": {
+        "episode_a_id": { "type": "string" },
+        "episode_b_id": { "type": "string" },
+        "steps": { "$ref": "#/$defs/AB" },
+        "clicks": { "$ref": "#/$defs/AB" },
+        "fields": { "$ref": "#/$defs/AB" },
+        "interstitials": { "$ref": "#/$defs/AB" },
+        "ratios": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["steps_ratio", "clicks_ratio", "fields_ratio", "interstitials_ratio"],
+          "properties": {
+            "steps_ratio": { "type": ["number", "null"] },
+            "clicks_ratio": { "type": ["number", "null"] },
+            "fields_ratio": { "type": ["number", "null"] },
+            "interstitials_ratio": { "type": ["number", "null"] }
+          }
+        }
+      }
+    }
+  }
+}

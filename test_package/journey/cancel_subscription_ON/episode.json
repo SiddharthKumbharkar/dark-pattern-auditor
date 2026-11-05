@@ -1,0 +1,1657 @@
+{
+  "schema_version": 2,
+  "audit_metadata": {
+    "audit_id": "episode_auralis_cancel_on_v2",
+    "target_domain": "auralis-on.local",
+    "audit_start_time": "2026-08-09T17:25:12.948001+00:00",
+    "audit_end_time": "2026-08-09T17:25:26.895854+00:00"
+  },
+  "website_context": {
+    "domain": "auralis-on.local",
+    "industry": "ecommerce"
+  },
+  "journey_steps": [],
+  "temporal_checks": [],
+  "disclosure_context": [],
+  "episode": {
+    "episode_id": "episode_auralis_cancel_on_v2",
+    "site_id": "auralis-on.local",
+    "site_domain": "auralis-on.local",
+    "sector": "ecommerce",
+    "goal": "cancel_subscription",
+    "revisit_index": 0,
+    "device_context": "desktop",
+    "locale": null,
+    "paired_episode_id": "episode_auralis_signup_on",
+    "collection_mode": "manual",
+    "operator": "enrichment-script",
+    "group_evidence_path": "groups/auralis-on_local__cancel_subscription/group_evidence.json"
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-08-09T17:25:15.481995+00:00",
+      "action": {
+        "type": "navigate",
+        "selector": null,
+        "bounding_box": null,
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_001_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_001.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_001.json"
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-08-09T17:25:17.346872+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-2xl > div.mt-10.text-center > a.text-xs.text-brand-muted/70",
+        "bounding_box": {
+          "x": 660.140625,
+          "y": 351,
+          "width": 119.703125,
+          "height": 15
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_002_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_002.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_002.json"
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-08-09T17:25:19.118454+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > a.rounded-full.border",
+        "bounding_box": {
+          "x": 488,
+          "y": 215,
+          "width": 464,
+          "height": 42
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_003_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_003.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription/retention-offer",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_003.json"
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2026-08-09T17:25:20.897029+00:00",
+      "action": {
+        "type": "click",
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "bounding_box": {
+          "x": 652.75,
+          "y": 331,
+          "width": 134.5,
+          "height": 16.5
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_004_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_004.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription/exit-survey",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_004.json"
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2026-08-09T17:25:22.696896+00:00",
+      "action": {
+        "type": "click",
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.mt-8.w-full",
+        "bounding_box": {
+          "x": 488,
+          "y": 709.25,
+          "width": 464,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_005_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_005.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription/confirm-cancel",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_005.json"
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2026-08-09T17:25:24.463369+00:00",
+      "action": {
+        "type": "click",
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "bounding_box": {
+          "x": 647.296875,
+          "y": 331,
+          "width": 145.40625,
+          "height": 16.5
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_006_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_006.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription/final-confirm",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_006.json"
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2026-08-09T17:25:25.025479+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.rounded-xl > button.fake-unsubscribe-btn.mt-2",
+        "bounding_box": {
+          "x": 509,
+          "y": 292,
+          "width": 240.296875,
+          "height": 30
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_007_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_007.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription/final-confirm",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_007.json"
+    },
+    {
+      "step_id": 8,
+      "timestamp": "2026-08-09T17:25:26.793743+00:00",
+      "action": {
+        "type": "click",
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.mt-6.w-full",
+        "bounding_box": {
+          "x": 488,
+          "y": 387,
+          "width": 464,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_008_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_008.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription/cancelled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_008.json"
+    }
+  ],
+  "outcome": {
+    "goal_achieved": null,
+    "abandoned_reason": null,
+    "steps_to_complete": 8,
+    "first_price_shown": null,
+    "final_price_shown": null,
+    "operator_notes": ""
+  },
+  "privacy": {
+    "masker_version": "privacy_masker/1.0.0",
+    "redactions_applied": [],
+    "validation_passed": true
+  },
+  "evidence": {
+    "extractor_version": "evidence_extractor/1.0.0",
+    "extracted_at": "2026-08-09T17:38:59.003054+00:00",
+    "friction_metrics": {
+      "steps": 8,
+      "clicks": 7,
+      "form_fields_required": 0,
+      "confirmation_interstitials": 8,
+      "retention_offers_detected": 1,
+      "dead_ends": 0,
+      "friction_ratio": 4.0
+    },
+    "visual_asymmetry": [
+      {
+        "step_id": 3,
+        "pair_pattern": "accept_reject",
+        "positive_selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+        "negative_selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "positive_text": "Yes, keep my 50% off plan",
+        "negative_text": "no thanks, cancel anyway",
+        "area_ratio": 12.544778641432917,
+        "contrast_ratio": 0.9088371730864331,
+        "font_size_ratio": 1.6363636363636365,
+        "vertical_position_delta_px": -84,
+        "tab_order_delta": -1,
+        "positive_below_fold": false,
+        "negative_below_fold": false
+      },
+      {
+        "step_id": 5,
+        "pair_pattern": "keep_cancel",
+        "positive_selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+        "negative_selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "positive_text": "Keep my membership",
+        "negative_text": "yes, cancel my membership",
+        "area_ratio": 11.603852841763867,
+        "contrast_ratio": 0.9088371730864331,
+        "font_size_ratio": 1.6363636363636365,
+        "vertical_position_delta_px": -84,
+        "tab_order_delta": -1,
+        "positive_below_fold": false,
+        "negative_below_fold": false
+      }
+    ],
+    "claim_extraction": [],
+    "price_drift": {
+      "first_total": 499.0,
+      "final_total": 199.0,
+      "drift": -300.0,
+      "increases": []
+    },
+    "path_deviation": [
+      {
+        "step_id": 1,
+        "event_type": "forced_interstitial",
+        "from_url": "",
+        "to_url": "http://localhost:3002/account"
+      }
+    ],
+    "complexity_metrics": {
+      "option_counts": [
+        {
+          "step_id": 1,
+          "option_count": 11
+        },
+        {
+          "step_id": 2,
+          "option_count": 12
+        },
+        {
+          "step_id": 3,
+          "option_count": 14
+        },
+        {
+          "step_id": 4,
+          "option_count": 28
+        },
+        {
+          "step_id": 5,
+          "option_count": 14
+        },
+        {
+          "step_id": 6,
+          "option_count": 14
+        },
+        {
+          "step_id": 7,
+          "option_count": 14
+        },
+        {
+          "step_id": 8,
+          "option_count": 13
+        }
+      ],
+      "copy_readability": [
+        {
+          "step_id": 1,
+          "flesch_kincaid_grade": 13.05,
+          "negation_count": 1,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 2,
+          "flesch_kincaid_grade": 13.13,
+          "negation_count": 1,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 3,
+          "flesch_kincaid_grade": 8.84,
+          "negation_count": 3,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 4,
+          "flesch_kincaid_grade": 12.4,
+          "negation_count": 6,
+          "double_negative_count": 1
+        },
+        {
+          "step_id": 5,
+          "flesch_kincaid_grade": 11.01,
+          "negation_count": 2,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 6,
+          "flesch_kincaid_grade": 11.62,
+          "negation_count": 2,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 7,
+          "flesch_kincaid_grade": 11.39,
+          "negation_count": 2,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 8,
+          "flesch_kincaid_grade": 10.66,
+          "negation_count": 3,
+          "double_negative_count": 0
+        }
+      ],
+      "time_on_step": [
+        {
+          "step_id": 2,
+          "seconds": 1.865
+        },
+        {
+          "step_id": 3,
+          "seconds": 1.772
+        },
+        {
+          "step_id": 4,
+          "seconds": 1.779
+        },
+        {
+          "step_id": 5,
+          "seconds": 1.8
+        },
+        {
+          "step_id": 6,
+          "seconds": 1.766
+        },
+        {
+          "step_id": 7,
+          "seconds": 0.562
+        },
+        {
+          "step_id": 8,
+          "seconds": 1.768
+        }
+      ],
+      "total_actions_required": 7
+    },
+    "stated_vs_actual": [
+      {
+        "claimed_action": "Cancel membership",
+        "step_id": 3,
+        "network_fired": false,
+        "route_changed": true,
+        "request_ids": []
+      },
+      {
+        "claimed_action": "no thanks, cancel anyway",
+        "step_id": 4,
+        "network_fired": false,
+        "route_changed": true,
+        "request_ids": []
+      },
+      {
+        "claimed_action": "yes, cancel my membership",
+        "step_id": 6,
+        "network_fired": false,
+        "route_changed": true,
+        "request_ids": []
+      },
+      {
+        "claimed_action": "Unsubscribe from marketing emails",
+        "step_id": 7,
+        "network_fired": false,
+        "route_changed": false,
+        "request_ids": []
+      }
+    ],
+    "ui_regions": [
+      {
+        "step_id": 1,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "main.flex-1 > div.mx-auto.max-w-2xl > div.mt-10.text-center > a.text-xs.text-brand-muted/70",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 2,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > a.rounded-full.border",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 2,
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > a.text-center.text-sm",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-lg > div.mt-6.grid > label.flex.items-center > input.exit-survey-reason",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > label.mt-6.flex > input.winback-optin.mt-0.5",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.mt-8.w-full",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 5,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 5,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.rounded-xl > button.fake-unsubscribe-btn.mt-2",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 6,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.mt-6.w-full",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 6,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted",
+        "region": "cancellation_flow",
+        "text": "Cancelling now will incur a \u20b9199 early cancellation fee, charged to your card on file within 24 hours."
+      },
+      {
+        "step_id": 7,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.rounded-xl > button.fake-unsubscribe-btn.mt-2",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 7,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.mt-6.w-full",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 7,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted",
+        "region": "cancellation_flow",
+        "text": "Cancelling now will incur a \u20b9199 early cancellation fee, charged to your card on file within 24 hours."
+      },
+      {
+        "step_id": 8,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > a.mt-8.inline-block",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "div.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 8,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "cancellation_flow"
+      }
+    ]
+  },
+  "attributes": {
+    "extractor_version": "attribute_runner/1.0.0",
+    "extracted_at": "2026-10-12T06:49:58.010082+00:00",
+    "results": [
+      {
+        "attribute": "asymmetry",
+        "verdict": "fires",
+        "severity": 5,
+        "confidence": 0.75,
+        "evidence_pointers": [
+          {
+            "step_id": 3,
+            "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+            "signal": "visual_asymmetry.area_ratio.positive",
+            "ui_region": "cancellation_flow"
+          },
+          {
+            "step_id": 3,
+            "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+            "signal": "visual_asymmetry.area_ratio.negative",
+            "ui_region": "cancellation_flow"
+          },
+          {
+            "step_id": 5,
+            "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+            "signal": "visual_asymmetry.area_ratio.positive",
+            "ui_region": "cancellation_flow"
+          },
+          {
+            "step_id": 5,
+            "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+            "signal": "visual_asymmetry.area_ratio.negative",
+            "ui_region": "cancellation_flow"
+          }
+        ],
+        "reasoning": "2 of 2 pair(s) exceeded the asymmetry threshold: pair at step 3 skewed on area_ratio; pair at step 5 skewed on area_ratio.",
+        "agent_version": "asymmetry_code/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "covertness",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "covertness_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "deception",
+        "verdict": "fires",
+        "severity": 1,
+        "confidence": 0.7,
+        "evidence_pointers": [
+          {
+            "step_id": 7,
+            "selector": null,
+            "signal": "stated_vs_actual.network_fired",
+            "ui_region": "cancellation_flow"
+          }
+        ],
+        "reasoning": "1 claimed action(s) (e.g. 'Unsubscribe from marketing emails') fired no network request and produced no client-side route change.",
+        "agent_version": "deception_code/1.1.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "information_hiding",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "information_hiding_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "restriction",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "Required signal(s) unavailable: group_evidence.paired_flow_comparison.",
+        "agent_version": "restriction_code/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "disparate_treatment",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "disparate_treatment_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "complexity",
+        "verdict": "fires",
+        "severity": 2,
+        "confidence": 0.75,
+        "evidence_pointers": [
+          {
+            "step_id": 4,
+            "selector": null,
+            "signal": "complexity_metrics.option_counts.option_count",
+            "ui_region": "cancellation_flow"
+          },
+          {
+            "step_id": null,
+            "selector": null,
+            "signal": "complexity_metrics.total_actions_required",
+            "ui_region": "cancellation_flow"
+          }
+        ],
+        "reasoning": "2 dimension(s) exceeded the cancel_subscription complexity threshold: option_count=28 at step 4; total_actions_required=7.",
+        "agent_version": "complexity_code/1.0.0",
+        "agent_type": "code"
+      }
+    ]
+  },
+  "ccpa_verdict": {},
+  "mechanism_verdict": {
+    "entries": [
+      {
+        "role": "attribute",
+        "attribute": "information_hiding",
+        "model_name": "claude-sonnet-5",
+        "prompt_version": "attribute_prompt.v1",
+        "ingested_at": "2026-08-09T18:06:22.183503+00:00",
+        "operator": "siddharth",
+        "raw_response": {
+          "attribute": "information_hiding",
+          "verdict": "fires",
+          "severity": 4,
+          "confidence": 0.85,
+          "evidence_pointers": [
+            {
+              "step_id": 1,
+              "selector": "main.flex-1 > div.mx-auto.max-w-2xl > div.mt-10.text-center > a.text-xs.text-brand-muted/70",
+              "ui_region": "unclassified",
+              "signal": "initial account page shows plan price \u20b9499/month with no mention of any cancellation fee"
+            },
+            {
+              "step_id": 6,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted",
+              "ui_region": "cancellation_flow",
+              "signal": "disclosure_elements text: 'Cancelling now will incur a \u20b9199 early cancellation fee, charged to your card on file within 24 hours.'"
+            },
+            {
+              "step_id": 7,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted",
+              "ui_region": "cancellation_flow",
+              "signal": "same fee disclosure repeated at step 7, still only surfaced deep in the flow"
+            },
+            {
+              "step_id": 2,
+              "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > a.rounded-full.border",
+              "ui_region": "cancellation_flow",
+              "signal": "Manage membership page (step 2) shows only 'Cancel membership' button, no fee mentioned"
+            }
+          ],
+          "reasoning": "The account page (step 1) and the initial 'Manage membership' page (step 2) present the subscription and the cancel action with no mention of any early cancellation fee \u2014 only the \u20b9499/month recurring price is shown. The user then goes through a retention offer (step 3) and a survey (step 4) and a confirmation step (step 5), none of which disclose a fee either. Only at step 6 \u2014 after the user has already clicked through multiple 'no thanks'/'yes, cancel' prompts \u2014 does a new screen appear stating \"Cancelling now will incur a \u20b9199 early cancellation fee, charged to your card on file within 24 hours.\" This fee was never mentioned on the account/membership summary page or earlier in the cancellation funnel; it surfaces for the first time on what is nearly the final step, after the user has committed effort to cancelling. This is a condition (a fee triggered by cancelling) that was withheld until deep in the flow, not a cost that grew because of anything the user opted into (e.g., an add-on) \u2014 it is an inherent term of cancelling this subscription. This matches the definition of information_hiding: a cost/condition withheld until later in the flow. The fee is disclosed before final confirmation (step 6/7 precede the 'Confirm cancellation' button), so the user is not charged completely without warning, which prevents this from being the most severe case, but withholding it until this late point, after several sunk-cost steps, still constitutes hiding significant information early when the user could have made a fully informed decision to cancel from the account page itself."
+        }
+      },
+      {
+        "role": "attribute",
+        "attribute": "covertness",
+        "model_name": "claude-sonnet-5",
+        "prompt_version": "attribute_prompt.v1",
+        "ingested_at": "2026-08-10T02:08:43.791019+00:00",
+        "operator": "siddharth",
+        "raw_response": {
+          "attribute": "covertness",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.72,
+          "evidence_pointers": [
+            {
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+              "ui_region": "cancellation_flow",
+              "signal": "visual_asymmetry"
+            },
+            {
+              "step_id": 5,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+              "ui_region": "cancellation_flow",
+              "signal": "visual_asymmetry"
+            },
+            {
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+              "ui_region": "cancellation_flow",
+              "signal": "screenshot_visual_inspection.button_prominence"
+            }
+          ],
+          "reasoning": "The evidence shows a classic asymmetry pattern (large ratio, area_ratio ~12x, font_size_ratio ~1.64x, negative option always above positive by -84px vertical delta, tab order reversed) but in every step the \"cancel\"/\"no thanks\" option is still present as visible, legible text on the page \u2014 it is not hidden behind a menu, disguised as unrelated content, rendered in invisible/near-background color, mislabeled to look like something else, or requiring extra hover/scroll/click-through to reveal. Screenshots (steps 3, 5) show the reject link as a plain underlined text link directly below a large colored CTA button \u2014 same page, same viewport, fully visible without scrolling (\"negative_below_fold\": false in both records). This is a textbook prominence/asymmetry pattern (visual de-emphasis via smaller font, less contrast, lower position) rather than deliberate concealment or disguise of the option's existence or function. There's no evidence of the reject option being mislabeled, buried in a submenu, colored to blend into the background, or requiring an unrelated action to find \u2014 which would be needed to support \"covert\" as distinct from merely \"asymmetric.\" The flow is a long multi-step gauntlet (retention offer, survey, confirmation, fee warning) but each step's reject/cancel link is consistently visible and clickable at every stage, just visually subordinate to the accept button. That pattern fits asymmetry, not covertness under this attribute's specific definition, so I judge covertness does not fire based on the provided evidence."
+        }
+      },
+      {
+        "role": "coordinator",
+        "attribute": null,
+        "model_name": "claude-sonnet-5",
+        "prompt_version": "coordinator_prompt.v1",
+        "ingested_at": "2026-08-10T02:09:39.435077+00:00",
+        "operator": "siddharth",
+        "raw_response": {
+          "pattern_combinations": [
+            {
+              "ui_region": "cancellation_flow",
+              "attributes": [
+                "asymmetry",
+                "restriction",
+                "complexity"
+              ],
+              "pattern_name": "obstructed cancellation with visual steering",
+              "description": "The cancellation flow combines visually asymmetric buttons that steer users toward retention (asymmetry) with an elevated number of forced steps/interstitials (restriction) and an oversized set of options at the exit-reason step (complexity). Individually, a skewed button pair, a long flow, or a large checklist could each be a minor usability issue, but together they compound: the user is forced through multiple extra screens, each of which visually pushes them toward 'keep' choices, while also being asked to wade through an unusually large set of choices before they can proceed. This raises the effective cost of leaving far beyond what any single friction point would create, and the visual steering makes it harder to notice how much extra effort is being imposed.",
+              "visual_claim_unverified": true
+            },
+            {
+              "ui_region": "cancellation_flow",
+              "attributes": [
+                "deception",
+                "asymmetry"
+              ],
+              "pattern_name": "fake confirmation paired with steered choice architecture",
+              "description": "The flow includes a claimed action ('Unsubscribe from marketing emails') that produces a confirmation message but fires no actual network request (deception), occurring in the same flow where button pairs are visually skewed to favor staying subscribed (asymmetry). Together, this suggests a broader pattern of the interface visually and functionally misleading users at multiple points in the same journey \u2014 not only are users nudged via unequal visual weighting toward retention, but a specific claimed user action within that same journey appears to not actually take effect, undermining trust in whether other actions in the flow (including the cancellation itself) are honored as displayed.",
+              "visual_claim_unverified": true
+            }
+          ]
+        }
+      }
+    ],
+    "computed_output": {
+      "overall": {
+        "verdict": "dark_patterns_present",
+        "coverage_limited": false,
+        "human_review_recommended": true,
+        "coverage": {
+          "assessed": [
+            "asymmetry",
+            "covertness",
+            "deception",
+            "information_hiding",
+            "restriction",
+            "complexity"
+          ],
+          "not_assessable": [],
+          "stubbed_pending_stage2": [
+            "disparate_treatment"
+          ],
+          "counts": {
+            "fires": 5,
+            "no": 1,
+            "unsure": 0,
+            "not_assessable": 1
+          }
+        },
+        "regions_summary": {
+          "total_regions_examined": 3,
+          "regions_with_findings": 2,
+          "regions_clean": 1
+        },
+        "urgency_claims": [],
+        "summary": "Human review needed \u2014 high-severity finding(s). Dark patterns present: cancellation_flow (strong)."
+      },
+      "regions": [
+        {
+          "ui_region": "cancellation_flow",
+          "representative_element": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+          "steps": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "shared_elements": [],
+          "attributes_fired": [
+            {
+              "attribute": "asymmetry",
+              "severity": 5,
+              "confidence": 0.75,
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6"
+            },
+            {
+              "attribute": "asymmetry",
+              "severity": 5,
+              "confidence": 0.75,
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8"
+            },
+            {
+              "attribute": "asymmetry",
+              "severity": 5,
+              "confidence": 0.75,
+              "step_id": 5,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6"
+            },
+            {
+              "attribute": "asymmetry",
+              "severity": 5,
+              "confidence": 0.75,
+              "step_id": 5,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8"
+            },
+            {
+              "attribute": "information_hiding",
+              "severity": 4,
+              "confidence": 0.85,
+              "step_id": 2,
+              "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > a.rounded-full.border"
+            },
+            {
+              "attribute": "information_hiding",
+              "severity": 4,
+              "confidence": 0.85,
+              "step_id": 6,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted"
+            },
+            {
+              "attribute": "information_hiding",
+              "severity": 4,
+              "confidence": 0.85,
+              "step_id": 7,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted"
+            },
+            {
+              "attribute": "restriction",
+              "severity": 3,
+              "confidence": 0.8,
+              "step_id": 1,
+              "selector": null
+            },
+            {
+              "attribute": "complexity",
+              "severity": 2,
+              "confidence": 0.75,
+              "step_id": 4,
+              "selector": null
+            },
+            {
+              "attribute": "deception",
+              "severity": 1,
+              "confidence": 0.7,
+              "step_id": 7,
+              "selector": null
+            }
+          ],
+          "attributes_unsure": [],
+          "attributes_absent": [
+            "covertness"
+          ],
+          "attributes_not_assessed": [
+            "disparate_treatment"
+          ],
+          "likely_pattern": {
+            "name": "obstructed cancellation with visual steering",
+            "confidence": null,
+            "source": "coordinator"
+          },
+          "finding_strength": "strong",
+          "assessment": "asymmetry (4 locations), deception, information_hiding (3 locations), restriction, complexity fired in cancellation_flow -- finding_strength: strong."
+        },
+        {
+          "ui_region": "unclassified",
+          "representative_element": "main.flex-1 > div.mx-auto.max-w-2xl > div.mt-10.text-center > a.text-xs.text-brand-muted/70",
+          "steps": [
+            1
+          ],
+          "shared_elements": [],
+          "attributes_fired": [
+            {
+              "attribute": "information_hiding",
+              "severity": 4,
+              "confidence": 0.85,
+              "step_id": 1,
+              "selector": "main.flex-1 > div.mx-auto.max-w-2xl > div.mt-10.text-center > a.text-xs.text-brand-muted/70"
+            }
+          ],
+          "attributes_unsure": [],
+          "attributes_absent": [
+            "covertness"
+          ],
+          "attributes_not_assessed": [
+            "disparate_treatment"
+          ],
+          "likely_pattern": null,
+          "finding_strength": "weak",
+          "assessment": "information_hiding fired in unclassified -- finding_strength: weak."
+        }
+      ],
+      "verdicts": [
+        {
+          "attribute": "asymmetry",
+          "verdict": "fires",
+          "severity": 5,
+          "confidence": 0.75,
+          "evidence_pointers": [
+            {
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+              "signal": "visual_asymmetry.area_ratio.positive",
+              "ui_region": "cancellation_flow"
+            },
+            {
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+              "signal": "visual_asymmetry.area_ratio.negative",
+              "ui_region": "cancellation_flow"
+            },
+            {
+              "step_id": 5,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+              "signal": "visual_asymmetry.area_ratio.positive",
+              "ui_region": "cancellation_flow"
+            },
+            {
+              "step_id": 5,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+              "signal": "visual_asymmetry.area_ratio.negative",
+              "ui_region": "cancellation_flow"
+            }
+          ],
+          "reasoning": "2 of 2 pair(s) exceeded the asymmetry threshold: pair at step 3 skewed on area_ratio; pair at step 5 skewed on area_ratio.",
+          "agent_version": "asymmetry_code/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "covertness",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.72,
+          "evidence_pointers": [
+            {
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+              "ui_region": "cancellation_flow",
+              "signal": "visual_asymmetry"
+            },
+            {
+              "step_id": 5,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-cancel-link.mt-6",
+              "ui_region": "cancellation_flow",
+              "signal": "visual_asymmetry"
+            },
+            {
+              "step_id": 3,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > button.btn-keep-subscription.mt-8",
+              "ui_region": "cancellation_flow",
+              "signal": "screenshot_visual_inspection.button_prominence"
+            }
+          ],
+          "reasoning": "The evidence shows a classic asymmetry pattern (large ratio, area_ratio ~12x, font_size_ratio ~1.64x, negative option always above positive by -84px vertical delta, tab order reversed) but in every step the \"cancel\"/\"no thanks\" option is still present as visible, legible text on the page \u2014 it is not hidden behind a menu, disguised as unrelated content, rendered in invisible/near-background color, mislabeled to look like something else, or requiring extra hover/scroll/click-through to reveal. Screenshots (steps 3, 5) show the reject link as a plain underlined text link directly below a large colored CTA button \u2014 same page, same viewport, fully visible without scrolling (\"negative_below_fold\": false in both records). This is a textbook prominence/asymmetry pattern (visual de-emphasis via smaller font, less contrast, lower position) rather than deliberate concealment or disguise of the option's existence or function. There's no evidence of the reject option being mislabeled, buried in a submenu, colored to blend into the background, or requiring an unrelated action to find \u2014 which would be needed to support \"covert\" as distinct from merely \"asymmetric.\" The flow is a long multi-step gauntlet (retention offer, survey, confirmation, fee warning) but each step's reject/cancel link is consistently visible and clickable at every stage, just visually subordinate to the accept button. That pattern fits asymmetry, not covertness under this attribute's specific definition, so I judge covertness does not fire based on the provided evidence.",
+          "agent_version": "llm:claude-sonnet-5/attribute_prompt.v1",
+          "agent_type": "llm"
+        },
+        {
+          "attribute": "deception",
+          "verdict": "fires",
+          "severity": 1,
+          "confidence": 0.7,
+          "evidence_pointers": [
+            {
+              "step_id": 7,
+              "selector": null,
+              "signal": "stated_vs_actual.network_fired",
+              "ui_region": "cancellation_flow"
+            }
+          ],
+          "reasoning": "1 claimed action(s) (e.g. 'Unsubscribe from marketing emails') fired no network request and produced no client-side route change.",
+          "agent_version": "deception_code/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "information_hiding",
+          "verdict": "fires",
+          "severity": 4,
+          "confidence": 0.85,
+          "evidence_pointers": [
+            {
+              "step_id": 1,
+              "selector": "main.flex-1 > div.mx-auto.max-w-2xl > div.mt-10.text-center > a.text-xs.text-brand-muted/70",
+              "ui_region": "unclassified",
+              "signal": "initial account page shows plan price \u20b9499/month with no mention of any cancellation fee"
+            },
+            {
+              "step_id": 6,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted",
+              "ui_region": "cancellation_flow",
+              "signal": "disclosure_elements text: 'Cancelling now will incur a \u20b9199 early cancellation fee, charged to your card on file within 24 hours.'"
+            },
+            {
+              "step_id": 7,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-3.text-brand-muted",
+              "ui_region": "cancellation_flow",
+              "signal": "same fee disclosure repeated at step 7, still only surfaced deep in the flow"
+            },
+            {
+              "step_id": 2,
+              "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > a.rounded-full.border",
+              "ui_region": "cancellation_flow",
+              "signal": "Manage membership page (step 2) shows only 'Cancel membership' button, no fee mentioned"
+            }
+          ],
+          "reasoning": "The account page (step 1) and the initial 'Manage membership' page (step 2) present the subscription and the cancel action with no mention of any early cancellation fee \u2014 only the \u20b9499/month recurring price is shown. The user then goes through a retention offer (step 3) and a survey (step 4) and a confirmation step (step 5), none of which disclose a fee either. Only at step 6 \u2014 after the user has already clicked through multiple 'no thanks'/'yes, cancel' prompts \u2014 does a new screen appear stating \"Cancelling now will incur a \u20b9199 early cancellation fee, charged to your card on file within 24 hours.\" This fee was never mentioned on the account/membership summary page or earlier in the cancellation funnel; it surfaces for the first time on what is nearly the final step, after the user has committed effort to cancelling. This is a condition (a fee triggered by cancelling) that was withheld until deep in the flow, not a cost that grew because of anything the user opted into (e.g., an add-on) \u2014 it is an inherent term of cancelling this subscription. This matches the definition of information_hiding: a cost/condition withheld until later in the flow. The fee is disclosed before final confirmation (step 6/7 precede the 'Confirm cancellation' button), so the user is not charged completely without warning, which prevents this from being the most severe case, but withholding it until this late point, after several sunk-cost steps, still constitutes hiding significant information early when the user could have made a fully informed decision to cancel from the account page itself.",
+          "agent_version": "llm:claude-sonnet-5/attribute_prompt.v1",
+          "agent_type": "llm"
+        },
+        {
+          "attribute": "restriction",
+          "verdict": "fires",
+          "severity": 3,
+          "confidence": 0.8,
+          "evidence_pointers": [
+            {
+              "step_id": null,
+              "selector": null,
+              "signal": "friction_metrics.friction_ratio",
+              "ui_region": "cancellation_flow"
+            },
+            {
+              "step_id": 1,
+              "selector": null,
+              "signal": "path_deviation.forced_interstitial",
+              "ui_region": "cancellation_flow"
+            }
+          ],
+          "reasoning": "friction_ratio=4.00 (fires); 1 forced interstitial(s) (unsure).",
+          "agent_version": "restriction_code/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "disparate_treatment",
+          "verdict": "not_assessable",
+          "severity": null,
+          "confidence": 0.0,
+          "evidence_pointers": [],
+          "reasoning": "requires LLM judgement \u2014 Stage 2",
+          "agent_version": "disparate_treatment_stub/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "complexity",
+          "verdict": "fires",
+          "severity": 2,
+          "confidence": 0.75,
+          "evidence_pointers": [
+            {
+              "step_id": 4,
+              "selector": null,
+              "signal": "complexity_metrics.option_counts.option_count",
+              "ui_region": "cancellation_flow"
+            },
+            {
+              "step_id": null,
+              "selector": null,
+              "signal": "complexity_metrics.total_actions_required",
+              "ui_region": "cancellation_flow"
+            }
+          ],
+          "reasoning": "2 dimension(s) exceeded the cancel_subscription complexity threshold: option_count=28 at step 4; total_actions_required=7.",
+          "agent_version": "complexity_code/1.0.0",
+          "agent_type": "code"
+        }
+      ]
+    }
+  }
+}

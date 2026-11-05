@@ -1,0 +1,30 @@
+{
+  "asymmetry": {
+    "definition": "Does an opposing choice pair (accept/reject, keep/cancel, yes/no, subscribe/decline) show a strong visual imbalance -- one option significantly more prominent than its opposite via contrast, size/area, or vertical position?",
+    "code_agent_note": "A code agent (attribute_agents/asymmetry.py) has already scored this from measured contrast/area/position ratios against calibrated baselines. Your job is to independently verify against the screenshots and evidence provided -- confirm, revise, or add nuance the numbers alone can't capture (e.g. whether the visual difference reads as intentional emphasis or incidental styling)."
+  },
+  "covertness": {
+    "definition": "Is the negative/reject option DELIBERATELY hidden or disguised -- as opposed to simply less prominent (that is asymmetry) or a coincidental layout choice? This requires judging apparent intent from the page's overall design, not just raw contrast/position numbers.",
+    "code_agent_note": "No code agent judges this attribute -- it is intentionally left as a stub (attribute_agents/covertness.py always returns not_assessable) because distinguishing deliberate concealment from incidental layout needs contextual reading a fixed threshold can't do. This is the first real assessment of this attribute for this episode."
+  },
+  "deception": {
+    "definition": "Did a claimed state-changing action (unsubscribe/cancel/reject/etc.) fail to actually do what it claimed, did a countdown timer reset instead of counting down, or did a scarcity/urgency claim show an implausible persistence pattern across revisits? Fires ONLY on verified, structural contradictions -- never on how aggressive or manipulative a claim's wording sounds by itself.",
+    "code_agent_note": "A code agent (attribute_agents/deception.py) has already checked structural signals (network activity, claim persistence, timer resets). Your job is to review the same verified contradictions with visual context, and sanity-check the code agent's reasoning -- do not introduce a new 'fires' finding based purely on wording that looks manipulative if no structural evidence supports it."
+  },
+  "information_hiding": {
+    "definition": "Was a cost, term, or condition WITHHELD from the user until later in the flow, as opposed to a price that legitimately grew because the user added something (shipping, quantity, an optional add-on)? Distinguishing a withheld-by-design fee from a user-caused price change requires reading the surrounding copy and the user's own actions in context.",
+    "code_agent_note": "No code agent judges this attribute -- it is intentionally left as a stub (attribute_agents/information_hiding.py always returns not_assessable) because a raw price delta can't tell a withheld fee apart from a user-caused increase. This is the first real assessment of this attribute for this episode."
+  },
+  "restriction": {
+    "definition": "Did this episode require disproportionately more steps, clicks, or non-skippable interstitials than its paired counterpart flow, in a way that appears designed to make the action harder than it needs to be?",
+    "code_agent_note": "A code agent (attribute_agents/restriction.py) has already scored this from measured friction_ratio and forced-interstitial counts against calibrated baselines, and requires a paired episode to assess at all. Your job is to independently verify against the screenshots and evidence provided."
+  },
+  "disparate_treatment": {
+    "definition": "Did a linked flow (e.g. signup vs. cancel) treat this episode's path differently from its pair in a way that specifically DISADVANTAGES the user -- as opposed to a structural difference that is simply inherent to the two tasks being different?",
+    "code_agent_note": "No code agent judges this attribute -- it is intentionally left as a stub (attribute_agents/disparate_treatment.py always returns not_assessable) because telling 'deliberately obstructed' apart from 'inherently a different, more involved task' needs contextual judgement. This is the first real assessment of this attribute for this episode."
+  },
+  "complexity": {
+    "definition": "Is a decision point overloaded with options, is consent/cancellation copy written at an unreasonably high reading grade, or does the flow require an unusually large number of distinct actions -- beyond what is INHERENT to this specific goal (compare against this goal's own baseline, not a generic one)?",
+    "code_agent_note": "A code agent (attribute_agents/complexity.py) has already scored this from measured option counts, Flesch-Kincaid reading grade, and total actions required, each compared against this goal's own calibrated baseline. Your job is to independently verify against the screenshots and evidence provided."
+  }
+}

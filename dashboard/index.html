@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dark Pattern Auditor</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-elevated: #161922;
+    --bg-card: #1c2029;
+    --bg-card-hover: #232836;
+    --bg-input: #12141c;
+    --border: #2a2f3b;
+    --border-light: #363c4a;
+    --text: #e6e8ec;
+    --text-dim: #9aa2b1;
+    --text-faint: #5c6474;
+    --accent-green: #3ddc84;
+    --accent-green-dim: rgba(61, 220, 132, 0.15);
+    --accent-blue: #5b9dff;
+    --accent-blue-dim: rgba(91, 157, 255, 0.15);
+    --accent-grey: #7b8494;
+    --accent-grey-dim: rgba(123, 132, 148, 0.15);
+    --accent-orange: #ffab40;
+    --accent-orange-dim: rgba(255, 171, 64, 0.15);
+    --accent-yellow: #ffe066;
+    --accent-yellow-dim: rgba(255, 224, 102, 0.15);
+    --accent-red: #ff5c6c;
+    --accent-red-dim: rgba(255, 92, 108, 0.15);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --sidebar-width: 280px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  button, input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+
+  a { color: var(--accent-blue); }
+
+  .empty-hint {
+    color: var(--text-faint);
+    font-size: 13px;
+    padding: 8px 2px;
+    margin: 0;
+  }
+
+  /* ---------- error banner ---------- */
+  .error-banner {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--accent-red-dim);
+    color: var(--accent-red);
+    border-bottom: 1px solid var(--accent-red);
+    padding: 10px 16px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  /* ---------- layout ---------- */
+  .app-layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    height: calc(100vh - 0px);
+  }
+  body.has-banner .app-layout { height: calc(100vh - 41px); }
+
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-elevated);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .sidebar-section.scrollable {
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .sidebar-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 14px 16px 8px;
+  }
+
+  .sidebar-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  /* ---------- new audit form ---------- */
+  #newAuditForm {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+  }
+
+  input[type="text"], input[type="url"], select, textarea {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    color: var(--text);
+    outline: none;
+  }
+
+  input[type="text"]:focus, input[type="url"]:focus, select:focus, textarea:focus {
+    border-color: var(--accent-blue);
+  }
+
+  textarea { resize: vertical; min-height: 44px; }
+
+  .btn {
+    border: 1px solid var(--border-light);
+    background: var(--bg-card);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 9px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .btn:hover { background: var(--bg-card-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #06210f;
+  }
+  .btn-primary:hover { background: #34c975; }
+
+  .btn-danger {
+    background: transparent;
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+  }
+  .btn-danger:hover { background: var(--accent-red-dim); }
+
+  .btn-small { padding: 5px 10px; font-size: 12px; }
+  .btn-block { width: 100%; }
+
+  /* ---------- audit list ---------- */
+  #auditList { padding: 0 10px 8px; display: flex; flex-direction: column; gap: 6px; }
+
+  .audit-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .audit-card:hover { background: var(--bg-card-hover); }
+  .audit-card.selected { border-color: var(--accent-blue); background: var(--accent-blue-dim); }
+
+  .audit-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .audit-domain {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .audit-card-meta {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-faint);
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  /* ---------- status badge ---------- */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .status-recording { background: var(--accent-green-dim); color: var(--accent-green); }
+  .status-recording .status-dot { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+  .status-stopped { background: var(--accent-grey-dim); color: var(--accent-grey); }
+  .status-stopped .status-dot { background: var(--accent-grey); }
+  .status-complete { background: var(--accent-blue-dim); color: var(--accent-blue); }
+  .status-complete .status-dot { background: var(--accent-blue); }
+  .status-unknown { background: var(--accent-grey-dim); color: var(--accent-grey); }
+  .status-unknown .status-dot { background: var(--accent-grey); }
+
+  /* ---------- reminders ---------- */
+  #remindersList {
+    padding: 0 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 40vh;
+  }
+
+  .reminder-card {
+    background: var(--accent-orange-dim);
+    border: 1px solid var(--accent-orange);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .reminder-claim { font-weight: 600; font-size: 13px; }
+  .reminder-domain { font-size: 12px; color: var(--text-dim); }
+  .reminder-type {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-orange);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .reminder-card select, .reminder-card textarea { background: var(--bg-input); }
+  .reminder-actions { display: flex; gap: 6px; margin-top: 2px; }
+
+  /* ---------- main / detail area ---------- */
+  .detail {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  #emptyState {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-faint);
+    font-size: 16px;
+  }
+
+  #auditDetail {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  #detailDomain { font-size: 20px; font-weight: 700; }
+  #detailStepCount, #detailStartedAt { color: var(--text-dim); font-size: 13px; }
+
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ---------- tabs ---------- */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    padding: 10px 6px;
+    margin-right: 18px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+  .tab-panels { flex: 1; overflow-y: auto; padding: 18px 24px 40px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ---------- steps ---------- */
+  #stepsList { display: flex; flex-direction: column; gap: 10px; }
+
+  .step-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+  .step-card:hover { border-color: var(--border-light); }
+  .step-card.excluded { opacity: 0.6; }
+
+  .step-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .step-number { font-weight: 700; color: var(--text); }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    color: var(--text-dim);
+    border: 1px solid var(--border-light);
+  }
+  .badge-pagetype { text-transform: capitalize; }
+  .badge-excluded { background: var(--accent-red-dim); color: var(--accent-red); border-color: var(--accent-red); }
+  .badge-urgency { background: var(--accent-orange-dim); color: var(--accent-orange); border-color: var(--accent-orange); }
+  .badge-social { background: var(--accent-yellow-dim); color: var(--accent-yellow); border-color: var(--accent-yellow); }
+  .badge-price { background: var(--accent-green-dim); color: var(--accent-green); border-color: var(--accent-green); }
+  .badge-cart { background: var(--accent-blue-dim); color: var(--accent-blue); border-color: var(--accent-blue); }
+
+  .step-url { color: var(--text-dim); font-size: 12.5px; word-break: break-all; margin-bottom: 4px; }
+  .step-meta { display: flex; gap: 14px; color: var(--text-faint); font-size: 12px; }
+  .step-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .step-expand-hint { color: var(--text-faint); font-size: 11px; margin-top: 8px; }
+  .step-json {
+    margin-top: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    font-family: "SF Mono", Consolas, Menlo, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  /* ---------- screenshots ---------- */
+  #screenshotsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .screenshot-tile {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .screenshot-tile:hover { border-color: var(--accent-blue); }
+  .screenshot-tile img { width: 100%; display: block; aspect-ratio: 16 / 10; object-fit: cover; background: var(--bg-input); }
+  .screenshot-caption {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* ---------- export tab ---------- */
+  .export-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .export-grid { grid-template-columns: 1fr; }
+  }
+  .export-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .export-panel h3 { margin: 0 0 10px; font-size: 14px; }
+  .export-actions { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  #journeyJsonPre {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-family: "SF Mono", Consolas, Menlo, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 60vh;
+    overflow-y: auto;
+    margin: 0;
+  }
+  #screenshotFilenamesList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: "SF Mono", Consolas, Menlo, monospace;
+    font-size: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  #screenshotFilenamesList li {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    word-break: break-all;
+  }
+
+  /* ---------- lightbox ---------- */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 40px;
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img { max-width: 100%; max-height: 100%; border-radius: var(--radius); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+  #lightboxClose {
+    position: absolute;
+    top: 20px;
+    right: 28px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  /* ---------- toasts ---------- */
+  #toastContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1100;
+  }
+  .toast {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    max-width: 320px;
+    font-size: 13px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="errorBanner" class="error-banner">⚠ Cannot connect to server. Is server.py running?</div>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-header">New Audit</div>
+      <form id="newAuditForm">
+        <div>
+          <div class="field-label">URL</div>
+          <input type="url" id="urlInput" placeholder="https://bewakoof.com" required>
+        </div>
+        <div>
+          <div class="field-label">Domain</div>
+          <input type="text" id="domainInput" placeholder="bewakoof.com" required>
+        </div>
+        <div>
+          <div class="field-label">Industry</div>
+          <select id="industrySelect">
+            <option value="ecommerce">E-commerce</option>
+            <option value="travel_booking">Travel Booking</option>
+            <option value="saas">SaaS</option>
+            <option value="subscription_streaming">Subscription / Streaming</option>
+            <option value="food_delivery">Food Delivery</option>
+            <option value="news_media">News / Media</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button type="submit" id="startAuditBtn" class="btn btn-primary btn-block">Start Recording</button>
+      </form>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <div class="sidebar-section" style="flex: 1 1 auto; min-height: 120px;">
+      <div class="sidebar-header">Active Audits</div>
+      <div id="auditList" class="scrollable" style="overflow-y:auto;">
+        <p class="empty-hint">No audits yet</p>
+      </div>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <div class="sidebar-section">
+      <div class="sidebar-header">Reminders</div>
+      <div id="remindersList">
+        <p class="empty-hint">No pending reminders</p>
+      </div>
+    </div>
+  </aside>
+
+  <main class="detail">
+    <div id="emptyState">Select an audit or start a new one</div>
+
+    <div id="auditDetail">
+      <div class="detail-header">
+        <span id="detailDomain"></span>
+        <span id="detailStatusBadge"></span>
+        <span id="detailStepCount"></span>
+        <span id="detailStartedAt"></span>
+      </div>
+
+      <div class="controls-row">
+        <button id="takeScreenshotBtn" class="btn">📷 Take Screenshot</button>
+        <button id="stopRecordingBtn" class="btn btn-danger">⏹ Stop Recording</button>
+      </div>
+
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="live">Live View</button>
+        <button class="tab-btn" data-tab="screenshots">Screenshots</button>
+        <button class="tab-btn" data-tab="export">Export</button>
+      </div>
+
+      <div class="tab-panels">
+        <div id="tab-live" class="tab-panel active">
+          <div id="stepsList"><p class="empty-hint">No steps captured yet.</p></div>
+        </div>
+
+        <div id="tab-screenshots" class="tab-panel">
+          <div id="screenshotsGrid"><p class="empty-hint">No screenshots yet.</p></div>
+        </div>
+
+        <div id="tab-export" class="tab-panel">
+          <div class="export-grid">
+            <div class="export-panel">
+              <h3>Journey JSON</h3>
+              <div class="export-actions">
+                <button id="copyJsonBtn" class="btn btn-small">Copy JSON</button>
+                <button id="downloadJsonBtn" class="btn btn-small">Download JSON</button>
+              </div>
+              <pre id="journeyJsonPre">Select an audit to load its journey JSON.</pre>
+            </div>
+            <div class="export-panel">
+              <h3>Screenshots (zip)</h3>
+              <div class="export-actions">
+                <button id="copyPathsBtn" class="btn btn-small">Copy screenshot paths</button>
+                <button id="downloadAllBtn" class="btn btn-small">Download all screenshots</button>
+              </div>
+              <ul id="screenshotFilenamesList"><li class="empty-hint">No screenshots.</li></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="lightbox">
+  <button id="lightboxClose" aria-label="Close">&times;</button>
+  <img id="lightboxImg" src="" alt="Full-size screenshot">
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const API_BASE = "http://localhost:8000";
+
+  const state = {
+    audits: [],
+    selectedAuditId: null,
+    selectedAuditData: null,
+    reminders: [],
+    activeTab: "live",
+    expandedSteps: new Set(),
+    currentJourney: null,
+    currentScreenshotFilenames: [],
+  };
+
+  let serverReachable = true;
+  let listPollHandle = null;
+  let remindersPollHandle = null;
+  let statusPollHandle = null;
+  let domainManuallyEdited = false;
+
+  // ---------------------------------------------------------------
+  // small utilities
+  // ---------------------------------------------------------------
+
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function truncate(str, max) {
+    if (!str) return "";
+    return str.length > max ? str.slice(0, max - 1) + "…" : str;
+  }
+
+  function timeAgo(isoString) {
+    if (!isoString) return "";
+    const then = new Date(isoString).getTime();
+    if (Number.isNaN(then)) return "";
+    const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+    if (diffSec < 60) return "just now";
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} min${diffMin === 1 ? "" : "s"} ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr} hr${diffHr === 1 ? "" : "s"} ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
+  }
+
+  function formatTimestamp(iso) {
+    try {
+      return new Date(iso).toLocaleString();
+    } catch (err) {
+      return iso || "";
+    }
+  }
+
+  function extractDomain(url) {
+    if (!url) return "";
+    try {
+      const u = new URL(url.includes("://") ? url : "https://" + url);
+      return u.hostname;
+    } catch (err) {
+      return url.replace(/^https?:\/\//, "").split("/")[0];
+    }
+  }
+
+  function statusBadge(status) {
+    const map = {
+      recording: { cls: "status-recording", label: "Recording" },
+      stopped: { cls: "status-stopped", label: "Stopped" },
+      complete: { cls: "status-complete", label: "Complete" },
+    };
+    const info = map[status] || { cls: "status-unknown", label: status || "Unknown" };
+    return `<span class="status-badge ${info.cls}"><span class="status-dot"></span>${escapeHtml(info.label)}</span>`;
+  }
+
+  function actionSummary(userAction) {
+    if (!userAction) return "—";
+    const type = userAction.action_type || "unknown";
+    if (type === "click" && userAction.target_text) {
+      return `click "${truncate(userAction.target_text, 40)}"`;
+    }
+    return type.replace(/_/g, " ");
+  }
+
+  function getScreenshotId(step) {
+    if (step.screenshot_id) return step.screenshot_id;
+    return (step.state_capture && step.state_capture.screenshot_id) || null;
+  }
+
+  // ---------------------------------------------------------------
+  // connectivity banner + toasts
+  // ---------------------------------------------------------------
+
+  function setServerReachable(reachable) {
+    if (reachable === serverReachable) return;
+    serverReachable = reachable;
+    document.getElementById("errorBanner").style.display = reachable ? "none" : "flex";
+    document.body.classList.toggle("has-banner", !reachable);
+  }
+
+  function showToast(message) {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("show"));
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 250);
+    }, 3000);
+  }
+
+  // apiFetch: used for user-initiated actions. Always throws on failure and
+  // shows a toast at the call site. Also drives the connectivity banner.
+  async function apiFetch(path, options) {
+    let res;
+    try {
+      res = await fetch(API_BASE + path, options || {});
+    } catch (err) {
+      setServerReachable(false);
+      throw new Error("Cannot reach server");
+    }
+    setServerReachable(true);
+    if (!res.ok) {
+      let detail = res.statusText || `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body && body.detail) detail = body.detail;
+      } catch (err) { /* ignore non-JSON error bodies */ }
+      throw new Error(detail);
+    }
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) return res.json();
+    return res;
+  }
+
+  // apiFetchQuiet: used for background polling loops. Same connectivity
+  // banner behavior, but never shows a toast (a toast every 3-30s while the
+  // server is down would be noise on top of the persistent banner).
+  async function apiFetchQuiet(path) {
+    try {
+      const data = await apiFetch(path);
+      return data;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(() => legacyCopy(text));
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function legacyCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (err) { /* best effort */ }
+    ta.remove();
+  }
+
+  function triggerBlobDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // ---------------------------------------------------------------
+  // sidebar: New Audit form
+  // ---------------------------------------------------------------
+
+  const urlInput = document.getElementById("urlInput");
+  const domainInput = document.getElementById("domainInput");
+  const industrySelect = document.getElementById("industrySelect");
+  const startAuditBtn = document.getElementById("startAuditBtn");
+
+  urlInput.addEventListener("input", () => {
+    if (!domainManuallyEdited) {
+      domainInput.value = extractDomain(urlInput.value);
+    }
+  });
+  domainInput.addEventListener("input", () => { domainManuallyEdited = true; });
+
+  document.getElementById("newAuditForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const url = urlInput.value.trim();
+    const domain = domainInput.value.trim();
+    const industry = industrySelect.value;
+    if (!url || !domain) {
+      showToast("URL and domain are required");
+      return;
+    }
+    startAuditBtn.disabled = true;
+    try {
+      const data = await apiFetch("/audit/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain, industry, url }),
+      });
+      showToast(`Recording started for ${domain}`);
+      document.getElementById("newAuditForm").reset();
+      domainManuallyEdited = false;
+      await refreshAuditList();
+      selectAudit(data.audit_id);
+    } catch (err) {
+      showToast(`Failed to start audit: ${err.message}`);
+    } finally {
+      startAuditBtn.disabled = false;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // sidebar: audit list
+  // ---------------------------------------------------------------
+
+  async function refreshAuditList() {
+    const audits = await apiFetchQuiet("/audit/list");
+    if (audits === null) return;
+    state.audits = audits;
+    renderAuditList();
+  }
+
+  function renderAuditList() {
+    const container = document.getElementById("auditList");
+    if (!state.audits.length) {
+      container.innerHTML = '<p class="empty-hint">No audits yet</p>';
+      return;
+    }
+    container.innerHTML = state.audits.map((a) => `
+      <div class="audit-card ${a.audit_id === state.selectedAuditId ? "selected" : ""}" data-audit-id="${escapeHtml(a.audit_id)}">
+        <div class="audit-card-top">
+          <span class="audit-domain">${escapeHtml(a.domain)}</span>
+          ${statusBadge(a.status)}
+        </div>
+        <div class="audit-card-meta">
+          <span>${a.step_count} step${a.step_count === 1 ? "" : "s"}</span>
+          <span>${timeAgo(a.started_at)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  document.getElementById("auditList").addEventListener("click", (e) => {
+    const card = e.target.closest(".audit-card");
+    if (!card) return;
+    selectAudit(card.dataset.auditId);
+  });
+
+  // ---------------------------------------------------------------
+  // sidebar: reminders
+  // ---------------------------------------------------------------
+
+  async function refreshReminders() {
+    const data = await apiFetchQuiet("/reminders");
+    if (data === null) return;
+    state.reminders = data;
+    renderReminders();
+  }
+
+  function renderReminders() {
+    const container = document.getElementById("remindersList");
+    if (!state.reminders.length) {
+      container.innerHTML = '<p class="empty-hint">No pending reminders</p>';
+      return;
+    }
+    container.innerHTML = state.reminders.map((r) => `
+      <div class="reminder-card" data-check-id="${escapeHtml(r.check_id)}" data-audit-id="${escapeHtml(r.audit_id)}">
+        <div class="reminder-claim">${escapeHtml(r.claim)}</div>
+        <div class="reminder-domain">${escapeHtml(r.domain)}</div>
+        <div class="reminder-type">${r.reminder_type === "fresh_session" ? "Fresh session revisit due" : "Same session revisit due"}</div>
+        <button class="btn btn-small open-url-btn" data-url="${escapeHtml(r.url)}" type="button">Open URL</button>
+        <select class="reminder-result">
+          <option value="persisted">Claim persisted</option>
+          <option value="changed">Claim changed</option>
+          <option value="not_found">Claim not found</option>
+        </select>
+        <textarea class="reminder-notes" placeholder="Notes (optional)"></textarea>
+        <div class="reminder-actions">
+          <button class="btn btn-primary btn-small save-reminder-btn" type="button">Save</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  document.getElementById("remindersList").addEventListener("click", async (e) => {
+    const card = e.target.closest(".reminder-card");
+    if (!card) return;
+
+    if (e.target.classList.contains("open-url-btn")) {
+      window.open(e.target.dataset.url, "_blank", "noopener");
+      return;
+    }
+
+    if (e.target.classList.contains("save-reminder-btn")) {
+      const checkId = card.dataset.checkId;
+      const auditId = card.dataset.auditId;
+      const result = card.querySelector(".reminder-result").value;
+      const notes = card.querySelector(".reminder-notes").value;
+      e.target.disabled = true;
+      try {
+        await apiFetch(`/audit/${encodeURIComponent(auditId)}/temporal_check/acknowledge`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ check_id: checkId, result, notes }),
+        });
+        showToast("Reminder acknowledged");
+        await refreshReminders();
+      } catch (err) {
+        showToast(`Failed to save: ${err.message}`);
+        e.target.disabled = false;
+      }
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // audit selection + Live View polling
+  // ---------------------------------------------------------------
+
+  async function selectAudit(auditId) {
+    state.selectedAuditId = auditId;
+    state.activeTab = "live";
+    state.expandedSteps.clear();
+    if (statusPollHandle) {
+      clearInterval(statusPollHandle);
+      statusPollHandle = null;
+    }
+    renderAuditList();
+    renderTabs();
+    await fetchAndRenderStatus();
+  }
+
+  async function fetchAndRenderStatus() {
+    const auditId = state.selectedAuditId;
+    if (!auditId) return;
+    const data = await apiFetchQuiet(`/audit/${encodeURIComponent(auditId)}/status`);
+    if (data === null || state.selectedAuditId !== auditId) return;
+    state.selectedAuditData = data;
+    renderAuditDetail();
+
+    if (data.status === "recording") {
+      if (!statusPollHandle) {
+        statusPollHandle = setInterval(fetchAndRenderStatus, 3000);
+      }
+    } else if (statusPollHandle) {
+      clearInterval(statusPollHandle);
+      statusPollHandle = null;
+    }
+  }
+
+  function renderAuditDetail() {
+    const data = state.selectedAuditData;
+    if (!data) return;
+
+    document.getElementById("emptyState").style.display = "none";
+    document.getElementById("auditDetail").style.display = "flex";
+
+    document.getElementById("detailDomain").textContent = data.domain;
+    document.getElementById("detailStatusBadge").innerHTML = statusBadge(data.status);
+    document.getElementById("detailStepCount").textContent = `${data.step_count} step${data.step_count === 1 ? "" : "s"}`;
+    document.getElementById("detailStartedAt").textContent = `Started ${timeAgo(data.started_at)}`;
+
+    const isRecording = data.status === "recording";
+    document.getElementById("stopRecordingBtn").disabled = !isRecording;
+    document.getElementById("takeScreenshotBtn").disabled = !isRecording;
+
+    renderSteps();
+    if (state.activeTab === "screenshots") renderScreenshots();
+  }
+
+  // ---------------------------------------------------------------
+  // Live View: steps list
+  // ---------------------------------------------------------------
+
+  function signalsSummary(signals) {
+    if (!signals) return "";
+    let badges = "";
+    (signals.urgency_claims || []).forEach((claim) => {
+      badges += `<span class="badge badge-urgency">⚠ Urgency: ${escapeHtml(truncate(claim, 60))}</span>`;
+    });
+    (signals.social_proof_claims || []).forEach((claim) => {
+      badges += `<span class="badge badge-social">👥 ${escapeHtml(truncate(claim, 60))}</span>`;
+    });
+    if (signals.prices && signals.prices.length) {
+      const priceStr = signals.prices.map((p) => `₹${p.value}`).join(", ");
+      badges += `<span class="badge badge-price">${escapeHtml(priceStr)}</span>`;
+    }
+    if (signals.cart_items && signals.cart_items.length) {
+      badges += `<span class="badge badge-cart">Cart: ${signals.cart_items.length} item${signals.cart_items.length === 1 ? "" : "s"}</span>`;
+    }
+    return badges;
+  }
+
+  function renderSteps() {
+    const container = document.getElementById("stepsList");
+    const data = state.selectedAuditData;
+    if (!data || !data.steps || !data.steps.length) {
+      container.innerHTML = '<p class="empty-hint">No steps captured yet.</p>';
+      return;
+    }
+    const stepsDesc = data.steps.slice().sort((a, b) => b.step_id - a.step_id);
+    container.innerHTML = stepsDesc.map(renderStepCard).join("");
+  }
+
+  function renderStepCard(step) {
+    const excluded = !!step.capture_excluded;
+    const expanded = state.expandedSteps.has(step.step_id);
+    const signals = step.extracted_signals || {};
+    const badges = excluded ? "" : signalsSummary(signals);
+
+    return `
+      <div class="step-card ${excluded ? "excluded" : ""}" data-step-id="${step.step_id}">
+        <div class="step-card-header">
+          <span class="step-number">#${step.step_id}</span>
+          <span class="badge badge-pagetype">${escapeHtml(step.page_type || "unclassified")}</span>
+          ${excluded ? '<span class="badge badge-excluded">excluded</span>' : ""}
+        </div>
+        <div class="step-url" title="${escapeHtml(step.url)}">${escapeHtml(truncate(step.url, 80))}</div>
+        <div class="step-meta">
+          <span>${escapeHtml(formatTimestamp(step.timestamp))}</span>
+          <span>${escapeHtml(actionSummary(step.user_action))}</span>
+        </div>
+        ${badges ? `<div class="step-badges">${badges}</div>` : ""}
+        ${!excluded ? `<div class="step-expand-hint">${expanded ? "▲ hide full signals" : "▼ show full signals"}</div>` : ""}
+        ${!excluded && expanded ? `<pre class="step-json">${escapeHtml(JSON.stringify(signals, null, 2))}</pre>` : ""}
+      </div>
+    `;
+  }
+
+  document.getElementById("stepsList").addEventListener("click", (e) => {
+    const card = e.target.closest(".step-card");
+    if (!card) return;
+    const stepId = Number(card.dataset.stepId);
+    if (state.expandedSteps.has(stepId)) {
+      state.expandedSteps.delete(stepId);
+    } else {
+      state.expandedSteps.add(stepId);
+    }
+    renderSteps();
+  });
+
+  // ---------------------------------------------------------------
+  // Live View: manual controls
+  // ---------------------------------------------------------------
+
+  document.getElementById("takeScreenshotBtn").addEventListener("click", async () => {
+    if (!state.selectedAuditId) return;
+    const btn = document.getElementById("takeScreenshotBtn");
+    btn.disabled = true;
+    try {
+      const data = await apiFetch(`/audit/${encodeURIComponent(state.selectedAuditId)}/screenshot`, { method: "POST" });
+      showToast(`Screenshot captured (step ${data.step_id})`);
+      await fetchAndRenderStatus();
+    } catch (err) {
+      showToast(`Screenshot failed: ${err.message}`);
+    } finally {
+      btn.disabled = state.selectedAuditData ? state.selectedAuditData.status !== "recording" : true;
+    }
+  });
+
+  document.getElementById("stopRecordingBtn").addEventListener("click", async () => {
+    if (!state.selectedAuditId) return;
+    if (!window.confirm("Stop recording this audit? This cannot be undone.")) return;
+    const btn = document.getElementById("stopRecordingBtn");
+    btn.disabled = true;
+    try {
+      const data = await apiFetch(`/audit/${encodeURIComponent(state.selectedAuditId)}/stop`, { method: "POST" });
+      showToast(`Audit stopped. ${data.step_count} steps saved to ${data.output_file}`);
+      await refreshAuditList();
+      await fetchAndRenderStatus();
+    } catch (err) {
+      showToast(`Stop failed: ${err.message}`);
+      btn.disabled = false;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // tabs
+  // ---------------------------------------------------------------
+
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.activeTab = btn.dataset.tab;
+      renderTabs();
+    });
+  });
+
+  function renderTabs() {
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.tab === state.activeTab);
+    });
+    document.querySelectorAll(".tab-panel").forEach((panel) => {
+      panel.classList.toggle("active", panel.id === `tab-${state.activeTab}`);
+    });
+    if (state.activeTab === "screenshots") renderScreenshots();
+    if (state.activeTab === "export") renderExportTab();
+  }
+
+  // ---------------------------------------------------------------
+  // Screenshots tab + lightbox
+  // ---------------------------------------------------------------
+
+  function renderScreenshots() {
+    const container = document.getElementById("screenshotsGrid");
+    const data = state.selectedAuditData;
+    if (!data) {
+      container.innerHTML = '<p class="empty-hint">No screenshots yet.</p>';
+      return;
+    }
+    const shots = data.steps
+      .filter((s) => !s.capture_excluded && getScreenshotId(s))
+      .slice()
+      .sort((a, b) => a.step_id - b.step_id);
+
+    if (!shots.length) {
+      container.innerHTML = '<p class="empty-hint">No screenshots yet.</p>';
+      return;
+    }
+
+    container.innerHTML = shots.map((s) => {
+      const shotId = getScreenshotId(s);
+      const src = `${API_BASE}/audit/${encodeURIComponent(data.audit_id)}/screenshot/${encodeURIComponent(shotId)}`;
+      return `
+        <div class="screenshot-tile" data-src="${escapeHtml(src)}">
+          <img src="${escapeHtml(src)}" loading="lazy" alt="Step ${s.step_id} screenshot">
+          <div class="screenshot-caption">
+            <span>Step ${s.step_id}</span>
+            <span>${escapeHtml(s.page_type || "unclassified")}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  document.getElementById("screenshotsGrid").addEventListener("click", (e) => {
+    const tile = e.target.closest(".screenshot-tile");
+    if (!tile) return;
+    openLightbox(tile.dataset.src);
+  });
+
+  function openLightbox(src) {
+    document.getElementById("lightboxImg").src = src;
+    document.getElementById("lightbox").classList.add("open");
+  }
+
+  function closeLightbox() {
+    document.getElementById("lightbox").classList.remove("open");
+    document.getElementById("lightboxImg").src = "";
+  }
+
+  document.getElementById("lightbox").addEventListener("click", (e) => {
+    if (e.target.id === "lightbox" || e.target.id === "lightboxClose") closeLightbox();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeLightbox();
+  });
+
+  // ---------------------------------------------------------------
+  // Export tab
+  // ---------------------------------------------------------------
+
+  async function renderExportTab() {
+    if (!state.selectedAuditId) return;
+    const jsonPre = document.getElementById("journeyJsonPre");
+    const filenamesList = document.getElementById("screenshotFilenamesList");
+    jsonPre.textContent = "Loading journey JSON…";
+    filenamesList.innerHTML = "";
+
+    try {
+      const journey = await apiFetch(`/audit/${encodeURIComponent(state.selectedAuditId)}/journey`);
+      state.currentJourney = journey;
+      jsonPre.textContent = JSON.stringify(journey, null, 2);
+
+      const filenames = (journey.journey_steps || [])
+        .map((s) => s.state_capture && s.state_capture.screenshot_id)
+        .filter(Boolean);
+      state.currentScreenshotFilenames = filenames;
+      filenamesList.innerHTML = filenames.length
+        ? filenames.map((f) => `<li>${escapeHtml(f)}</li>`).join("")
+        : '<li class="empty-hint">No screenshots.</li>';
+    } catch (err) {
+      jsonPre.textContent = `Failed to load journey: ${err.message}`;
+      filenamesList.innerHTML = `<li class="empty-hint">Failed to load: ${escapeHtml(err.message)}</li>`;
+      showToast(`Failed to load journey JSON: ${err.message}`);
+    }
+  }
+
+  document.getElementById("copyJsonBtn").addEventListener("click", async () => {
+    if (!state.currentJourney) {
+      showToast("No journey JSON loaded yet");
+      return;
+    }
+    await copyToClipboard(JSON.stringify(state.currentJourney, null, 2));
+    showToast("Journey JSON copied to clipboard");
+  });
+
+  document.getElementById("downloadJsonBtn").addEventListener("click", () => {
+    if (!state.currentJourney) {
+      showToast("No journey JSON loaded yet");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(state.currentJourney, null, 2)], { type: "application/json" });
+    triggerBlobDownload(blob, `${state.selectedAuditId}.json`);
+  });
+
+  document.getElementById("copyPathsBtn").addEventListener("click", async () => {
+    const list = state.currentScreenshotFilenames || [];
+    if (!list.length) {
+      showToast("No screenshot filenames to copy");
+      return;
+    }
+    await copyToClipboard(list.join("\n"));
+    showToast("Screenshot filenames copied");
+  });
+
+  document.getElementById("downloadAllBtn").addEventListener("click", async () => {
+    const list = state.currentScreenshotFilenames || [];
+    if (!list.length) {
+      showToast("No screenshots to download");
+      return;
+    }
+    showToast(`Downloading ${list.length} screenshot${list.length === 1 ? "" : "s"}…`);
+    for (const filename of list) {
+      try {
+        const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(state.selectedAuditId)}/screenshot/${encodeURIComponent(filename)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        triggerBlobDownload(blob, filename);
+      } catch (err) {
+        showToast(`Failed to download ${filename}: ${err.message}`);
+      }
+      // Stagger slightly: back-to-back programmatic downloads can be
+      // silently dropped by some browsers' popup/download throttling.
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // bootstrap
+  // ---------------------------------------------------------------
+
+  refreshAuditList();
+  refreshReminders();
+  listPollHandle = setInterval(refreshAuditList, 5000);
+  remindersPollHandle = setInterval(refreshReminders, 30000);
+})();
+</script>
+</body>
+</html>

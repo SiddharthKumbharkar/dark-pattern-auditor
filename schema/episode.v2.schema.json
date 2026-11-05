@@ -1,0 +1,553 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "episode.v2.schema.json",
+  "title": "Dark Pattern Audit Episode (v2)",
+  "description": "ADDITIVE extension of episode.v1.schema.json. Every v1 top-level field is reused here by pointer with its exact v1 name, type, and meaning unchanged (audit_metadata, website_context, journey_steps, temporal_checks, disclosure_context, and every nested $def they use). schema_version and eight new blocks (episode, steps, outcome, privacy, evidence, attributes, ccpa_verdict, mechanism_verdict) are added alongside them, never replacing them. See journey/schema_migration.py for the v1-to-v2 migration shim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "audit_metadata",
+    "website_context",
+    "journey_steps",
+    "temporal_checks",
+    "disclosure_context",
+    "episode",
+    "steps",
+    "outcome",
+    "privacy",
+    "evidence",
+    "attributes",
+    "ccpa_verdict",
+    "mechanism_verdict"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+
+    "audit_metadata": { "$ref": "episode.v1.schema.json#/$defs/AuditMetadata" },
+    "website_context": { "$ref": "episode.v1.schema.json#/$defs/WebsiteContext" },
+    "journey_steps": {
+      "type": "array",
+      "items": { "$ref": "episode.v1.schema.json#/$defs/JourneyStep" }
+    },
+    "temporal_checks": {
+      "type": "array",
+      "items": { "$ref": "episode.v1.schema.json#/$defs/TemporalCheck" }
+    },
+    "disclosure_context": {
+      "type": "array",
+      "items": { "$ref": "episode.v1.schema.json#/$defs/DisclosureContext" }
+    },
+
+    "episode": { "$ref": "#/$defs/Episode" },
+    "steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Step" }
+    },
+    "outcome": { "$ref": "#/$defs/Outcome" },
+    "privacy": { "$ref": "#/$defs/Privacy" },
+
+    "evidence": {
+      "$ref": "#/$defs/Evidence"
+    },
+    "attributes": {
+      "$ref": "#/$defs/Attributes"
+    },
+    "ccpa_verdict": {
+      "type": "object",
+      "description": "Existing v1 judge output (prompts/pattern_prompt_judge.txt's {findings:[...]} shape), unchanged. Empty object until llm/judge.py is implemented and run.",
+      "additionalProperties": true
+    },
+    "mechanism_verdict": {
+      "type": "object",
+      "description": "Filled later from manual LLM ingest, Phase 4. Empty object until then.",
+      "additionalProperties": true
+    }
+  },
+
+  "$defs": {
+    "Episode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id", "site_id", "site_domain", "sector", "goal", "revisit_index",
+        "device_context", "locale", "paired_episode_id", "collection_mode", "operator",
+        "group_evidence_path"
+      ],
+      "properties": {
+        "episode_id": { "type": "string", "minLength": 1 },
+        "site_id": { "type": "string", "minLength": 1 },
+        "site_domain": { "type": "string", "minLength": 1 },
+        "sector": { "type": "string", "minLength": 1 },
+        "goal": {
+          "type": ["string", "null"],
+          "description": "A goal id from the goal library (config.yaml goals[].id), or null if this episode wasn't recorded against a specific goal (e.g. migrated v1 data never tracked one)."
+        },
+        "revisit_index": { "type": "integer", "minimum": 0, "description": "0 = first visit." },
+        "device_context": { "enum": ["desktop", "mobile"] },
+        "locale": {
+          "type": ["string", "null"],
+          "description": "Nullable: v1 never captured locale, so migrated episodes carry null here rather than a fabricated value."
+        },
+        "paired_episode_id": { "type": ["string", "null"] },
+        "collection_mode": {
+          "enum": ["manual"],
+          "description": "Only 'manual' exists in Stage 1; the enum is expected to grow in a later, still-additive schema revision."
+        },
+        "operator": { "type": "string", "minLength": 1 },
+        "group_evidence_path": {
+          "type": ["string", "null"],
+          "description": "Path (relative to output.root, i.e. this episode's grandparent directory) to the group_evidence.json this episode was last included in, or null if extract-group-evidence has never run for its (site_id, goal) group. Added after v2's initial release -- additive, same schema_version:2. See journey/group_evidence_extractor.py."
+        }
+      }
+    },
+
+    "BoundingBox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      }
+    },
+
+    "Action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "selector", "bounding_box", "input_redacted"],
+      "properties": {
+        "type": { "type": "string" },
+        "selector": { "type": ["string", "null"] },
+        "bounding_box": {
+          "anyOf": [{ "$ref": "#/$defs/BoundingBox" }, { "type": "null" }]
+        },
+        "input_redacted": { "type": "boolean" }
+      }
+    },
+
+    "NetworkEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "url_redacted", "status", "resource_type", "request_id", "redacted_headers"],
+      "properties": {
+        "method": { "type": "string" },
+        "url_redacted": { "type": "string" },
+        "status": { "type": ["integer", "null"] },
+        "resource_type": { "type": "string" },
+        "request_id": { "type": "string" },
+        "redacted_headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Lowercase NAMES (never values) of headers that were present and withheld -- e.g. [\"authorization\",\"cookie\"] -- see recorder/masking/network_masker.py. Added after v2's initial release -- additive, same schema_version:2."
+        }
+      }
+    },
+
+    "Viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer" },
+        "height": { "type": "integer" }
+      }
+    },
+
+    "Step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step_id", "timestamp", "action", "screenshot_path", "screenshot_masked_path",
+        "dom_snapshot_path", "dom_snapshot_masked_path", "network_events", "page_url_redacted",
+        "viewport", "capture_error", "tab_id", "computed_styles_path"
+      ],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "timestamp": { "type": "string" },
+        "action": { "$ref": "#/$defs/Action" },
+        "screenshot_path": {
+          "type": ["string", "null"],
+          "description": "Path to an UNMASKED screenshot in the episode folder. Always null once masking is active (see recorder/masking/): the unmasked image is never written to the episode folder, only kept transiently in a temp dir (privacy.keep_raw_artifacts). Non-null only for pre-masking-era data."
+        },
+        "screenshot_masked_path": { "type": ["string", "null"] },
+        "dom_snapshot_path": {
+          "type": ["string", "null"],
+          "description": "Path to an UNMASKED DOM snapshot. Always null once masking is active, for the same reason as screenshot_path -- see dom_snapshot_masked_path."
+        },
+        "dom_snapshot_masked_path": {
+          "type": ["string", "null"],
+          "description": "The masked DOM snapshot actually persisted in the episode folder (recorder/masking/dom_masker.py). Added after v2's initial release -- additive, same schema_version:2, mirrors screenshot_path/screenshot_masked_path's split."
+        },
+        "network_events": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/NetworkEvent" }
+        },
+        "page_url_redacted": { "type": "string" },
+        "viewport": { "$ref": "#/$defs/Viewport" },
+        "capture_error": {
+          "type": ["string", "null"],
+          "description": "Non-null when screenshot or DOM capture failed for this step (recorder/interactive_v2.py records the step anyway rather than dropping it). Added after v2's initial release -- additive, same schema_version:2, existing v2 producers/consumers that don't set it will fail validation until they do (see journey/schema_migration.py, which now always sets this to null for migrated v1 steps)."
+        },
+        "tab_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Which browser tab/page produced this step ('main' for the initial tab, a generated id for each popup/new-tab attached mid-session). Added alongside capture_error, same reasoning."
+        },
+        "computed_styles_path": {
+          "type": ["string", "null"],
+          "description": "Path to a JSON file of computed CSS + geometry for this step's interactive elements (recorder/evidence_probe.py) -- selector/tag/text/tab_index/bounding_box/color/background_color/font_size_px/is_below_fold per element. Feeds signals/visual_asymmetry.py. Added after v2's initial release -- additive, same schema_version:2."
+        }
+      }
+    },
+
+    "PriceShown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value", "currency"],
+      "properties": {
+        "label": { "type": "string" },
+        "value": { "type": "number" },
+        "currency": { "type": "string" }
+      }
+    },
+
+    "Outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_achieved", "abandoned_reason", "steps_to_complete",
+        "first_price_shown", "final_price_shown", "operator_notes"
+      ],
+      "properties": {
+        "goal_achieved": {
+          "type": ["boolean", "null"],
+          "description": "Nullable: episodes with no goal-completion assessment (e.g. migrated v1 data, which never tracked this) carry null rather than a fabricated true/false."
+        },
+        "abandoned_reason": { "type": ["string", "null"] },
+        "steps_to_complete": { "type": "integer", "minimum": 0 },
+        "first_price_shown": {
+          "anyOf": [{ "$ref": "#/$defs/PriceShown" }, { "type": "null" }]
+        },
+        "final_price_shown": {
+          "anyOf": [{ "$ref": "#/$defs/PriceShown" }, { "type": "null" }]
+        },
+        "operator_notes": { "type": "string" }
+      }
+    },
+
+    "Redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "kind", "count"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "kind": { "type": "string" },
+        "count": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "Privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["masker_version", "redactions_applied", "validation_passed"],
+      "properties": {
+        "masker_version": {
+          "type": ["string", "null"],
+          "description": "Nullable: null means no masking stage ran over this episode (e.g. migrated v1 data, recorded before any masker existed)."
+        },
+        "redactions_applied": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Redaction" }
+        },
+        "validation_passed": { "type": "boolean" }
+      }
+    },
+
+    "Evidence": {
+      "type": "object",
+      "description": "Added after v2's initial release -- additive, same schema_version:2. Every property is OPTIONAL (an empty object {} still validates, matching pre-extractor episodes) but, once present, must match its documented shape. Populated by journey/evidence_extractor.py -- pure measurement over the stored (masked) episode, no LLM, no subjective judgement. See signals/friction.py, visual_asymmetry.py, claims.py, price_drift.py, path_deviation.py, complexity.py, stated_vs_actual.py.",
+      "additionalProperties": false,
+      "properties": {
+        "extractor_version": { "type": "string" },
+        "extracted_at": { "type": "string" },
+        "friction_metrics": { "$ref": "#/$defs/FrictionMetrics" },
+        "visual_asymmetry": { "type": "array", "items": { "$ref": "#/$defs/VisualAsymmetryPair" } },
+        "claim_extraction": { "type": "array", "items": { "$ref": "#/$defs/Claim" } },
+        "price_drift": { "$ref": "#/$defs/PriceDrift" },
+        "path_deviation": { "type": "array", "items": { "$ref": "#/$defs/PathDeviationEvent" } },
+        "complexity_metrics": { "$ref": "#/$defs/ComplexityMetrics" },
+        "stated_vs_actual": { "type": "array", "items": { "$ref": "#/$defs/StatedVsActualEntry" } },
+        "ui_regions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/UiRegionTag" },
+          "description": "One entry per interactive element recorder/evidence_probe.py captured, tagged by signals/ui_regions.py BEFORE any attribute agent runs -- see attribute_agents/base.py's build_region_map, the only place downstream that reads this. Added after v2's initial release -- additive, same schema_version:2."
+        }
+      }
+    },
+
+    "UiRegionTag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "selector", "region"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "selector": { "type": "string", "minLength": 1 },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Only present for a DISCLOSURE-tagged element (signals/ui_regions.py's data-disclosure opt-in pass) -- interactive elements omit this, their text already reaches evidence via computed_styles/the code agent's own evidence_pointers. Optional (additive), not required, so older stored episodes without it still validate."
+        },
+        "region": {
+          "enum": [
+            "cookie_consent_banner", "checkout_price_summary", "cancellation_flow",
+            "signup_form", "login_form", "newsletter_modal", "addon_upsell",
+            "account_settings", "retention_offer", "unclassified"
+          ],
+          "description": "Must exactly match config.ui_regions.REGION_IDS -- kept as a duplicated enum (same pattern as AttributeResult.attribute duplicating attribute_agents.base.ATTRIBUTES) so schema validation doesn't need to import Python config at validate time."
+        }
+      }
+    },
+
+    "FrictionMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "steps", "clicks", "form_fields_required", "confirmation_interstitials",
+        "retention_offers_detected", "dead_ends", "friction_ratio"
+      ],
+      "properties": {
+        "steps": { "type": "integer" },
+        "clicks": { "type": "integer" },
+        "form_fields_required": {
+          "type": "integer",
+          "description": "Max count of required form fields ([required] attribute) found in any single step's masked DOM across the episode -- see signals/friction.py docstring for why 'max over steps' rather than a sum."
+        },
+        "confirmation_interstitials": { "type": "integer" },
+        "retention_offers_detected": { "type": "integer" },
+        "dead_ends": { "type": "integer" },
+        "friction_ratio": {
+          "type": ["number", "null"],
+          "description": "this episode's step count / paired episode's step count. Null unless episode.paired_episode_id is set AND that episode's episode.json was found on disk -- never guessed."
+        }
+      }
+    },
+
+    "VisualAsymmetryPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step_id", "pair_pattern", "positive_selector", "negative_selector", "positive_text", "negative_text",
+        "area_ratio", "contrast_ratio", "font_size_ratio", "vertical_position_delta_px", "tab_order_delta",
+        "positive_below_fold", "negative_below_fold"
+      ],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "pair_pattern": { "type": "string", "description": "Which opposing-pair pattern matched, e.g. \"accept_reject\", \"keep_cancel\"." },
+        "positive_selector": { "type": "string" },
+        "negative_selector": { "type": "string" },
+        "positive_text": { "type": "string" },
+        "negative_text": { "type": "string" },
+        "area_ratio": { "type": ["number", "null"] },
+        "contrast_ratio": {
+          "type": ["number", "null"],
+          "description": "positive element's own WCAG text/background contrast ratio, divided by the negative element's own -- >1 means the accept/keep/yes option is visually more prominent than the reject/cancel/no option."
+        },
+        "font_size_ratio": { "type": ["number", "null"] },
+        "vertical_position_delta_px": { "type": "number" },
+        "tab_order_delta": { "type": "integer" },
+        "positive_below_fold": { "type": "boolean" },
+        "negative_below_fold": { "type": "boolean" }
+      }
+    },
+
+    "Claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim_text", "normalized_value", "claim_type", "step_id", "selector"],
+      "properties": {
+        "claim_text": { "type": "string" },
+        "normalized_value": {
+          "anyOf": [{ "type": "number" }, { "type": "string" }, { "type": "null" }],
+          "description": "The extracted quantity/duration where one exists (e.g. 2 for \"only 2 left\", seconds-remaining for a countdown), else null."
+        },
+        "claim_type": {
+          "enum": ["stock_count", "countdown_timer", "viewer_count", "purchase_count", "deadline_phrase", "urgency_phrase", "social_proof"]
+        },
+        "step_id": { "type": "integer" },
+        "selector": { "type": ["string", "null"] }
+      }
+    },
+
+    "PriceIncrease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "delta", "new_total"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "delta": { "type": "number" },
+        "new_total": { "type": "number" }
+      }
+    },
+
+    "PriceDrift": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first_total", "final_total", "drift", "increases"],
+      "properties": {
+        "first_total": { "type": ["number", "null"] },
+        "final_total": { "type": ["number", "null"] },
+        "drift": { "type": ["number", "null"] },
+        "increases": { "type": "array", "items": { "$ref": "#/$defs/PriceIncrease" } }
+      }
+    },
+
+    "PathDeviationEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "event_type", "from_url", "to_url"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "event_type": { "enum": ["forced_interstitial", "redirect", "dead_end"] },
+        "from_url": { "type": "string" },
+        "to_url": { "type": ["string", "null"] }
+      }
+    },
+
+    "OptionCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "option_count"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "option_count": { "type": "integer" }
+      }
+    },
+
+    "CopyReadability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "flesch_kincaid_grade", "negation_count", "double_negative_count"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "flesch_kincaid_grade": { "type": ["number", "null"] },
+        "negation_count": { "type": "integer" },
+        "double_negative_count": { "type": "integer" }
+      }
+    },
+
+    "TimeOnStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "seconds"],
+      "properties": {
+        "step_id": { "type": "integer" },
+        "seconds": { "type": ["number", "null"] }
+      }
+    },
+
+    "ComplexityMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["option_counts", "copy_readability", "time_on_step", "total_actions_required"],
+      "properties": {
+        "option_counts": { "type": "array", "items": { "$ref": "#/$defs/OptionCount" } },
+        "copy_readability": { "type": "array", "items": { "$ref": "#/$defs/CopyReadability" } },
+        "time_on_step": { "type": "array", "items": { "$ref": "#/$defs/TimeOnStep" } },
+        "total_actions_required": { "type": "integer" }
+      }
+    },
+
+    "StatedVsActualEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "route_changed and claim_kind are both additive (not required) so already-stored v2 episodes whose stated_vs_actual predates them still load -- journey/evidence_extractor.py always populates both for anything freshly extracted; attribute_agents/deception.py treats a missing claim_kind as \"state_change\" (its original, only meaning before claim_kind existed) and a missing route_changed as False.",
+      "required": ["claimed_action", "step_id", "network_fired", "request_ids"],
+      "properties": {
+        "claimed_action": { "type": "string" },
+        "claim_kind": {
+          "enum": ["state_change", "dismiss"],
+          "description": "state_change (unsubscribe/cancel/reject/etc.) claims something real happens, verified by network_fired OR route_changed. dismiss (close/×/skip/etc.) claims the OPPOSITE -- nothing beyond going away -- so network_fired OR route_changed there is itself the contradiction. See signals/stated_vs_actual.py's module docstring."
+        },
+        "step_id": { "type": "integer" },
+        "network_fired": { "type": "boolean" },
+        "route_changed": {
+          "type": "boolean",
+          "description": "True if this step's URL differs from the immediately preceding step's -- a second, independent way a genuinely client-side-only action (no backend, e.g. a mock demo's React-state-only cancel) can show up without network_fired. For a state_change claim, attribute_agents/deception.py only treats it as suspicious when NEITHER this nor network_fired is true; for a dismiss claim, the opposite -- either one firing is itself suspicious."
+        },
+        "request_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "Attributes": {
+      "type": "object",
+      "description": "Added after v2's initial release -- additive, same schema_version:2. No required properties ({} still validates, matching pre-Phase-3 episodes). Populated by journey/attribute_runner.py (the run-attributes CLI) -- see attribute_agents/base.py for the per-result contract and the hard rules every result satisfies before landing here.",
+      "additionalProperties": false,
+      "properties": {
+        "extractor_version": { "type": "string" },
+        "extracted_at": { "type": "string" },
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AttributeResult" },
+          "description": "A list, not a dict keyed by attribute, because more than one agent (e.g. a code agent now and an LLM agent later) may assess the same attribute -- each result is independently tagged with which attribute/agent produced it."
+        }
+      }
+    },
+
+    "EvidencePointer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "selector", "ui_region", "signal"],
+      "properties": {
+        "step_id": {
+          "type": ["integer", "null"],
+          "description": "Null for evidence sourced from group-level signals (claim_persistence, paired_flow_comparison, etc.), which span more than one episode/step and have no single step_id."
+        },
+        "selector": { "type": ["string", "null"] },
+        "ui_region": {
+          "enum": [
+            "cookie_consent_banner", "checkout_price_summary", "cancellation_flow",
+            "signup_form", "login_form", "newsletter_modal", "addon_upsell",
+            "account_settings", "retention_offer", "unclassified"
+          ],
+          "description": "Stamped by attribute_agents/base.py's build_region_map/enrich_evidence_pointers from episode.evidence.ui_regions -- never authored by an agent, never invented by an LLM (journey/mechanism_verdict_ingest.py rejects a Stage-2 response whose ui_region doesn't match the extractor's own tag for that (step_id, selector)). \"unclassified\" is the honest default when no region matched or selector is null."
+        },
+        "signal": { "type": "string", "minLength": 1, "description": "Dot-path identifying which measurement this points at, e.g. \"visual_asymmetry.contrast_ratio\". An image-sourced signal (the model actually looked at the attached screenshot for this specific claim) is prefixed \"screenshot_visual_inspection\" -- see signals/visual_claims.py." }
+      }
+    },
+
+    "AttributeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attribute", "verdict", "severity", "confidence", "evidence_pointers",
+        "reasoning", "agent_version", "agent_type"
+      ],
+      "properties": {
+        "attribute": {
+          "enum": ["asymmetry", "covertness", "deception", "information_hiding", "restriction", "disparate_treatment", "complexity"]
+        },
+        "verdict": {
+          "enum": ["fires", "no", "unsure", "not_assessable"],
+          "description": "not_assessable is required (not 'no') when the necessary signal was null/missing -- see attribute_agents/base.py's required_signals mechanism, which enforces this in the framework rather than trusting each agent."
+        },
+        "severity": { "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 5 }, { "type": "null" }] },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "evidence_pointers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EvidencePointer" },
+          "description": "A verdict of fires/unsure with an empty list here is impossible in stored data -- attribute_agents/base.py downgrades any such result to 'no' before it can be written."
+        },
+        "reasoning": { "type": "string", "minLength": 1 },
+        "agent_version": { "type": "string" },
+        "agent_type": { "enum": ["code", "llm"] },
+        "visual_claim_unverified": {
+          "type": "boolean",
+          "description": "OPTIONAL 9th field, present only when relevant. A Stage-2 LLM verdict whose reasoning makes a visual claim (see signals/visual_claims.py) must set this true UNLESS at least one evidence_pointer's signal is image-sourced (prefixed \"screenshot_visual_inspection\") -- journey/mechanism_verdict_ingest.py enforces the OR at ingest time. Absent (not false) for every code-agent result and every LLM result with no visual claim at all -- code agents structurally can never have this be true, see attribute_agents/base.py's hard visual-claim guard."
+        }
+      }
+    }
+  }
+}

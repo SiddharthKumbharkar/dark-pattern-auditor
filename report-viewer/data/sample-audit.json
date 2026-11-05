@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "audit_id": "demo_site_full",
+    "domain": "auralis-demo.local",
+    "audit_date": "2026-07-06",
+    "total_patterns_checked": 13
+  },
+  "findings": [
+    {
+      "pattern": "False Urgency",
+      "status": "confirmed",
+      "severity": "high",
+      "evidence": [
+        "step_2: countdown-timer element \"Hurry, this price ends in 00:14:54 — sale price reverts after that.\" recomputes a fresh ~15-minute deadline on every page load rather than counting down to a fixed date",
+        "step_2: social_proof_claims — \"42 people are viewing this right now\", \"213 people bought this in the last 7 days\" — values update on a client-side timer with no backing data source"
+      ],
+      "reasoning": "The product page combines a countdown timer with fabricated social-proof counters. The timer resets to roughly 15 minutes on every fresh page load instead of counting down to a genuine fixed deadline, which is the defining signature of False Urgency rather than a real limited-time offer. The \"people viewing / bought\" counters update via a client-side interval with no server-backed data, reinforcing the same pattern. Both signals were directly observed in the rendered DOM, not inferred from indirect evidence.",
+      "recommended_human_review": false
+    },
+    {
+      "pattern": "Basket Sneaking",
+      "status": "confirmed",
+      "severity": "high",
+      "evidence": [
+        "step_3: cart_items — \"Auralis Protection Plan+ (auto-added)\" present with user_selected=false, newly_added=true; no user_action of type click referencing this item appears anywhere earlier in the journey",
+        "step_3: cart table renders a pre-checked \"Keep plan\" control for this item rather than an opt-in checkbox"
+      ],
+      "reasoning": "An item the user never selected — \"Auralis Protection Plan+\" — appears in the cart alongside the product that was actually added, labeled \"(auto-added)\" in the UI and pre-checked in a \"Keep plan\" control rather than presented as an opt-in add-on. The extraction shows newly_added=true with user_selected=false and no matching click action, which is exactly the signal this category is designed to catch.",
+      "recommended_human_review": false
+    },
+    {
+      "pattern": "Confirm Shaming",
+      "status": "confirmed",
+      "severity": "medium",
+      "evidence": [
+        "step_1: newsletter popup decline button text — \"No thanks, I don't like saving money\" — guilt-based phrasing rather than a neutral decline option"
+      ],
+      "reasoning": "The popup shown on first page load frames declining the newsletter as a rejection of savings rather than offering a neutral opt-out, which is the defining trait of Confirm Shaming. Severity is medium rather than high since the popup is easily dismissed and does not block navigation or purchase.",
+      "recommended_human_review": false
+    },
+    {
+      "pattern": "Forced Action",
+      "status": "not_detected",
+      "severity": "low",
+      "evidence": [],
+      "reasoning": "No flow in the recorded journey required the user to perform an unrelated action (e.g. mandatory account creation, forced social share, forced app install) to access core site functionality — product browsing, cart, and checkout were all reachable without an unrelated forced step. This is an evidence-absent verdict rather than a clean negative: the journey did not include a full purchase completed without engaging the membership flow, so this is flagged as a coverage gap rather than scored as a clean pass.",
+      "recommended_human_review": true
+    },
+    {
+      "pattern": "Subscription Trap",
+      "status": "likely",
+      "severity": "high",
+      "evidence": [
+        "step_8 (/trial): primary CTA reads \"Start My Free Trial\"; the ₹499/month auto-renewal disclosure is present but rendered in reduced-contrast fine print below the CTA",
+        "step_9 (/account): the only cancellation entry point, \"Manage membership\", is a small text link positioned at the bottom of the page rather than alongside the subscription details"
+      ],
+      "reasoning": "The trial signup discloses the recurring charge, so this does not rise to outright non-disclosure, but the CTA framing and the fine-print sizing both steer attention away from the billing commitment, and the cancellation path is demoted to a barely-visible link. Capped at \"likely\" rather than \"confirmed\" because the disclosure is present and legible, just de-emphasized — a reasonable person could still find it with attention.",
+      "recommended_human_review": true
+    },
+    {
+      "pattern": "Interface Interference",
+      "status": "confirmed",
+      "severity": "high",
+      "evidence": [
+        "step_11 (/account/subscription/retention-offer): \"Yes, keep my 50% off plan\" rendered as a large, high-contrast, shadowed button; \"no thanks, cancel anyway\" rendered as an 11px underlined text link with no visual weight",
+        "step_12 (/account/subscription/confirm-cancel): the same size/contrast asymmetry repeats on a second consecutive screen (\"Keep my membership\" vs \"yes, cancel my membership\")"
+      ],
+      "reasoning": "Two consecutive cancellation screens each pair a visually dominant \"keep\" action against a barely perceptible \"cancel\" action — a clear and repeated instance of Interface Interference through disparate visual weighting rather than disparate information.",
+      "recommended_human_review": true
+    },
+    {
+      "pattern": "Bait & Switch",
+      "status": "not_detected",
+      "severity": "low",
+      "evidence": [],
+      "reasoning": "No instance was observed of an advertised item, price, or offer being substituted for a different one after the user committed to an action. The full purchase flow (product, cart, checkout, confirmation) was recorded and the advertised product and price remained consistent throughout, so this is scored as evidence-present-and-clean.",
+      "recommended_human_review": false
+    },
+    {
+      "pattern": "Drip Pricing",
+      "status": "confirmed",
+      "severity": "high",
+      "evidence": [
+        "step_4 (/checkout/shipping): displayed total ₹9,398 (items + Protection Plan only)",
+        "step_5 (/checkout/payment): capture_excluded=true — matches the pipeline's payment-page URL exclusion rule, so the exact moment the first fee appears was not directly observed",
+        "step_6 (/checkout/review): displayed total ₹9,746 — a ₹149 \"Payment processing fee\" and a ₹199 \"Service & handling fee\" both appear for the first time, neither shown at step_4"
+      ],
+      "reasoning": "The order total grows by ₹348 between the shipping step and the review step purely from two newly-introduced fees that were never disclosed on the cart or shipping pages. The intermediate payment step was excluded from capture under the pipeline's own payment-page exclusion rule, but the before/after comparison across the shipping and review steps is conclusive on its own.",
+      "recommended_human_review": false
+    },
+    {
+      "pattern": "Disguised Advertisements",
+      "status": "not_detected",
+      "severity": "low",
+      "evidence": [],
+      "reasoning": "No sponsored or third-party promotional content styled to resemble organic site content was observed anywhere in the recorded journey.",
+      "recommended_human_review": false
+    },
+    {
+      "pattern": "Nagging",
+      "status": "confirmed",
+      "severity": "medium",
+      "evidence": [
+        "step_2 (/product/auralis-pro-x): notification-permission modal (\"Turn on notifications?\") visible in visible_text_summary after an extended dwell time on the page"
+      ],
+      "reasoning": "A notification-permission prompt is presented mid-session rather than at a natural entry point, consistent with a nagging re-prompt pattern. The recorded journey captured only one appearance of the modal directly; a second, later capture of the same modal reappearing after dismissal would make the recurring behavior fully explicit in the evidence trail.",
+      "recommended_human_review": false
+    },
+    {
+      "pattern": "Trick Wording",
+      "status": "not_detected",
+      "severity": "low",
+      "evidence": [],
+      "reasoning": "No double-negative or deliberately confusing checkbox/opt-out phrasing was found in the recorded journey. Flagged for human review since the free-trial fine print was not evaluated specifically for confusing phrasing beyond its size and contrast, which is scored separately under Subscription Trap.",
+      "recommended_human_review": true
+    },
+    {
+      "pattern": "SaaS Billing",
+      "status": "likely",
+      "severity": "medium",
+      "evidence": [
+        "step_8 (/trial): payment method is captured before any free value is delivered; card is charged automatically at trial end per the fine print, with no separate active confirmation step at that time"
+      ],
+      "reasoning": "The trial requires payment details upfront and bills automatically without a renewed consent step when the trial ends. This overlaps with the Subscription Trap finding above; it is scored independently here because SaaS Billing specifically concerns the billing mechanism rather than the marketing framing of the signup. Recommended for human review to avoid double-counting against Subscription Trap in the final report.",
+      "recommended_human_review": true
+    },
+    {
+      "pattern": "Rogue Malware",
+      "status": "not_detected",
+      "severity": "low",
+      "evidence": [],
+      "reasoning": "No indicators of malicious scripts, unauthorized redirects, drive-by downloads, or unexpected permission requests beyond the in-page notification-permission UI were observed.",
+      "recommended_human_review": false
+    }
+  ]
+}

@@ -1,0 +1,1937 @@
+{
+  "schema_version": 2,
+  "audit_metadata": {
+    "audit_id": "episode_auralis_checkout_on",
+    "target_domain": "auralis-on.local",
+    "audit_start_time": "2026-10-12T06:46:00.139109+00:00",
+    "audit_end_time": "2026-10-12T06:46:19.196021+00:00"
+  },
+  "website_context": {
+    "domain": "auralis-on.local",
+    "industry": "ecommerce"
+  },
+  "journey_steps": [],
+  "temporal_checks": [],
+  "disclosure_context": [],
+  "episode": {
+    "episode_id": "episode_auralis_checkout_on",
+    "site_id": "auralis-on.local",
+    "site_domain": "auralis-on.local",
+    "sector": "ecommerce",
+    "goal": "purchase_cheapest",
+    "revisit_index": 0,
+    "device_context": "desktop",
+    "locale": null,
+    "paired_episode_id": null,
+    "collection_mode": "manual",
+    "operator": "scripted",
+    "group_evidence_path": null
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-10-12T06:46:04.736085+00:00",
+      "action": {
+        "type": "navigate",
+        "selector": null,
+        "bounding_box": null,
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_001_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_001.html",
+      "network_events": [
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/",
+          "status": 200,
+          "resource_type": "Document",
+          "request_id": "5C45E2FAC35125A1C7C8E64BDE6E74FC",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2",
+          "status": 200,
+          "resource_type": "Font",
+          "request_id": "13877.2",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Broot-of-the-server%5D__0h72x19._.css",
+          "status": 200,
+          "resource_type": "Stylesheet",
+          "request_id": "13877.3",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1xx01vv._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.4",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_090k2jm.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.5",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.6",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.7",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_1amofcm._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.8",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.9",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.10",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_%40swc_helpers_cjs_1r9vbqw._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.11",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_1anvha4._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.12",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/turbopack-_01_ro95._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.13",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_1_n60qq._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.14",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_0kcvcec._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.15",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_layout_tsx_007e4b2._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.16",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_page_tsx_1149goh._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.17",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_client_components_builtin_global-error_1149goh.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.18",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/media/7178b3e590c64307-s.21jp631_3pja2.woff2",
+          "status": 200,
+          "resource_type": "Font",
+          "request_id": "13877.39",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1mojsay._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.42",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1xch-cm._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.43",
+          "redacted_headers": []
+        }
+      ],
+      "page_url_redacted": "http://localhost:3011/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_001.json"
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-10-12T06:46:06.751019+00:00",
+      "action": {
+        "type": "click",
+        "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+        "bounding_box": {
+          "x": 521,
+          "y": 537.5,
+          "width": 398,
+          "height": 16
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_002_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_002.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3011/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_002.json"
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-10-12T06:46:09.289538+00:00",
+      "action": {
+        "type": "click",
+        "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+        "bounding_box": {
+          "x": 521,
+          "y": 537.5,
+          "width": 398,
+          "height": 16
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_003_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_003.html",
+      "network_events": [
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/product/auralis-pro-x",
+          "status": 200,
+          "resource_type": "Document",
+          "request_id": "6263F359246298CBBA96059226B06813",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2",
+          "status": 200,
+          "resource_type": "Font",
+          "request_id": "13877.51",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Broot-of-the-server%5D__0h72x19._.css",
+          "status": 304,
+          "resource_type": "Stylesheet",
+          "request_id": "13877.52",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1xx01vv._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.53",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_090k2jm.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.54",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.55",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.56",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_1amofcm._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.57",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.58",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.59",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_%40swc_helpers_cjs_1r9vbqw._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.60",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_1anvha4._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.61",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/turbopack-_01_ro95._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.62",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_1_n60qq._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.63",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_0kcvcec._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.64",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_layout_tsx_007e4b2._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.65",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_client_components_builtin_global-error_1149goh.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.66",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_1h7_y7-._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.67",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_product_%5Bslug%5D_page_tsx_1149goh._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.68",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/media/7178b3e590c64307-s.21jp631_3pja2.woff2",
+          "status": 200,
+          "resource_type": "Font",
+          "request_id": "13877.90",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1mojsay._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.92",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1xch-cm._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.93",
+          "redacted_headers": []
+        }
+      ],
+      "page_url_redacted": "http://localhost:3011/product/auralis-pro-x",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_003.json"
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2026-10-12T06:46:10.029608+00:00",
+      "action": {
+        "type": "click",
+        "selector": "div.mx-auto.max-w-6xl > div.grid.grid-cols-1 > div:nth-of-type(2) > button.mt-6.w-full",
+        "bounding_box": {
+          "x": 740,
+          "y": 371,
+          "width": 155.0625,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_004_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_004.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3011/product/auralis-pro-x",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_004.json"
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2026-10-12T06:46:11.978017+00:00",
+      "action": {
+        "type": "click",
+        "selector": "div.mx-auto.max-w-6xl > div.grid.grid-cols-1 > div:nth-of-type(2) > button.mt-6.w-full",
+        "bounding_box": {
+          "x": 740,
+          "y": 371,
+          "width": 155.0625,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_005_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_005.html",
+      "network_events": [
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/cart",
+          "status": 200,
+          "resource_type": "Document",
+          "request_id": "00D09E6C0A2AFFB9DD269C246C2C6403",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2",
+          "status": 200,
+          "resource_type": "Font",
+          "request_id": "13877.101",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Broot-of-the-server%5D__0h72x19._.css",
+          "status": 304,
+          "resource_type": "Stylesheet",
+          "request_id": "13877.102",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1xx01vv._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.103",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_090k2jm.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.104",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.105",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-6._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.106",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_compiled_1amofcm._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.107",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.108",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.109",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_%40swc_helpers_cjs_1r9vbqw._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.110",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_1anvha4._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.111",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/turbopack-_01_ro95._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.112",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_1_n60qq._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.113",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_0kcvcec._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.114",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_layout_tsx_007e4b2._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.115",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_1oj5-6l._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.116",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_cart_page_tsx_1149goh._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.117",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/node_modules_next_dist_client_components_builtin_global-error_1149goh.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.118",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/media/7178b3e590c64307-s.21jp631_3pja2.woff2",
+          "status": 200,
+          "resource_type": "Font",
+          "request_id": "13877.141",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1mojsay._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.142",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_1xch-cm._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.143",
+          "redacted_headers": []
+        }
+      ],
+      "page_url_redacted": "http://localhost:3011/cart",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_005.json"
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2026-10-12T06:46:13.760672+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-4xl > div.mt-8.flex > a.rounded-full.bg-brand-ink",
+        "bounding_box": {
+          "x": 941.03125,
+          "y": 422,
+          "width": 202.96875,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_006_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_006.html",
+      "network_events": [
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/checkout/shipping?_rsc=mRaAIrbmPXdDyX0-",
+          "status": 200,
+          "resource_type": "Fetch",
+          "request_id": "13877.150",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_0oyuh3b._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.151",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_shipping_page_tsx_1149goh._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.152",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_0oyuh3b._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.153",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_shipping_page_tsx_1149goh._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.154",
+          "redacted_headers": []
+        }
+      ],
+      "page_url_redacted": "http://localhost:3011/checkout/shipping",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_006.json"
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2026-10-12T06:46:15.525411+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > button.rounded-full.bg-brand-ink",
+        "bounding_box": {
+          "x": 876.265625,
+          "y": 544,
+          "width": 203.734375,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_007_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_007.html",
+      "network_events": [
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/checkout/payment?_rsc=2DgVA82pY9QB6f9H",
+          "status": 200,
+          "resource_type": "Fetch",
+          "request_id": "13877.155",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_0wyidhj._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.156",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_payment_page_tsx_1149goh._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.157",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_0wyidhj._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.158",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_payment_page_tsx_1149goh._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.159",
+          "redacted_headers": []
+        }
+      ],
+      "page_url_redacted": "http://localhost:3011/checkout/payment",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_007.json"
+    },
+    {
+      "step_id": 8,
+      "timestamp": "2026-10-12T06:46:17.293362+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > button.rounded-full.bg-brand-ink",
+        "bounding_box": {
+          "x": 890.265625,
+          "y": 514,
+          "width": 189.734375,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_008_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_008.html",
+      "network_events": [
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/checkout/review?_rsc=lxmxjHOmUoNSEBiM",
+          "status": 200,
+          "resource_type": "Fetch",
+          "request_id": "13877.160",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_0noezs2._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.161",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_review_page_tsx_1149goh._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.162",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/_0noezs2._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.163",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_review_page_tsx_1149goh._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.164",
+          "redacted_headers": []
+        }
+      ],
+      "page_url_redacted": "http://localhost:3011/checkout/review",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_008.json"
+    },
+    {
+      "step_id": 9,
+      "timestamp": "2026-10-12T06:46:19.058983+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > button.rounded-full.bg-brand-ink",
+        "bounding_box": {
+          "x": 939.109375,
+          "y": 536,
+          "width": 140.890625,
+          "height": 44
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_009_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_009.html",
+      "network_events": [
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/checkout/confirmation?_rsc=K0yE4i8DUqj3YiyM",
+          "status": 200,
+          "resource_type": "Fetch",
+          "request_id": "13877.165",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_confirmation_page_tsx_1149goh._.js",
+          "status": 200,
+          "resource_type": "Script",
+          "request_id": "13877.166",
+          "redacted_headers": []
+        },
+        {
+          "method": "GET",
+          "url_redacted": "http://localhost:3011/_next/static/chunks/src_app_checkout_confirmation_page_tsx_1149goh._.js",
+          "status": 304,
+          "resource_type": "Script",
+          "request_id": "13877.167",
+          "redacted_headers": []
+        }
+      ],
+      "page_url_redacted": "http://localhost:3011/checkout/confirmation",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_009.json"
+    }
+  ],
+  "outcome": {
+    "goal_achieved": null,
+    "abandoned_reason": null,
+    "steps_to_complete": 9,
+    "first_price_shown": null,
+    "final_price_shown": null,
+    "operator_notes": ""
+  },
+  "privacy": {
+    "masker_version": "privacy_masker/1.0.0",
+    "redactions_applied": [],
+    "validation_passed": true
+  },
+  "evidence": {
+    "extractor_version": "evidence_extractor/1.0.0",
+    "extracted_at": "2026-10-12T06:48:51.465185+00:00",
+    "friction_metrics": {
+      "steps": 9,
+      "clicks": 8,
+      "form_fields_required": 0,
+      "confirmation_interstitials": 4,
+      "retention_offers_detected": 1,
+      "dead_ends": 0,
+      "friction_ratio": null
+    },
+    "visual_asymmetry": [
+      {
+        "step_id": 1,
+        "pair_pattern": "accept_reject",
+        "positive_selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+        "negative_selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+        "positive_text": "Yes, sign me up",
+        "negative_text": "No thanks, I don't like saving money",
+        "area_ratio": 2.5,
+        "contrast_ratio": 4.124679156385179,
+        "font_size_ratio": 1.1666666666666667,
+        "vertical_position_delta_px": -52.0,
+        "tab_order_delta": -1,
+        "positive_below_fold": false,
+        "negative_below_fold": false
+      }
+    ],
+    "claim_extraction": [
+      {
+        "claim_text": "Hurry, this price ends in",
+        "normalized_value": null,
+        "claim_type": "urgency_phrase",
+        "step_id": 3,
+        "selector": "div:nth-of-type(2) > div.mt-4 > div.countdown-timer.inline-flex > span"
+      },
+      {
+        "claim_text": "00:14:58",
+        "normalized_value": 898,
+        "claim_type": "countdown_timer",
+        "step_id": 3,
+        "selector": "div:nth-of-type(2) > div.mt-4 > div.countdown-timer.inline-flex > span"
+      },
+      {
+        "claim_text": "people are viewing this right now",
+        "normalized_value": null,
+        "claim_type": "urgency_phrase",
+        "step_id": 3,
+        "selector": "div:nth-of-type(2) > div.mt-4 > div.social-proof-counter.flex > p:nth-of-type(1)"
+      },
+      {
+        "claim_text": "Hurry, this price ends in",
+        "normalized_value": null,
+        "claim_type": "urgency_phrase",
+        "step_id": 4,
+        "selector": "div:nth-of-type(2) > div.mt-4 > div.countdown-timer.inline-flex > span"
+      },
+      {
+        "claim_text": "00:14:57",
+        "normalized_value": 897,
+        "claim_type": "countdown_timer",
+        "step_id": 4,
+        "selector": "div:nth-of-type(2) > div.mt-4 > div.countdown-timer.inline-flex > span"
+      },
+      {
+        "claim_text": "people are viewing this right now",
+        "normalized_value": null,
+        "claim_type": "urgency_phrase",
+        "step_id": 4,
+        "selector": "div:nth-of-type(2) > div.mt-4 > div.social-proof-counter.flex > p:nth-of-type(1)"
+      }
+    ],
+    "price_drift": {
+      "first_total": 12999.0,
+      "final_total": 9746.0,
+      "drift": -3253.0,
+      "increases": [
+        {
+          "step_id": 7,
+          "delta": 149.0,
+          "new_total": 9547.0
+        },
+        {
+          "step_id": 8,
+          "delta": 199.0,
+          "new_total": 9746.0
+        }
+      ]
+    },
+    "path_deviation": [
+      {
+        "step_id": 1,
+        "event_type": "forced_interstitial",
+        "from_url": "",
+        "to_url": "http://localhost:3011/"
+      },
+      {
+        "step_id": 7,
+        "event_type": "forced_interstitial",
+        "from_url": "http://localhost:3011/checkout/shipping",
+        "to_url": "http://localhost:3011/checkout/payment"
+      }
+    ],
+    "complexity_metrics": {
+      "option_counts": [
+        {
+          "step_id": 1,
+          "option_count": 18
+        },
+        {
+          "step_id": 2,
+          "option_count": 16
+        },
+        {
+          "step_id": 3,
+          "option_count": 13
+        },
+        {
+          "step_id": 4,
+          "option_count": 13
+        },
+        {
+          "step_id": 5,
+          "option_count": 14
+        },
+        {
+          "step_id": 6,
+          "option_count": 13
+        },
+        {
+          "step_id": 7,
+          "option_count": 15
+        },
+        {
+          "step_id": 8,
+          "option_count": 15
+        },
+        {
+          "step_id": 9,
+          "option_count": 14
+        }
+      ],
+      "copy_readability": [
+        {
+          "step_id": 1,
+          "flesch_kincaid_grade": 10.73,
+          "negation_count": 3,
+          "double_negative_count": 1
+        },
+        {
+          "step_id": 2,
+          "flesch_kincaid_grade": 11.86,
+          "negation_count": 1,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 3,
+          "flesch_kincaid_grade": 11.54,
+          "negation_count": 1,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 4,
+          "flesch_kincaid_grade": 11.62,
+          "negation_count": 1,
+          "double_negative_count": 0
+        }
+      ],
+      "time_on_step": [
+        {
+          "step_id": 2,
+          "seconds": 2.015
+        },
+        {
+          "step_id": 3,
+          "seconds": 2.539
+        },
+        {
+          "step_id": 4,
+          "seconds": 0.74
+        },
+        {
+          "step_id": 5,
+          "seconds": 1.948
+        },
+        {
+          "step_id": 6,
+          "seconds": 1.783
+        },
+        {
+          "step_id": 7,
+          "seconds": 1.765
+        },
+        {
+          "step_id": 8,
+          "seconds": 1.768
+        },
+        {
+          "step_id": 9,
+          "seconds": 1.766
+        }
+      ],
+      "total_actions_required": 8
+    },
+    "stated_vs_actual": [],
+    "ui_regions": [
+      {
+        "step_id": 1,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "section.mx-auto.flex > div.flex-1 > div.mt-7.flex > a.rounded-full.bg-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > section.mx-auto.max-w-6xl > div.grid.grid-cols-1 > a.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > section.mx-auto.max-w-6xl > div.grid.grid-cols-1 > a.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > section.mx-auto.max-w-6xl > div.grid.grid-cols-1 > a.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > section.mx-auto.max-w-6xl > div.rounded-2xl.border > a.mt-5.inline-block",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+        "region": "newsletter_modal"
+      },
+      {
+        "step_id": 1,
+        "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+        "region": "newsletter_modal"
+      },
+      {
+        "step_id": 1,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "section.mx-auto.flex > div.flex-1 > div.mt-7.flex > a.rounded-full.bg-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > section.mx-auto.max-w-6xl > div.grid.grid-cols-1 > a.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > section.mx-auto.max-w-6xl > div.grid.grid-cols-1 > a.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > section.mx-auto.max-w-6xl > div.grid.grid-cols-1 > a.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > section.mx-auto.max-w-6xl > div.rounded-2xl.border > a.mt-5.inline-block",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "main.flex-1 > div.mx-auto.max-w-6xl > nav.mb-6.text-sm > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div.mx-auto.max-w-6xl > div.grid.grid-cols-1 > div:nth-of-type(2) > button.mt-6.w-full",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "main.flex-1 > div.mx-auto.max-w-6xl > nav.mb-6.text-sm > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div.mx-auto.max-w-6xl > div.grid.grid-cols-1 > div:nth-of-type(2) > button.mt-6.w-full",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 4,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "tbody > tr.border-b.border-brand-border > td.px-5.py-4 > button.text-xs.font-medium",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "tr.border-b.border-brand-border > td.px-5.py-4 > label.inline-flex.items-center > input",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "main.flex-1 > div.mx-auto.max-w-4xl > div.mt-8.flex > a.rounded-full.bg-brand-ink",
+        "region": "checkout_price_summary"
+      },
+      {
+        "step_id": 5,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 5,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > a.text-sm.text-brand-muted",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > button.rounded-full.bg-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 6,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > a.text-sm.text-brand-muted",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > button.rounded-full.bg-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "body.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "body.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 7,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > a.text-sm.text-brand-muted",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "main.flex-1 > div.mx-auto.max-w-3xl > div.mt-8.flex > button.rounded-full.bg-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "body.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "body.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 8,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "body.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 9,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "body.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > a.mt-8.inline-block",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "body.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "body.flex.min-h-full > div.nagging-modal.fixed > div.mt-4.flex > button.flex-1.rounded-lg",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "#__dpa_toggle__",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 9,
+        "selector": "div > div:nth-of-type(2) > div:nth-of-type(4) > button:nth-of-type(4)",
+        "region": "unclassified"
+      }
+    ]
+  },
+  "attributes": {
+    "extractor_version": "attribute_runner/1.0.0",
+    "extracted_at": "2026-10-12T06:49:51.353059+00:00",
+    "results": [
+      {
+        "attribute": "asymmetry",
+        "verdict": "unsure",
+        "severity": null,
+        "confidence": 0.5,
+        "evidence_pointers": [
+          {
+            "step_id": 1,
+            "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+            "signal": "visual_asymmetry.contrast_ratio.positive",
+            "ui_region": "newsletter_modal"
+          },
+          {
+            "step_id": 1,
+            "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+            "signal": "visual_asymmetry.contrast_ratio.negative",
+            "ui_region": "newsletter_modal"
+          },
+          {
+            "step_id": 1,
+            "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+            "signal": "visual_asymmetry.area_ratio.positive",
+            "ui_region": "newsletter_modal"
+          },
+          {
+            "step_id": 1,
+            "selector": "body.flex.min-h-full > div.fixed.inset-0 > div.newsletter-popup.w-full > button.mt-3.w-full",
+            "signal": "visual_asymmetry.area_ratio.negative",
+            "ui_region": "newsletter_modal"
+          }
+        ],
+        "reasoning": "1 of 1 pair(s) approached the asymmetry threshold: pair at step 1 skewed on contrast_ratio, area_ratio.",
+        "agent_version": "asymmetry_code/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "covertness",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "covertness_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "deception",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "No state-change action was attempted and no non-timer group-level claim data is available.",
+        "agent_version": "deception_code/1.1.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "information_hiding",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "information_hiding_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "restriction",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "Required signal(s) unavailable: group_evidence.paired_flow_comparison.",
+        "agent_version": "restriction_code/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "disparate_treatment",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "disparate_treatment_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "complexity",
+        "verdict": "unsure",
+        "severity": null,
+        "confidence": 0.5,
+        "evidence_pointers": [
+          {
+            "step_id": null,
+            "selector": null,
+            "signal": "complexity_metrics.total_actions_required",
+            "ui_region": "unclassified"
+          }
+        ],
+        "reasoning": "1 dimension(s) approached the purchase_cheapest complexity threshold: total_actions_required=8.",
+        "agent_version": "complexity_code/1.0.0",
+        "agent_type": "code"
+      }
+    ]
+  },
+  "ccpa_verdict": {},
+  "mechanism_verdict": {}
+}

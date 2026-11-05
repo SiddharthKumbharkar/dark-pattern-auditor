@@ -1,0 +1,368 @@
+{
+  "attributes": {},
+  "audit_metadata": {
+    "audit_end_time": "2026-07-22T10:03:00+00:00",
+    "audit_id": "golden_fixture_audit",
+    "audit_start_time": "2026-07-22T10:00:00+00:00",
+    "target_domain": "shop.example.com"
+  },
+  "ccpa_verdict": {},
+  "disclosure_context": [],
+  "episode": {
+    "collection_mode": "manual",
+    "device_context": "desktop",
+    "episode_id": "golden_fixture_audit",
+    "goal": null,
+    "group_evidence_path": null,
+    "locale": null,
+    "operator": "fixture-author",
+    "paired_episode_id": null,
+    "revisit_index": 0,
+    "sector": "ecommerce",
+    "site_domain": "shop.example.com",
+    "site_id": "shop.example.com"
+  },
+  "evidence": {},
+  "journey_steps": [
+    {
+      "capture_excluded": false,
+      "exclusion_reason": null,
+      "extracted_signals": {
+        "cart_items": [],
+        "forms": [],
+        "popups": [],
+        "prices": [],
+        "social_proof_claims": [],
+        "timers": [],
+        "urgency_claims": [
+          "Only 3 left in stock!"
+        ]
+      },
+      "extraction_confidence": {
+        "dom_extraction_complete": true,
+        "low_confidence_fields": [],
+        "ocr_used": false
+      },
+      "page_title": "Example Shop - Home",
+      "page_type": "homepage",
+      "state_capture": {
+        "accessibility_tree_id": null,
+        "dom_snapshot_id": "step_001.html",
+        "ocr_text_id": null,
+        "screenshot_id": "step_001.png"
+      },
+      "step_id": 1,
+      "timestamp": "2026-07-22T10:00:00+00:00",
+      "ui_measurements": [],
+      "url": "https://shop.example.com/",
+      "user_action": {
+        "action_type": "open_page",
+        "input_value_masked": null,
+        "target_role": null,
+        "target_text": null
+      },
+      "visible_text_summary": [
+        "Welcome to Example Shop",
+        "Only 3 left in stock!",
+        "Shop Now"
+      ]
+    },
+    {
+      "capture_excluded": false,
+      "exclusion_reason": null,
+      "extracted_signals": {
+        "cart_items": [
+          {
+            "name": "Wireless Mouse",
+            "newly_added": true,
+            "quantity": 1,
+            "user_selected": false
+          }
+        ],
+        "forms": [],
+        "popups": [],
+        "prices": [
+          {
+            "currency": "INR",
+            "label": "price",
+            "value": 1299.0
+          }
+        ],
+        "social_proof_claims": [
+          "112 people bought this in the last 24 hours"
+        ],
+        "timers": [
+          {
+            "element_selector": "div#deal-timer",
+            "text_content": "Ends in 02:15:00"
+          }
+        ],
+        "urgency_claims": [
+          "Ends in 02:15:00",
+          "112 people bought this in the last 24 hours"
+        ]
+      },
+      "extraction_confidence": {
+        "dom_extraction_complete": true,
+        "low_confidence_fields": [],
+        "ocr_used": false
+      },
+      "page_title": "Wireless Mouse - Example Shop",
+      "page_type": "product_page",
+      "state_capture": {
+        "accessibility_tree_id": null,
+        "dom_snapshot_id": "step_002.html",
+        "ocr_text_id": null,
+        "screenshot_id": "step_002.png"
+      },
+      "step_id": 2,
+      "timestamp": "2026-07-22T10:01:00+00:00",
+      "ui_measurements": [],
+      "url": "https://shop.example.com/p/wireless-mouse",
+      "user_action": {
+        "action_type": "click",
+        "input_value_masked": null,
+        "target_role": "BUTTON",
+        "target_text": "Shop Now"
+      },
+      "visible_text_summary": [
+        "Wireless Mouse",
+        "Rs. 1,299",
+        "Add to Cart",
+        "Ends in 02:15:00",
+        "112 people bought this in the last 24 hours"
+      ]
+    },
+    {
+      "capture_excluded": false,
+      "exclusion_reason": null,
+      "extracted_signals": {
+        "cart_items": [
+          {
+            "name": "Wireless Mouse",
+            "newly_added": false,
+            "quantity": 1,
+            "user_selected": true
+          },
+          {
+            "name": "Extended Warranty",
+            "newly_added": true,
+            "quantity": 1,
+            "user_selected": false
+          }
+        ],
+        "forms": [],
+        "popups": [],
+        "prices": [
+          {
+            "currency": "INR",
+            "label": "price",
+            "value": 1299.0
+          },
+          {
+            "currency": "INR",
+            "label": "price",
+            "value": 499.0
+          }
+        ],
+        "social_proof_claims": [],
+        "timers": [],
+        "urgency_claims": []
+      },
+      "extraction_confidence": {
+        "dom_extraction_complete": true,
+        "low_confidence_fields": [],
+        "ocr_used": false
+      },
+      "page_title": "Your Cart - Example Shop",
+      "page_type": "cart_page",
+      "state_capture": {
+        "accessibility_tree_id": null,
+        "dom_snapshot_id": "step_003.html",
+        "ocr_text_id": null,
+        "screenshot_id": "step_003.png"
+      },
+      "step_id": 3,
+      "timestamp": "2026-07-22T10:02:00+00:00",
+      "ui_measurements": [],
+      "url": "https://shop.example.com/cart",
+      "user_action": {
+        "action_type": "click",
+        "input_value_masked": null,
+        "target_role": "BUTTON",
+        "target_text": "Add to Cart"
+      },
+      "visible_text_summary": [
+        "Wireless Mouse",
+        "Rs. 1,299",
+        "Extended Warranty",
+        "Rs. 499",
+        "Checkout"
+      ]
+    },
+    {
+      "capture_excluded": true,
+      "exclusion_reason": "url_pattern_match",
+      "extracted_signals": {
+        "cart_items": [],
+        "forms": [],
+        "popups": [],
+        "prices": [],
+        "social_proof_claims": [],
+        "timers": [],
+        "urgency_claims": []
+      },
+      "extraction_confidence": {
+        "dom_extraction_complete": true,
+        "low_confidence_fields": [],
+        "ocr_used": false
+      },
+      "page_title": "",
+      "page_type": "checkout_page",
+      "state_capture": {
+        "accessibility_tree_id": null,
+        "dom_snapshot_id": "",
+        "ocr_text_id": null,
+        "screenshot_id": ""
+      },
+      "step_id": 4,
+      "timestamp": "2026-07-22T10:03:00+00:00",
+      "ui_measurements": [],
+      "url": "https://shop.example.com/checkout/payment",
+      "user_action": {
+        "action_type": "click",
+        "input_value_masked": null,
+        "target_role": "BUTTON",
+        "target_text": "Checkout"
+      },
+      "visible_text_summary": []
+    }
+  ],
+  "mechanism_verdict": {},
+  "outcome": {
+    "abandoned_reason": null,
+    "final_price_shown": {
+      "currency": "INR",
+      "label": "price",
+      "value": 499.0
+    },
+    "first_price_shown": {
+      "currency": "INR",
+      "label": "price",
+      "value": 1299.0
+    },
+    "goal_achieved": null,
+    "operator_notes": "",
+    "steps_to_complete": 4
+  },
+  "privacy": {
+    "masker_version": null,
+    "redactions_applied": [],
+    "validation_passed": true
+  },
+  "schema_version": 2,
+  "steps": [
+    {
+      "action": {
+        "bounding_box": null,
+        "input_redacted": false,
+        "selector": null,
+        "type": "open_page"
+      },
+      "capture_error": null,
+      "computed_styles_path": null,
+      "dom_snapshot_masked_path": null,
+      "dom_snapshot_path": "dom/step_001.html",
+      "network_events": [],
+      "page_url_redacted": "https://shop.example.com/",
+      "screenshot_masked_path": null,
+      "screenshot_path": "screenshots/step_001.png",
+      "step_id": 1,
+      "tab_id": "main",
+      "timestamp": "2026-07-22T10:00:00+00:00",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "action": {
+        "bounding_box": null,
+        "input_redacted": false,
+        "selector": null,
+        "type": "click"
+      },
+      "capture_error": null,
+      "computed_styles_path": null,
+      "dom_snapshot_masked_path": null,
+      "dom_snapshot_path": "dom/step_002.html",
+      "network_events": [],
+      "page_url_redacted": "https://shop.example.com/p/wireless-mouse",
+      "screenshot_masked_path": null,
+      "screenshot_path": "screenshots/step_002.png",
+      "step_id": 2,
+      "tab_id": "main",
+      "timestamp": "2026-07-22T10:01:00+00:00",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "action": {
+        "bounding_box": null,
+        "input_redacted": false,
+        "selector": null,
+        "type": "click"
+      },
+      "capture_error": null,
+      "computed_styles_path": null,
+      "dom_snapshot_masked_path": null,
+      "dom_snapshot_path": "dom/step_003.html",
+      "network_events": [],
+      "page_url_redacted": "https://shop.example.com/cart",
+      "screenshot_masked_path": null,
+      "screenshot_path": "screenshots/step_003.png",
+      "step_id": 3,
+      "tab_id": "main",
+      "timestamp": "2026-07-22T10:02:00+00:00",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "action": {
+        "bounding_box": null,
+        "input_redacted": false,
+        "selector": null,
+        "type": "click"
+      },
+      "capture_error": null,
+      "computed_styles_path": null,
+      "dom_snapshot_masked_path": null,
+      "dom_snapshot_path": null,
+      "network_events": [],
+      "page_url_redacted": "https://shop.example.com/checkout/payment",
+      "screenshot_masked_path": null,
+      "screenshot_path": null,
+      "step_id": 4,
+      "tab_id": "main",
+      "timestamp": "2026-07-22T10:03:00+00:00",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    }
+  ],
+  "temporal_checks": [],
+  "website_context": {
+    "domain": "shop.example.com",
+    "industry": "ecommerce",
+    "known_flow_types": [
+      "product_browsing",
+      "cart",
+      "checkout"
+    ]
+  }
+}

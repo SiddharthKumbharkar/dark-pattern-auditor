@@ -1,0 +1,711 @@
+{
+  "schema_version": 2,
+  "audit_metadata": {
+    "audit_id": "episode_auralis_cancel_off_v2",
+    "target_domain": "auralis-off.local",
+    "audit_start_time": "2026-08-09T17:25:27.154651+00:00",
+    "audit_end_time": "2026-08-09T17:25:33.192199+00:00"
+  },
+  "website_context": {
+    "domain": "auralis-off.local",
+    "industry": "ecommerce"
+  },
+  "journey_steps": [],
+  "temporal_checks": [],
+  "disclosure_context": [],
+  "episode": {
+    "episode_id": "episode_auralis_cancel_off_v2",
+    "site_id": "auralis-off.local",
+    "site_domain": "auralis-off.local",
+    "sector": "ecommerce",
+    "goal": "cancel_subscription",
+    "revisit_index": 0,
+    "device_context": "desktop",
+    "locale": null,
+    "paired_episode_id": "episode_auralis_signup_off",
+    "collection_mode": "manual",
+    "operator": "enrichment-script",
+    "group_evidence_path": "groups/auralis-off_local__cancel_subscription/group_evidence.json"
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-08-09T17:25:29.522126+00:00",
+      "action": {
+        "type": "navigate",
+        "selector": null,
+        "bounding_box": null,
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_001_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_001.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_001.json"
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-08-09T17:25:31.321427+00:00",
+      "action": {
+        "type": "click",
+        "selector": "div.mx-auto.max-w-2xl > div.mt-6.rounded-2xl > div.mt-3 > a.mt-4.inline-block",
+        "bounding_box": {
+          "x": 433,
+          "y": 296,
+          "width": 177.28125,
+          "height": 42
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_002_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_002.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_002.json"
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-08-09T17:25:33.077912+00:00",
+      "action": {
+        "type": "click",
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > button.rounded-full.border",
+        "bounding_box": {
+          "x": 488,
+          "y": 263,
+          "width": 464,
+          "height": 42
+        },
+        "input_redacted": false
+      },
+      "screenshot_path": null,
+      "screenshot_masked_path": "screenshots/step_003_masked.png",
+      "dom_snapshot_path": null,
+      "dom_snapshot_masked_path": "dom/step_003.html",
+      "network_events": [],
+      "page_url_redacted": "http://localhost:3002/account/subscription/cancelled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture_error": null,
+      "tab_id": "main",
+      "computed_styles_path": "computed_styles/step_003.json"
+    }
+  ],
+  "outcome": {
+    "goal_achieved": null,
+    "abandoned_reason": null,
+    "steps_to_complete": 3,
+    "first_price_shown": null,
+    "final_price_shown": null,
+    "operator_notes": ""
+  },
+  "privacy": {
+    "masker_version": "privacy_masker/1.0.0",
+    "redactions_applied": [],
+    "validation_passed": true
+  },
+  "evidence": {
+    "extractor_version": "evidence_extractor/1.0.0",
+    "extracted_at": "2026-08-09T17:38:59.191231+00:00",
+    "friction_metrics": {
+      "steps": 3,
+      "clicks": 2,
+      "form_fields_required": 0,
+      "confirmation_interstitials": 3,
+      "retention_offers_detected": 0,
+      "dead_ends": 0,
+      "friction_ratio": 1.5
+    },
+    "visual_asymmetry": [],
+    "claim_extraction": [],
+    "price_drift": {
+      "first_total": 499.0,
+      "final_total": 199.0,
+      "drift": -300.0,
+      "increases": []
+    },
+    "path_deviation": [
+      {
+        "step_id": 1,
+        "event_type": "forced_interstitial",
+        "from_url": "",
+        "to_url": "http://localhost:3002/account"
+      }
+    ],
+    "complexity_metrics": {
+      "option_counts": [
+        {
+          "step_id": 1,
+          "option_count": 11
+        },
+        {
+          "step_id": 2,
+          "option_count": 12
+        },
+        {
+          "step_id": 3,
+          "option_count": 11
+        }
+      ],
+      "copy_readability": [
+        {
+          "step_id": 1,
+          "flesch_kincaid_grade": 13.05,
+          "negation_count": 1,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 2,
+          "flesch_kincaid_grade": 12.52,
+          "negation_count": 1,
+          "double_negative_count": 0
+        },
+        {
+          "step_id": 3,
+          "flesch_kincaid_grade": 11.16,
+          "negation_count": 2,
+          "double_negative_count": 0
+        }
+      ],
+      "time_on_step": [
+        {
+          "step_id": 2,
+          "seconds": 1.799
+        },
+        {
+          "step_id": 3,
+          "seconds": 1.756
+        }
+      ],
+      "total_actions_required": 2
+    },
+    "stated_vs_actual": [
+      {
+        "claimed_action": "Cancel membership",
+        "step_id": 2,
+        "network_fired": false,
+        "route_changed": true,
+        "request_ids": []
+      },
+      {
+        "claimed_action": "Cancel membership",
+        "step_id": 3,
+        "network_fired": false,
+        "route_changed": true,
+        "request_ids": []
+      }
+    ],
+    "ui_regions": [
+      {
+        "step_id": 1,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "div.mx-auto.max-w-2xl > div.mt-6.rounded-2xl > div.mt-3 > a.mt-4.inline-block",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 1,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 2,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > button.rounded-full.border",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 2,
+        "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > a.text-center.text-sm",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 2,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-2.text-sm",
+        "region": "cancellation_flow",
+        "text": "Note: cancelling before your renewal date may incur a \u20b9199 early cancellation fee, charged to your card on file."
+      },
+      {
+        "step_id": 3,
+        "selector": "div.flex.min-h-full > header.sticky.top-0 > div.mx-auto.flex > a.flex.items-center",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "unclassified"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > nav.hidden.items-center > a.hover:text-brand-ink",
+        "region": "account_settings"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > button.group.flex",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "header.sticky.top-0 > div.mx-auto.flex > div.flex.items-center > a.relative.flex",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > a.mt-8.inline-block",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(1)",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(2)",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(3)",
+        "region": "cancellation_flow"
+      },
+      {
+        "step_id": 3,
+        "selector": "html.h-full.antialiased > div > div:nth-of-type(5) > button:nth-of-type(4)",
+        "region": "cancellation_flow"
+      }
+    ]
+  },
+  "attributes": {
+    "extractor_version": "attribute_runner/1.0.0",
+    "extracted_at": "2026-10-12T06:49:58.164926+00:00",
+    "results": [
+      {
+        "attribute": "asymmetry",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "Required signal(s) unavailable: evidence.visual_asymmetry.",
+        "agent_version": "asymmetry_code/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "covertness",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "covertness_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "deception",
+        "verdict": "no",
+        "severity": null,
+        "confidence": 0.7,
+        "evidence_pointers": [],
+        "reasoning": "Checked 2 claimed action(s), 0 non-timer persisted claim(s); found no mismatch.",
+        "agent_version": "deception_code/1.1.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "information_hiding",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "information_hiding_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "restriction",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "Required signal(s) unavailable: group_evidence.paired_flow_comparison.",
+        "agent_version": "restriction_code/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "disparate_treatment",
+        "verdict": "not_assessable",
+        "severity": null,
+        "confidence": 0.0,
+        "evidence_pointers": [],
+        "reasoning": "requires LLM judgement \u2014 Stage 2",
+        "agent_version": "disparate_treatment_stub/1.0.0",
+        "agent_type": "code"
+      },
+      {
+        "attribute": "complexity",
+        "verdict": "no",
+        "severity": null,
+        "confidence": 0.7,
+        "evidence_pointers": [],
+        "reasoning": "Checked 3 option-count sample(s), 3 copy block(s), total_actions_required=2; none reached the cancel_subscription complexity threshold.",
+        "agent_version": "complexity_code/1.0.0",
+        "agent_type": "code"
+      }
+    ]
+  },
+  "ccpa_verdict": {},
+  "mechanism_verdict": {
+    "entries": [
+      {
+        "role": "attribute",
+        "attribute": "information_hiding",
+        "model_name": "claude-sonnet-5",
+        "prompt_version": "attribute_prompt.v1",
+        "ingested_at": "2026-08-09T18:06:28.653120+00:00",
+        "operator": "siddharth",
+        "raw_response": {
+          "attribute": "information_hiding",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.85,
+          "evidence_pointers": [
+            {
+              "step_id": 2,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-2.text-sm",
+              "ui_region": "cancellation_flow",
+              "signal": "disclosure_elements.text: early cancellation fee note disclosed before user commits to cancellation"
+            },
+            {
+              "step_id": 1,
+              "selector": "div.mx-auto.max-w-2xl > div.mt-6.rounded-2xl > div.mt-3 > a.mt-4.inline-block",
+              "ui_region": "cancellation_flow",
+              "signal": "price_drift.first_total vs final_total: final total (199) is lower than initial subscription price (499), not an undisclosed increase"
+            }
+          ],
+          "reasoning": "The relevant condition here is the potential \u20b9199 early cancellation fee. Evidence shows this fee is disclosed on step 2 (the \"Manage membership\" page), which is the very first screen the user reaches after clicking \"Cancel membership\" from the account page, and well before they click the final \"Cancel membership\" confirmation button in step 2 leading to step 3. The note text is directly present and readable in the flow itself (\"Note: cancelling before your renewal date may incur a \u20b9199 early cancellation fee, charged to your card on file\"), not hidden behind an extra click, a footnote, or introduced only after the cancellation was finalized. The price_drift evidence shows a decrease (499 -> 199) which appears to correspond to the disclosed one-time fee figure being referenced, not a new hidden charge appearing after the fact \u2014 there are no recorded 'increases' in price_drift, and the final confirmation screen (step 3) only confirms cancellation with no new surprise fee or term appearing that wasn't already disclosed in step 2. Since the term was surfaced proactively and prominently at the point where the user was about to act, this does not meet the bar for information_hiding (withholding a cost/term until later). This is a case of legitimate disclosure, not concealment."
+        }
+      },
+      {
+        "role": "attribute",
+        "attribute": "covertness",
+        "model_name": "claude-sonnet-5",
+        "prompt_version": "attribute_prompt.v1",
+        "ingested_at": "2026-08-10T02:08:50.749913+00:00",
+        "operator": "siddharth",
+        "raw_response": {
+          "attribute": "covertness",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.85,
+          "evidence_pointers": [
+            {
+              "step_id": 1,
+              "selector": "div.mx-auto.max-w-2xl > div.mt-6.rounded-2xl > div.mt-3 > a.mt-4.inline-block",
+              "ui_region": "cancellation_flow",
+              "signal": "screenshot_visual_inspection.cancel_button_visibility"
+            },
+            {
+              "step_id": 2,
+              "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > button.rounded-full.border",
+              "ui_region": "cancellation_flow",
+              "signal": "screenshot_visual_inspection.cancel_button_visibility"
+            }
+          ],
+          "reasoning": "Across all three steps, the cancellation path is clearly and consistently labeled and visible. On the account page (step 1), \"Cancel membership\" is a distinctly-colored (red-bordered) button placed directly under the membership status with no visual burying. On step 2, the \"Cancel membership\" button is the primary, most prominent element on the page \u2014 larger, centrally placed, and colored to stand out \u2014 while \"Back to account\" is the secondary, smaller text link below it. There is no evidence of the reject/cancel option being hidden behind unrelated menus, disguised as something else, given misleading labels, or rendered in low-contrast/tiny text to obscure it. The fee disclosure (\"\u20b9199 early cancellation fee\") is presented as plain adjacent text rather than concealed in fine print or a separate flow. The flow completes cancellation directly (step 3 shows \"Membership cancelled\") without extra dark-pattern hurdles like forced retention offers or hidden confirmation steps. This pattern is consistent with the site's \"Dark Patterns: OFF\" banner visible in every screenshot, indicating this episode is the control/clean version. None of the evidence suggests deliberate concealment or disguise of the cancel option \u2014 it is straightforwardly labeled and reasonably prominent throughout."
+        }
+      }
+    ],
+    "computed_output": {
+      "overall": {
+        "verdict": "inconclusive",
+        "coverage_limited": false,
+        "human_review_recommended": true,
+        "coverage": {
+          "assessed": [
+            "covertness",
+            "deception",
+            "information_hiding",
+            "restriction",
+            "complexity"
+          ],
+          "not_assessable": [
+            "asymmetry"
+          ],
+          "stubbed_pending_stage2": [
+            "disparate_treatment"
+          ],
+          "counts": {
+            "fires": 0,
+            "no": 4,
+            "unsure": 1,
+            "not_assessable": 2
+          }
+        },
+        "regions_summary": {
+          "total_regions_examined": 3,
+          "regions_with_findings": 1,
+          "regions_clean": 2
+        },
+        "urgency_claims": [],
+        "summary": "Human review needed \u2014 unsure finding(s). Inconclusive: only weak or unsure findings, in cancellation_flow."
+      },
+      "regions": [
+        {
+          "ui_region": "cancellation_flow",
+          "representative_element": null,
+          "steps": [
+            1,
+            2
+          ],
+          "shared_elements": [],
+          "attributes_fired": [],
+          "attributes_unsure": [
+            {
+              "attribute": "restriction",
+              "step_id": 1,
+              "selector": null
+            }
+          ],
+          "attributes_absent": [
+            "complexity",
+            "covertness",
+            "deception",
+            "information_hiding"
+          ],
+          "attributes_not_assessed": [
+            "asymmetry",
+            "disparate_treatment"
+          ],
+          "likely_pattern": null,
+          "finding_strength": "weak",
+          "assessment": "restriction came back unsure -- finding_strength: weak."
+        }
+      ],
+      "verdicts": [
+        {
+          "attribute": "asymmetry",
+          "verdict": "not_assessable",
+          "severity": null,
+          "confidence": 0.0,
+          "evidence_pointers": [],
+          "reasoning": "Required signal(s) unavailable: evidence.visual_asymmetry.",
+          "agent_version": "asymmetry_code/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "covertness",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.85,
+          "evidence_pointers": [
+            {
+              "step_id": 1,
+              "selector": "div.mx-auto.max-w-2xl > div.mt-6.rounded-2xl > div.mt-3 > a.mt-4.inline-block",
+              "ui_region": "cancellation_flow",
+              "signal": "screenshot_visual_inspection.cancel_button_visibility"
+            },
+            {
+              "step_id": 2,
+              "selector": "main.flex-1 > div.mx-auto.max-w-lg > div.mt-8.flex > button.rounded-full.border",
+              "ui_region": "cancellation_flow",
+              "signal": "screenshot_visual_inspection.cancel_button_visibility"
+            }
+          ],
+          "reasoning": "Across all three steps, the cancellation path is clearly and consistently labeled and visible. On the account page (step 1), \"Cancel membership\" is a distinctly-colored (red-bordered) button placed directly under the membership status with no visual burying. On step 2, the \"Cancel membership\" button is the primary, most prominent element on the page \u2014 larger, centrally placed, and colored to stand out \u2014 while \"Back to account\" is the secondary, smaller text link below it. There is no evidence of the reject/cancel option being hidden behind unrelated menus, disguised as something else, given misleading labels, or rendered in low-contrast/tiny text to obscure it. The fee disclosure (\"\u20b9199 early cancellation fee\") is presented as plain adjacent text rather than concealed in fine print or a separate flow. The flow completes cancellation directly (step 3 shows \"Membership cancelled\") without extra dark-pattern hurdles like forced retention offers or hidden confirmation steps. This pattern is consistent with the site's \"Dark Patterns: OFF\" banner visible in every screenshot, indicating this episode is the control/clean version. None of the evidence suggests deliberate concealment or disguise of the cancel option \u2014 it is straightforwardly labeled and reasonably prominent throughout.",
+          "agent_version": "llm:claude-sonnet-5/attribute_prompt.v1",
+          "agent_type": "llm"
+        },
+        {
+          "attribute": "deception",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.7,
+          "evidence_pointers": [],
+          "reasoning": "Checked 2 claimed action(s), 0 non-timer persisted claim(s); found no mismatch.",
+          "agent_version": "deception_code/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "information_hiding",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.85,
+          "evidence_pointers": [
+            {
+              "step_id": 2,
+              "selector": "div.flex.min-h-full > main.flex-1 > div.mx-auto.max-w-lg > p.mt-2.text-sm",
+              "ui_region": "cancellation_flow",
+              "signal": "disclosure_elements.text: early cancellation fee note disclosed before user commits to cancellation"
+            },
+            {
+              "step_id": 1,
+              "selector": "div.mx-auto.max-w-2xl > div.mt-6.rounded-2xl > div.mt-3 > a.mt-4.inline-block",
+              "ui_region": "cancellation_flow",
+              "signal": "price_drift.first_total vs final_total: final total (199) is lower than initial subscription price (499), not an undisclosed increase"
+            }
+          ],
+          "reasoning": "The relevant condition here is the potential \u20b9199 early cancellation fee. Evidence shows this fee is disclosed on step 2 (the \"Manage membership\" page), which is the very first screen the user reaches after clicking \"Cancel membership\" from the account page, and well before they click the final \"Cancel membership\" confirmation button in step 2 leading to step 3. The note text is directly present and readable in the flow itself (\"Note: cancelling before your renewal date may incur a \u20b9199 early cancellation fee, charged to your card on file\"), not hidden behind an extra click, a footnote, or introduced only after the cancellation was finalized. The price_drift evidence shows a decrease (499 -> 199) which appears to correspond to the disclosed one-time fee figure being referenced, not a new hidden charge appearing after the fact \u2014 there are no recorded 'increases' in price_drift, and the final confirmation screen (step 3) only confirms cancellation with no new surprise fee or term appearing that wasn't already disclosed in step 2. Since the term was surfaced proactively and prominently at the point where the user was about to act, this does not meet the bar for information_hiding (withholding a cost/term until later). This is a case of legitimate disclosure, not concealment.",
+          "agent_version": "llm:claude-sonnet-5/attribute_prompt.v1",
+          "agent_type": "llm"
+        },
+        {
+          "attribute": "restriction",
+          "verdict": "unsure",
+          "severity": null,
+          "confidence": 0.5,
+          "evidence_pointers": [
+            {
+              "step_id": null,
+              "selector": null,
+              "signal": "friction_metrics.friction_ratio",
+              "ui_region": "cancellation_flow"
+            },
+            {
+              "step_id": 1,
+              "selector": null,
+              "signal": "path_deviation.forced_interstitial",
+              "ui_region": "cancellation_flow"
+            }
+          ],
+          "reasoning": "friction_ratio=1.50 (unsure); 1 forced interstitial(s) (unsure).",
+          "agent_version": "restriction_code/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "disparate_treatment",
+          "verdict": "not_assessable",
+          "severity": null,
+          "confidence": 0.0,
+          "evidence_pointers": [],
+          "reasoning": "requires LLM judgement \u2014 Stage 2",
+          "agent_version": "disparate_treatment_stub/1.0.0",
+          "agent_type": "code"
+        },
+        {
+          "attribute": "complexity",
+          "verdict": "no",
+          "severity": null,
+          "confidence": 0.7,
+          "evidence_pointers": [],
+          "reasoning": "Checked 3 option-count sample(s), 3 copy block(s), total_actions_required=2; none reached the cancel_subscription complexity threshold.",
+          "agent_version": "complexity_code/1.0.0",
+          "agent_type": "code"
+        }
+      ]
+    }
+  }
+}
